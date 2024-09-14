@@ -1,23 +1,11 @@
 const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const routes = require('./routes');
-const errorHandler = require('./middleware/errorHandler');
+const dealRoutes = require('./routes/api/v1/Deal.Route');
 
 const app = express();
 
-// Middleware
-app.use(helmet());
-app.use(cors());
-app.use(morgan('dev'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use('/api/v1/deals', dealRoutes);
 
-// Routes
-app.use('/api', routes);
-
-// Error handling
-app.use(errorHandler);
+// ... other middleware and error handling
 
 module.exports = app;
