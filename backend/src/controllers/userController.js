@@ -14,9 +14,25 @@ const signToken = id => {
 
 exports.register = catchAsync(async (req, res, next) => {
   const { username, email, password } = req.body;
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+  if (existingUser) {
+    return next(new AppError('User with this email or username already exists', 400));
+  }
+
   const newUser = await User.create({ username, email, password });
+
+  // Remove password from output
+  newUser.password = undefined;
+
   const token = signToken(newUser._id);
-  res.status(201).json({ status: 'success', token, data: { user: newUser } });
+
+  res.status(201).json({
+    status: 'success',
+    token,
+    data: { user: newUser }
+  });
 });
 
 exports.login = catchAsync(async (req, res, next) => {

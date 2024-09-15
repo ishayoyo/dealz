@@ -24,7 +24,9 @@ const HomePage = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <DealGrid deals={dummyDeals} />
+      <Box p={4}>
+        <DealGrid deals={dummyDeals} />
+      </Box>
     </MotionBox>
   );
 };

@@ -4,7 +4,10 @@ const routes = require('./routes/api/v1');
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000', // or whatever port your frontend is running on
+  credentials: true
+}));
 app.use(express.json());
 app.use('/api/v1', routes);
 
