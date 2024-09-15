@@ -2,6 +2,7 @@ const Deal = require('../models/Deal.Model');
 const User = require('../models/User.Model');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const Comment = require('../models/Comment.Model');  // Add this line
 
 exports.getDeals = catchAsync(async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
@@ -140,13 +141,13 @@ exports.addComment = catchAsync(async (req, res, next) => {
     return next(new AppError('No deal found with that ID', 404));
   }
 
-  const comment = {
+  const comment = await Comment.create({
     content,
     user: req.user.id,
-    createdAt: new Date()
-  };
+    deal: id
+  });
 
-  deal.comments.push(comment);
+  deal.comments.push(comment._id);
   await deal.save();
 
   res.status(201).json({

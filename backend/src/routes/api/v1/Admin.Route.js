@@ -12,8 +12,6 @@ router.delete('/users/:id', adminController.deleteUser);
 router.get('/deals', adminController.getDeals);
 router.put('/deals/:id', adminController.updateDeal);
 router.delete('/deals/:id', adminController.deleteDeal);
-router.get('/comments', adminController.getComments);
-router.delete('/comments/:id', adminController.deleteComment);
 router.get('/stats', adminController.getStats);
 
 module.exports = router;

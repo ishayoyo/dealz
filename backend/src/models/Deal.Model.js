@@ -31,7 +31,9 @@ const dealSchema = new mongoose.Schema({
   location: {
     country: String,
     city: String
-  }
+  },
+  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }], // Add this line
+  votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Vote' }] // Add this line if not already present
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },
