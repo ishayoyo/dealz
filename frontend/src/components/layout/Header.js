@@ -4,6 +4,7 @@ import { Flex, Box, Link, Button, useColorMode, useColorModeValue, Menu, MenuBut
 import { MoonIcon, SunIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import LoginForm from '../auth/LoginForm';
 import SignupForm from '../auth/SignupForm';
+import PostDealForm from '../deals/PostDealForm';
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -36,9 +37,9 @@ const Header = () => {
         <Flex align="center">
           {isLoggedIn ? (
             <>
-              <Button as={RouterLink} to="/post-deal" mr={4}>Post a Deal</Button>
+              <PostDealForm />
               <Menu>
-                <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+                <MenuButton as={Button} rightIcon={<ChevronDownIcon />} ml={4}>
                   Account
                 </MenuButton>
                 <MenuList>

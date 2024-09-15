@@ -13,40 +13,94 @@ import {
   Input,
   Textarea,
   VStack,
+  Image,
   useDisclosure,
   Progress,
+  useToast,
 } from '@chakra-ui/react';
+import axios from 'axios';
 
 const PostDealForm = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     link: '',
+    url: '',
     title: '',
     description: '',
     price: '',
+    originalPrice: '',
     category: '',
+    imageUrl: '',
   });
+  const toast = useToast();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmitLink = (e) => {
+  const handleSubmitLink = async (e) => {
     e.preventDefault();
-    // Here you would typically fetch the information based on the link
-    console.log('Fetching information for:', formData.link);
-    // For now, we'll just move to the next step
-    setStep(2);
+    setIsLoading(true);
+    try {
+      const response = await axios.post('http://localhost:5000/api/v1/deals/fetch-image', { url: formData.link });
+      const imageUrl = response.data.data.imageUrl;
+      if (imageUrl) {
+        setFormData({ ...formData, imageUrl, url: formData.link });
+        setStep(2);
+      } else {
+        toast({
+          title: "Error",
+          description: "Unable to fetch image for the provided link.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "An error occurred while fetching the image.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSubmitDeal = (e) => {
+  const handleSubmitDeal = async (e) => {
     e.preventDefault();
-    console.log('Deal submitted:', formData);
-    // Add your deal submission logic here
-    onClose();
-    setStep(1);
-    setFormData({ link: '', title: '', description: '', price: '', category: '' });
+    setIsLoading(true);
+    try {
+      const response = await axios.post('http://localhost:5000/api/v1/deals', formData, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      toast({
+        title: "Success",
+        description: "Deal posted successfully!",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      onClose();
+      setStep(1);
+      setFormData({ link: '', url: '', title: '', description: '', price: '', originalPrice: '', category: '', imageUrl: '' });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "An error occurred while posting the deal.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -75,6 +129,9 @@ const PostDealForm = () => {
             ) : (
               <form onSubmit={handleSubmitDeal}>
                 <VStack spacing={4}>
+                  {formData.imageUrl && (
+                    <Image src={formData.imageUrl} alt="Deal preview" maxHeight="200px" objectFit="contain" />
+                  )}
                   <FormControl isRequired>
                     <FormLabel>Deal Title</FormLabel>
                     <Input
@@ -103,6 +160,16 @@ const PostDealForm = () => {
                       placeholder="Enter price"
                     />
                   </FormControl>
+                  <FormControl>
+                    <FormLabel>Original Price</FormLabel>
+                    <Input
+                      name="originalPrice"
+                      type="number"
+                      value={formData.originalPrice}
+                      onChange={handleChange}
+                      placeholder="Enter original price"
+                    />
+                  </FormControl>
                   <FormControl isRequired>
                     <FormLabel>Category</FormLabel>
                     <Input
@@ -119,7 +186,7 @@ const PostDealForm = () => {
 
           <ModalFooter>
             {step === 1 ? (
-              <Button colorScheme="blue" onClick={handleSubmitLink}>
+              <Button colorScheme="blue" onClick={handleSubmitLink} isLoading={isLoading}>
                 Next
               </Button>
             ) : (
@@ -127,7 +194,7 @@ const PostDealForm = () => {
                 <Button variant="ghost" mr={3} onClick={() => setStep(1)}>
                   Back
                 </Button>
-                <Button colorScheme="blue" onClick={handleSubmitDeal}>
+                <Button colorScheme="blue" onClick={handleSubmitDeal} isLoading={isLoading}>
                   Post Deal
                 </Button>
               </>

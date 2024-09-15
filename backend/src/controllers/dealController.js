@@ -3,6 +3,7 @@ const User = require('../models/User.Model');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const Comment = require('../models/Comment.Model');  // Add this line
+const ImageFetcherService = require('../services/imageFetcherService');  // Add this line
 
 exports.getDeals = catchAsync(async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
@@ -195,4 +196,24 @@ exports.getTrendingDeals = catchAsync(async (req, res, next) => {
 exports.getExpiringSoonDeals = catchAsync(async (req, res, next) => {
   // TODO: Implement get expiring soon deals logic
   res.status(501).json({ message: 'getExpiringSoonDeals not implemented yet' });
+});
+
+exports.fetchImage = catchAsync(async (req, res, next) => {
+  const { url } = req.body;
+  
+  if (!url) {
+    return next(new AppError('URL is required', 400));
+  }
+
+  const imageFetcher = new ImageFetcherService();
+  const imageUrl = await imageFetcher.fetchImageUrl(url);
+
+  if (!imageUrl) {
+    return next(new AppError('Unable to fetch image for the provided URL', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: { imageUrl }
+  });
 });

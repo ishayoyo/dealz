@@ -11,6 +11,9 @@ router.get('/stores', dealController.getStores);
 router.get('/trending', dealController.getTrendingDeals);
 router.get('/expiring-soon', dealController.getExpiringSoonDeals);
 
+// Add the new route for fetching image
+router.post('/fetch-image', dealController.fetchImage);
+
 // Move these routes to the bottom
 router.get('/:id', dealController.getDeal);
 router.put('/:id', auth, dealController.updateDeal);
