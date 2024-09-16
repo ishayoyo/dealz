@@ -11,13 +11,15 @@ import {
   Text,
   VStack,
   HStack,
-  Input,
   Textarea,
   useToast,
   Divider,
   IconButton,
+  Image,
+  Box,
+  Link,
 } from '@chakra-ui/react';
-import { FaFacebook, FaTwitter, FaInstagram } from 'react-icons/fa';
+import { FaFacebook, FaTwitter, FaInstagram, FaExternalLinkAlt } from 'react-icons/fa';
 
 const DealModal = ({ isOpen, onClose, deal }) => {
   const [comment, setComment] = useState('');
@@ -25,6 +27,13 @@ const DealModal = ({ isOpen, onClose, deal }) => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [hasBought, setHasBought] = useState(false);
   const toast = useToast();
+
+  const fallbackImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+  const getImageUrl = (url) => {
+    if (!url) return fallbackImageUrl;
+    return url.startsWith('http') ? url : `http://localhost:5000${url}`;
+  };
 
   const handleCommentSubmit = () => {
     if (comment.trim()) {
@@ -60,7 +69,6 @@ const DealModal = ({ isOpen, onClose, deal }) => {
   };
 
   const handleShare = (platform) => {
-    // Implement sharing logic here
     console.log(`Sharing on ${platform}`);
     toast({
       title: `Shared on ${platform}`,
@@ -78,8 +86,35 @@ const DealModal = ({ isOpen, onClose, deal }) => {
         <ModalCloseButton />
         <ModalBody>
           <VStack align="stretch" spacing={4}>
+            <Box borderRadius="md" overflow="hidden">
+              <Image 
+                src={getImageUrl(deal.imageUrl)}
+                alt={deal.title}
+                objectFit="cover"
+                width="100%"
+                height="300px"
+                fallbackSrc={fallbackImageUrl}
+              />
+            </Box>
+            <Link href={deal.url} isExternal>
+              <Button 
+                colorScheme="green" 
+                size="lg" 
+                width="100%" 
+                rightIcon={<FaExternalLinkAlt />}
+              >
+                Grab This Deal Now!
+              </Button>
+            </Link>
             <Text>{deal.description}</Text>
-            <Text fontWeight="bold">Price: ${deal.price}</Text>
+            <HStack justifyContent="space-between">
+              <Text fontWeight="bold">Price: ${deal.price}</Text>
+              {deal.originalPrice && (
+                <Text textDecoration="line-through" color="gray.500">
+                  Original: ${deal.originalPrice}
+                </Text>
+              )}
+            </HStack>
             <HStack>
               <Button onClick={handleFollow} colorScheme={isFollowing ? 'green' : 'gray'}>
                 {isFollowing ? 'Following' : 'Follow Deal'}

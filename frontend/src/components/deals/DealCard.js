@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Image, Text, VStack, Heading, Badge, HStack, IconButton, useDisclosure, AspectRatio } from '@chakra-ui/react';
+import { Box, Image, Text, VStack, Heading, Badge, HStack, IconButton, useDisclosure } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import DealModal from './DealModal';
@@ -15,8 +15,6 @@ const DealCard = ({ deal }) => {
     if (!url) return fallbackImageUrl;
     return url.startsWith('http') ? url : `http://localhost:5000${url}`;
   };
-
-  console.log('Deal image URL:', deal.imageUrl);
 
   return (
     <>
@@ -36,20 +34,20 @@ const DealCard = ({ deal }) => {
           bg="white"
           width="100%"
         >
-          <AspectRatio ratio={16 / 9}>
+          <Box height="200px" position="relative" overflow="hidden">
             <Image 
               src={getImageUrl(deal.imageUrl)}
               alt={deal.title}
               objectFit="cover"
               width="100%"
               height="100%"
-              onError={(e) => {
-                console.error('Image failed to load:', e.target.src);
-                e.target.src = fallbackImageUrl;
-              }}
-              onLoad={() => console.log('Image loaded successfully:', getImageUrl(deal.imageUrl))}
+              fallbackSrc={fallbackImageUrl}
+              position="absolute"
+              top="50%"
+              left="50%"
+              transform="translate(-50%, -50%)"
             />
-          </AspectRatio>
+          </Box>
           <VStack align="start" p={4} spacing={2}>
             <Heading size="md" noOfLines={2}>
               {deal.title}
