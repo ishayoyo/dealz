@@ -18,4 +18,4 @@ router.post('/forgot-password', userController.forgotPassword);
 router.post('/reset-password', userController.resetPassword);
 router.post('/verify-email', userController.verifyEmail);
 
-module.exports = router;    
+module.exports = router;

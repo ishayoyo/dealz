@@ -1,52 +1,68 @@
 const axios = require('axios');
+const path = require('path');
+const fs = require('fs-extra');
+const crypto = require('crypto');
 const cheerio = require('cheerio');
 
 class ImageFetcherService {
-	async fetchImageUrl(url) {
-		console.log(`Fetching image URL for: ${url}`);
-		
-		if (url.includes('amazon')) {
-			return this.fetchAmazonImageUrl(url);
-		}
-		
-		try {
-			const response = await axios.get(url);
-			const $ = cheerio.load(response.data);
-			
-			let imageUrl = $('meta[property="og:image"]').attr('content');
-			
-			if (!imageUrl) {
-				imageUrl = $('img').first().attr('src');
-			}
-			
-			if (imageUrl && !imageUrl.startsWith('http')) {
-				const baseUrl = new URL(url).origin;
-				imageUrl = new URL(imageUrl, baseUrl).href;
-			}
+  constructor() {
+    this.imageDir = path.join(__dirname, '..', '..', 'public', 'images', 'deals');
+    fs.ensureDirSync(this.imageDir);
+    console.log('ImageFetcherService initialized. Image directory:', this.imageDir);
+  }
 
-			console.log('Image URL found:', imageUrl);
-			return imageUrl;
-		} catch (error) {
-			console.error('Error fetching image URL:', error.message);
-			return null;
-		}
-	}
+  async fetchAndSaveImage(url) {
+    try {
+      console.log('Fetching image from URL:', url);
+      
+      // First, try to fetch the page content
+      const pageResponse = await axios.get(url, { timeout: 10000 });
+      const $ = cheerio.load(pageResponse.data);
+      
+      // Try to find the main image URL
+      let imageUrl = $('meta[property="og:image"]').attr('content') ||
+                     $('meta[name="twitter:image"]').attr('content') ||
+                     $('img[itemprop="image"]').attr('src') ||
+                     $('img').first().attr('src');
 
-	fetchAmazonImageUrl(url) {
-		const asin = this.extractAmazonASIN(url);
-		if (asin) {
-			const imageUrl = `https://images-na.ssl-images-amazon.com/images/P/${asin}.01._SCRM_.jpg`;
-			console.log('Amazon image URL constructed:', imageUrl);
-			return imageUrl;
-		}
-		console.error('Could not extract ASIN from Amazon URL');
-		return null;
-	}
+      if (!imageUrl) {
+        throw new Error('No image found on the page');
+      }
 
-	extractAmazonASIN(url) {
-		const match = url.match(/\/dp\/(\w{10})/);
-		return match ? match[1] : null;
-	}
+      // If the image URL is relative, make it absolute
+      if (imageUrl.startsWith('/')) {
+        const urlObj = new URL(url);
+        imageUrl = `${urlObj.protocol}//${urlObj.host}${imageUrl}`;
+      } else if (!imageUrl.startsWith('http')) {
+        imageUrl = new URL(imageUrl, url).href;
+      }
+
+      console.log('Found image URL:', imageUrl);
+
+      // Now fetch the actual image
+      const imageResponse = await axios.get(imageUrl, { 
+        responseType: 'arraybuffer',
+        timeout: 10000
+      });
+
+      console.log('Image fetched successfully');
+
+      const buffer = Buffer.from(imageResponse.data, 'binary');
+      const filename = `${crypto.randomBytes(16).toString('hex')}.jpg`;
+      const filepath = path.join(this.imageDir, filename);
+
+      console.log('Writing image to file:', filepath);
+      await fs.writeFile(filepath, buffer);
+      
+      console.log('Image saved successfully');
+      const savedImageUrl = `/images/deals/${filename}`;
+      console.log('Returning image URL:', savedImageUrl);
+      return savedImageUrl;
+    } catch (error) {
+      console.error('Error in fetchAndSaveImage:', error.message);
+      return null;
+    }
+  }
 }
 
 module.exports = ImageFetcherService;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { VStack, FormControl, FormLabel, Input, Button, useToast } from '@chakra-ui/react';
-import { registerUser } from '../../utils/api';
+import { signup } from '../../utils/auth'; // Changed from registerUser to signup
 
 const SignupForm = ({ onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -19,7 +19,7 @@ const SignupForm = ({ onSubmit }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const data = await registerUser(formData);
+      const data = await signup(formData); // Changed from registerUser to signup
       toast({
         title: "Account created.",
         description: "We've created your account for you.",

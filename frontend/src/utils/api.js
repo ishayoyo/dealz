@@ -1,23 +1,88 @@
 import axios from 'axios';
+import { getAuthToken } from './auth';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api/v1';
+
+// Add a request interceptor to include the token in all requests
+axios.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export const fetchDeals = async () => {
-  const response = await fetch(`${API_BASE_URL}/deals`);
-  if (!response.ok) throw new Error('Failed to fetch deals');
-  return response.json();
+  try {
+    const response = await axios.get(`${API_BASE_URL}/deals`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching deals:', error);
+    throw error;
+  }
 };
 
-export const loginUser = async (credentials) => {
-  const response = await axios.post(`${API_BASE_URL}/v1/users/login`, credentials);
-  if (!response.data) throw new Error('Failed to login');
-  return response.data;
+export const createDeal = async (dealData) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/deals`, dealData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating deal:', error);
+    throw error;
+  }
 };
 
-export const registerUser = async (userData) => {
-  const response = await axios.post(`${API_BASE_URL}/v1/users/register`, userData);
-  if (!response.data) throw new Error('Failed to register user');
-  return response.data;
+export const updateDeal = async (dealId, dealData) => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/deals/${dealId}`, dealData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating deal:', error);
+    throw error;
+  }
 };
 
-// ... other API functions ...
+export const deleteDeal = async (dealId) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/deals/${dealId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting deal:', error);
+    throw error;
+  }
+};
+
+export const voteDeal = async (dealId, voteType) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/deals/${dealId}/vote`, { value: voteType });
+    return response.data;
+  } catch (error) {
+    console.error('Error voting on deal:', error);
+    throw error;
+  }
+};
+
+export const fetchUserProfile = async (userId) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+};
+
+export const updateUserProfile = async (userId, profileData) => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/users/${userId}`, profileData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
+  }
+};

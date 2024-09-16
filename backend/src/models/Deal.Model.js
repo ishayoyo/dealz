@@ -7,7 +7,7 @@ const dealSchema = new mongoose.Schema({
   originalPrice: Number,
   currency: { type: String, default: 'USD' },
   url: { type: String, required: true },
-  imageUrl: String,
+  imageUrl: { type: String, required: true }, // Updated to be required
   store: { type: String, index: true },
   category: { type: String, index: true },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },

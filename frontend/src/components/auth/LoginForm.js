@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { VStack, FormControl, FormLabel, Input, Button, useToast } from '@chakra-ui/react';
-import { loginUser } from '../../utils/api';
+import { login } from '../../utils/auth'; // Changed import
 
 const LoginForm = ({ onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -18,7 +18,7 @@ const LoginForm = ({ onSubmit }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const data = await loginUser(formData);
+      const data = await login(formData); // Changed function call
       toast({
         title: "Login successful.",
         description: "You've been logged in.",
@@ -26,8 +26,7 @@ const LoginForm = ({ onSubmit }) => {
         duration: 5000,
         isClosable: true,
       });
-      localStorage.setItem('token', data.token);
-      onSubmit(data);
+      onSubmit(data); // Removed localStorage.setItem
     } catch (error) {
       toast({
         title: "An error occurred.",

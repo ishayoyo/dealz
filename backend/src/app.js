@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const routes = require('./routes/api/v1');
 
 const app = express();
@@ -9,6 +10,10 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Serve static files from the 'public' directory
+app.use('/images', express.static(path.join(__dirname, '../public/images')));
+
 app.use('/api/v1', routes);
 
 // Global error handler

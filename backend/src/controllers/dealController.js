@@ -2,8 +2,8 @@ const Deal = require('../models/Deal.Model');
 const User = require('../models/User.Model');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
-const Comment = require('../models/Comment.Model');  // Add this line
-const ImageFetcherService = require('../services/imageFetcherService');  // Add this line
+const Comment = require('../models/Comment.Model');
+const ImageFetcherService = require('../services/imageFetcherService');
 
 exports.getDeals = catchAsync(async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
@@ -29,7 +29,11 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.createDeal = catchAsync(async (req, res, next) => {
-  const { title, description, price, originalPrice, url, store, category, tags } = req.body;
+  const { title, description, price, originalPrice, url, store, category, tags, imageUrl } = req.body;
+
+  if (!imageUrl) {
+    return next(new AppError('Image URL is required', 400));
+  }
 
   const deal = await Deal.create({
     title,
@@ -37,6 +41,7 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     price,
     originalPrice,
     url,
+    imageUrl,
     store,
     category,
     tags,
@@ -98,7 +103,7 @@ exports.deleteDeal = catchAsync(async (req, res, next) => {
     return next(new AppError('You do not have permission to perform this action', 403));
   }
 
-  await deal.deleteOne();  // Changed from remove() to deleteOne()
+  await deal.deleteOne();
 
   res.status(204).json({
     status: 'success',
@@ -199,21 +204,36 @@ exports.getExpiringSoonDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.fetchImage = catchAsync(async (req, res, next) => {
-  const { url } = req.body;
-  
-  if (!url) {
-    return next(new AppError('URL is required', 400));
+  try {
+    console.log('Received request to fetch image:', req.body);
+    const { url } = req.body;
+    
+    if (!url) {
+      console.log('URL is missing from request body');
+      return next(new AppError('URL is required', 400));
+    }
+
+    console.log(`Fetching image for URL: ${url}`);
+
+    const imageFetcher = new ImageFetcherService();
+    console.log('ImageFetcherService instance created');
+    
+    const imageUrl = await imageFetcher.fetchAndSaveImage(url);
+    console.log('fetchAndSaveImage completed, result:', imageUrl);
+
+    if (!imageUrl) {
+      console.log('No image URL returned from ImageFetcherService');
+      return next(new AppError('Unable to fetch image for the provided URL', 404));
+    }
+
+    console.log(`Image URL fetched and saved: ${imageUrl}`);
+
+    res.status(200).json({
+      status: 'success',
+      data: { imageUrl }
+    });
+  } catch (error) {
+    console.error('Detailed error in fetchImage:', error);
+    return next(new AppError(`An error occurred while fetching the image: ${error.message}`, 500));
   }
-
-  const imageFetcher = new ImageFetcherService();
-  const imageUrl = await imageFetcher.fetchImageUrl(url);
-
-  if (!imageUrl) {
-    return next(new AppError('Unable to fetch image for the provided URL', 404));
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: { imageUrl }
-  });
 });

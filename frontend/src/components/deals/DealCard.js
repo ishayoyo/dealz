@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Image, Text, VStack, Heading, Badge, HStack, IconButton, useDisclosure } from '@chakra-ui/react';
+import React from 'react';
+import { Box, Image, Text, VStack, Heading, Badge, HStack, IconButton, useDisclosure, AspectRatio } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import DealModal from './DealModal';
@@ -8,6 +8,15 @@ const MotionBox = motion(Box);
 
 const DealCard = ({ deal }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const fallbackImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+  const getImageUrl = (url) => {
+    if (!url) return fallbackImageUrl;
+    return url.startsWith('http') ? url : `http://localhost:5000${url}`;
+  };
+
+  console.log('Deal image URL:', deal.imageUrl);
 
   return (
     <>
@@ -25,8 +34,22 @@ const DealCard = ({ deal }) => {
           overflow="hidden"
           boxShadow="md"
           bg="white"
+          width="100%"
         >
-          <Image src={deal.image} alt={deal.title} />
+          <AspectRatio ratio={16 / 9}>
+            <Image 
+              src={getImageUrl(deal.imageUrl)}
+              alt={deal.title}
+              objectFit="cover"
+              width="100%"
+              height="100%"
+              onError={(e) => {
+                console.error('Image failed to load:', e.target.src);
+                e.target.src = fallbackImageUrl;
+              }}
+              onLoad={() => console.log('Image loaded successfully:', getImageUrl(deal.imageUrl))}
+            />
+          </AspectRatio>
           <VStack align="start" p={4} spacing={2}>
             <Heading size="md" noOfLines={2}>
               {deal.title}

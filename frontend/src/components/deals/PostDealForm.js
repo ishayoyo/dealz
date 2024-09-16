@@ -36,6 +36,13 @@ const PostDealForm = () => {
   });
   const toast = useToast();
 
+  const fallbackImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+  const getImageUrl = (url) => {
+    if (!url) return fallbackImageUrl;
+    return url.startsWith('http') ? url : `http://localhost:5000${url}`;
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -44,24 +51,30 @@ const PostDealForm = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/v1/deals/fetch-image', { url: formData.link });
+      console.log('Sending request to fetch image:', formData.link);
+      const response = await axios.post('http://localhost:5000/api/v1/deals/fetch-image', 
+        { url: formData.link },
+        { 
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+      console.log('Received response:', response.data);
       const imageUrl = response.data.data.imageUrl;
       if (imageUrl) {
+        console.log('Setting image URL:', imageUrl);
         setFormData({ ...formData, imageUrl, url: formData.link });
         setStep(2);
       } else {
-        toast({
-          title: "Error",
-          description: "Unable to fetch image for the provided link.",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
+        throw new Error('No image URL returned from server');
       }
     } catch (error) {
+      console.error('Error in handleSubmitLink:', error);
       toast({
         title: "Error",
-        description: error.response?.data?.message || "An error occurred while fetching the image.",
+        description: error.response?.data?.message || error.message || "An error occurred while fetching the image.",
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -130,7 +143,17 @@ const PostDealForm = () => {
               <form onSubmit={handleSubmitDeal}>
                 <VStack spacing={4}>
                   {formData.imageUrl && (
-                    <Image src={formData.imageUrl} alt="Deal preview" maxHeight="200px" objectFit="contain" />
+                    <Image 
+                      src={getImageUrl(formData.imageUrl)}
+                      alt="Deal preview" 
+                      maxHeight="200px" 
+                      objectFit="contain" 
+                      onError={(e) => {
+                        console.error('Image failed to load:', e.target.src);
+                        e.target.src = fallbackImageUrl;
+                      }}
+                      onLoad={() => console.log('Image loaded successfully:', getImageUrl(formData.imageUrl))}
+                    />
                   )}
                   <FormControl isRequired>
                     <FormLabel>Deal Title</FormLabel>
