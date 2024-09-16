@@ -1,3 +1,5 @@
+// File: src/models/Deal.Model.js
+
 const mongoose = require('mongoose');
 
 const dealSchema = new mongoose.Schema({
@@ -7,7 +9,8 @@ const dealSchema = new mongoose.Schema({
   originalPrice: Number,
   currency: { type: String, default: 'USD' },
   url: { type: String, required: true },
-  imageUrl: { type: String, required: true }, // Updated to be required
+  imageUrl: { type: String, required: true },
+  userUploadedImage: { type: Boolean, default: false },
   store: { type: String, index: true },
   category: { type: String, index: true },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -32,8 +35,8 @@ const dealSchema = new mongoose.Schema({
     country: String,
     city: String
   },
-  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }], // Add this line
-  votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Vote' }] // Add this line if not already present
+  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
+  votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Vote' }]
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

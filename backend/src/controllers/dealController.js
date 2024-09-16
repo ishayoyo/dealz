@@ -1,9 +1,14 @@
+// File: src/controllers/dealController.js
+
 const Deal = require('../models/Deal.Model');
 const User = require('../models/User.Model');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const Comment = require('../models/Comment.Model');
 const ImageFetcherService = require('../services/imageFetcherService');
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs').promises;
 
 exports.getDeals = catchAsync(async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
@@ -237,3 +242,43 @@ exports.fetchImage = catchAsync(async (req, res, next) => {
     return next(new AppError(`An error occurred while fetching the image: ${error.message}`, 500));
   }
 });
+
+exports.uploadImage = catchAsync(async (req, res, next) => {
+  if (!req.file) {
+    return next(new AppError('No file uploaded', 400));
+  }
+
+  const filename = `deal-${req.user.id}-${Date.now()}.jpeg`;
+  const filepath = path.join(__dirname, '..', '..', 'public', 'images', 'deals', filename);
+
+  await sharp(req.file.buffer)
+    .resize(800, 600)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(filepath);
+
+  const imageUrl = `/images/deals/${filename}`;
+
+  res.status(200).json({
+    status: 'success',
+    data: { imageUrl }
+  });
+});
+
+module.exports = {
+  getDeals: exports.getDeals,
+  createDeal: exports.createDeal,
+  getDeal: exports.getDeal,
+  updateDeal: exports.updateDeal,
+  deleteDeal: exports.deleteDeal,
+  voteDeal: exports.voteDeal,
+  addComment: exports.addComment,
+  getDealComments: exports.getDealComments,
+  searchDeals: exports.searchDeals,
+  getCategories: exports.getCategories,
+  getStores: exports.getStores,
+  getTrendingDeals: exports.getTrendingDeals,
+  getExpiringSoonDeals: exports.getExpiringSoonDeals,
+  fetchImage: exports.fetchImage,
+  uploadImage: exports.uploadImage
+};

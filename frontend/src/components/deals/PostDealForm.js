@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -17,6 +17,7 @@ import {
   useDisclosure,
   Progress,
   useToast,
+  HStack,
 } from '@chakra-ui/react';
 import axios from 'axios';
 
@@ -33,8 +34,10 @@ const PostDealForm = () => {
     originalPrice: '',
     category: '',
     imageUrl: '',
+    userUploadedImage: false,
   });
   const toast = useToast();
+  const fileInputRef = useRef(null);
 
   const fallbackImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
@@ -65,7 +68,7 @@ const PostDealForm = () => {
       const imageUrl = response.data.data.imageUrl;
       if (imageUrl) {
         console.log('Setting image URL:', imageUrl);
-        setFormData({ ...formData, imageUrl, url: formData.link });
+        setFormData({ ...formData, imageUrl, url: formData.link, userUploadedImage: false });
         setStep(2);
       } else {
         throw new Error('No image URL returned from server');
@@ -73,8 +76,39 @@ const PostDealForm = () => {
     } catch (error) {
       console.error('Error in handleSubmitLink:', error);
       toast({
+        title: "Warning",
+        description: "Failed to fetch image automatically. You can upload an image manually.",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      setStep(2);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/v1/deals/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      setFormData(prevData => ({ ...prevData, imageUrl: response.data.data.imageUrl, userUploadedImage: true }));
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
         title: "Error",
-        description: error.response?.data?.message || error.message || "An error occurred while fetching the image.",
+        description: "Failed to upload image. Please try again.",
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -102,7 +136,7 @@ const PostDealForm = () => {
       });
       onClose();
       setStep(1);
-      setFormData({ link: '', url: '', title: '', description: '', price: '', originalPrice: '', category: '', imageUrl: '' });
+      setFormData({ link: '', url: '', title: '', description: '', price: '', originalPrice: '', category: '', imageUrl: '', userUploadedImage: false });
     } catch (error) {
       toast({
         title: "Error",
@@ -155,6 +189,18 @@ const PostDealForm = () => {
                       onLoad={() => console.log('Image loaded successfully:', getImageUrl(formData.imageUrl))}
                     />
                   )}
+                  <HStack>
+                    <Button onClick={() => fileInputRef.current.click()} isLoading={isLoading}>
+                      {formData.imageUrl ? 'Replace Image' : 'Upload Image'}
+                    </Button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                      accept="image/*"
+                    />
+                  </HStack>
                   <FormControl isRequired>
                     <FormLabel>Deal Title</FormLabel>
                     <Input
