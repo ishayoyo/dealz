@@ -19,10 +19,12 @@ import {
   Image,
   Box,
   Link,
+  Avatar,
 } from '@chakra-ui/react';
 import { FaFacebook, FaTwitter, FaInstagram, FaExternalLinkAlt, FaHeart, FaShoppingCart, FaComment, FaUsers } from 'react-icons/fa';
 import { markDealAsBought, followDeal, unfollowDeal } from '../../utils/api';
 import { updateUserDeals } from '../../redux/slices/userSlice';
+import axios from 'axios';
 
 const DealModal = ({ isOpen, onClose, deal }) => {
   const dispatch = useDispatch();
@@ -35,6 +37,7 @@ const DealModal = ({ isOpen, onClose, deal }) => {
   const [isBoughtLoading, setIsBoughtLoading] = useState(false);
   const [boughtCount, setBoughtCount] = useState(deal.boughtCount || 0);
   const [followCount, setFollowCount] = useState(deal.followCount || 0);
+  const [isCommentLoading, setIsCommentLoading] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -44,6 +47,26 @@ const DealModal = ({ isOpen, onClose, deal }) => {
     }
   }, [user, deal]);
 
+  useEffect(() => {
+    fetchComments();
+  }, [deal._id]);
+
+  const fetchComments = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/v1/deals/${deal._id}/comments`);
+      setComments(response.data.data.comments);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch comments. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
   const fallbackImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
   const getImageUrl = (url) => {
@@ -51,16 +74,48 @@ const DealModal = ({ isOpen, onClose, deal }) => {
     return url.startsWith('http') ? url : `http://localhost:5000${url}`;
   };
 
-  const handleCommentSubmit = () => {
-    if (comment.trim()) {
-      setComments([...comments, { text: comment, user: 'Current User' }]);
-      setComment('');
+  const handleCommentSubmit = async () => {
+    if (!isAuthenticated) {
       toast({
-        title: 'Comment added',
-        status: 'success',
-        duration: 2000,
+        title: "Authentication required",
+        description: "Please log in to post comments.",
+        status: "warning",
+        duration: 3000,
         isClosable: true,
       });
+      return;
+    }
+
+    if (comment.trim()) {
+      setIsCommentLoading(true);
+      try {
+        const response = await axios.post(`http://localhost:5000/api/v1/deals/${deal._id}/comments`, {
+          content: comment
+        }, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        setComments([...comments, response.data.data.comment]);
+        setComment('');
+        toast({
+          title: 'Comment added',
+          status: 'success',
+          duration: 2000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error('Error posting comment:', error);
+        toast({
+          title: "Error",
+          description: "Failed to post comment. Please try again.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setIsCommentLoading(false);
+      }
     }
   };
 
@@ -258,12 +313,14 @@ const DealModal = ({ isOpen, onClose, deal }) => {
             <Divider />
             <Text fontWeight="bold" fontSize="lg">Comments</Text>
             <VStack align="stretch" maxHeight="200px" overflowY="auto" spacing={2}>
-              {comments.map((c, index) => (
-                <Box key={index} p={2} backgroundColor="gray.50" borderRadius="md">
-                  <Text>
-                    <strong>{c.user}:</strong> {c.text}
-                  </Text>
-                </Box>
+              {comments.map((c) => (
+                <HStack key={c._id} p={2} backgroundColor="gray.50" borderRadius="md" alignItems="flex-start">
+                  <Avatar size="sm" src={c.user.profilePicture} name={c.user.username} />
+                  <Box>
+                    <Text fontWeight="bold">{c.user.username}</Text>
+                    <Text>{c.content}</Text>
+                  </Box>
+                </HStack>
               ))}
             </VStack>
             <Textarea
@@ -276,6 +333,9 @@ const DealModal = ({ isOpen, onClose, deal }) => {
               onClick={handleCommentSubmit} 
               colorScheme="blue"
               leftIcon={<FaComment />}
+              isLoading={isCommentLoading}
+              loadingText="Posting..."
+              isDisabled={!isAuthenticated || isCommentLoading}
             >
               Post Comment
             </Button>
