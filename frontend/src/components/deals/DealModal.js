@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -20,13 +20,23 @@ import {
   Link,
 } from '@chakra-ui/react';
 import { FaFacebook, FaTwitter, FaInstagram, FaExternalLinkAlt } from 'react-icons/fa';
+import { markDealAsBought, followDeal, unfollowDeal } from '../../utils/api';
 
-const DealModal = ({ isOpen, onClose, deal }) => {
+const DealModal = ({ isOpen, onClose, deal, isAuthenticated, user }) => {
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState(deal.comments || []);
   const [isFollowing, setIsFollowing] = useState(false);
   const [hasBought, setHasBought] = useState(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [isBoughtLoading, setIsBoughtLoading] = useState(false);
   const toast = useToast();
+
+  useEffect(() => {
+    if (user && deal) {
+      setIsFollowing(user.followedDeals.includes(deal._id));
+      setHasBought(user.boughtDeals.includes(deal._id));
+    }
+  }, [user, deal]);
 
   const fallbackImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
@@ -48,24 +58,85 @@ const DealModal = ({ isOpen, onClose, deal }) => {
     }
   };
 
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
-    toast({
-      title: isFollowing ? 'Unfollowed deal' : 'Following deal',
-      status: 'success',
-      duration: 2000,
-      isClosable: true,
-    });
+  const handleFollow = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to follow deals.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsFollowLoading(true);
+    try {
+      if (isFollowing) {
+        await unfollowDeal(deal._id);
+        setIsFollowing(false);
+        toast({
+          title: "Deal unfollowed",
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
+      } else {
+        await followDeal(deal._id);
+        setIsFollowing(true);
+        toast({
+          title: "Deal followed",
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update follow status. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsFollowLoading(false);
+    }
   };
 
-  const handleBought = () => {
-    setHasBought(true);
-    toast({
-      title: 'Marked as bought',
-      status: 'success',
-      duration: 2000,
-      isClosable: true,
-    });
+  const handleBought = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to mark deals as bought.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsBoughtLoading(true);
+    try {
+      await markDealAsBought(deal._id);
+      setHasBought(true);
+      toast({
+        title: "Marked as bought",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to mark deal as bought. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsBoughtLoading(false);
+    }
   };
 
   const handleShare = (platform) => {
@@ -116,10 +187,22 @@ const DealModal = ({ isOpen, onClose, deal }) => {
               )}
             </HStack>
             <HStack>
-              <Button onClick={handleFollow} colorScheme={isFollowing ? 'green' : 'gray'}>
+              <Button 
+                onClick={handleFollow} 
+                colorScheme={isFollowing ? 'green' : 'gray'}
+                isDisabled={!isAuthenticated || isFollowLoading}
+                isLoading={isFollowLoading}
+                loadingText={isFollowing ? 'Unfollowing...' : 'Following...'}
+              >
                 {isFollowing ? 'Following' : 'Follow Deal'}
               </Button>
-              <Button onClick={handleBought} colorScheme={hasBought ? 'blue' : 'gray'} isDisabled={hasBought}>
+              <Button 
+                onClick={handleBought} 
+                colorScheme={hasBought ? 'blue' : 'gray'} 
+                isDisabled={hasBought || !isAuthenticated || isBoughtLoading}
+                isLoading={isBoughtLoading}
+                loadingText="Marking as Bought..."
+              >
                 {hasBought ? 'Bought' : 'Mark as Bought'}
               </Button>
             </HStack>

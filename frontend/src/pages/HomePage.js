@@ -3,6 +3,7 @@ import { Box, Spinner, Center, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import DealGrid from '../components/deals/DealGrid';
 import { fetchDeals } from '../utils/api';
+import { isAuthenticated as checkIsAuthenticated } from '../utils/auth';
 
 const MotionBox = motion(Box);
 
@@ -10,8 +11,10 @@ const HomePage = () => {
   const [deals, setDeals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    setIsAuthenticated(checkIsAuthenticated());
     const getDeals = async () => {
       try {
         setIsLoading(true);
@@ -32,6 +35,12 @@ const HomePage = () => {
     getDeals();
   }, []);
 
+  const handleVote = (dealId, newVoteCount) => {
+    setDeals(deals.map(deal => 
+      deal._id === dealId ? { ...deal, voteCount: newVoteCount } : deal
+    ));
+  };
+
   return (
     <MotionBox
       initial={{ opacity: 0 }}
@@ -49,7 +58,11 @@ const HomePage = () => {
             <Text textAlign="center" color="red.500">{error}</Text>
           </Center>
         ) : deals.length > 0 ? (
-          <DealGrid deals={deals} />
+          <DealGrid 
+            deals={deals} 
+            isAuthenticated={isAuthenticated} 
+            onVote={handleVote}
+          />
         ) : (
           <Center h="50vh">
             <Text textAlign="center">No deals available at the moment.</Text>

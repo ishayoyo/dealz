@@ -67,6 +67,36 @@ export const voteDeal = async (dealId, voteType) => {
   }
 };
 
+export const markDealAsBought = async (dealId) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/deals/${dealId}/buy`);
+    return response.data;
+  } catch (error) {
+    console.error('Error marking deal as bought:', error);
+    throw error;
+  }
+};
+
+export const followDeal = async (dealId) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/deals/${dealId}/follow`);
+    return response.data;
+  } catch (error) {
+    console.error('Error following deal:', error);
+    throw error;
+  }
+};
+
+export const unfollowDeal = async (dealId) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/deals/${dealId}/follow`);
+    return response.data;
+  } catch (error) {
+    console.error('Error unfollowing deal:', error);
+    throw error;
+  }
+};
+
 export const fetchUserProfile = async (userId) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/users/${userId}`);

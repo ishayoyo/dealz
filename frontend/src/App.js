@@ -12,13 +12,13 @@ import SignupForm from './components/auth/SignupForm';
 import UserProfile from './components/user/UserProfile';
 import UserSettings from './components/user/UserSettings';
 import theme from './theme';
-import { isAuthenticated } from './utils/auth';
+import { isAuthenticated as checkIsAuthenticated } from './utils/auth';
 
 function App() {
-  const [auth, setAuth] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    setAuth(isAuthenticated());
+    setIsAuthenticated(checkIsAuthenticated());
   }, []);
 
   return (
@@ -26,17 +26,17 @@ function App() {
       <CSSReset />
       <Router>
         <Box minHeight="100vh" display="flex" flexDirection="column">
-          <Header isAuthenticated={auth} setAuth={setAuth} />
+          <Header isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
           <Box flex={1} px={4}>
             <CategoryButtons />
             <AnimatePresence mode="wait">
               <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/deal/:id" element={<DealPage />} />
-                <Route path="/profile" element={auth ? <UserProfile /> : <Navigate to="/login" />} />
-                <Route path="/settings" element={auth ? <UserSettings /> : <Navigate to="/login" />} />
-                <Route path="/login" element={<LoginForm setAuth={setAuth} />} />
-                <Route path="/signup" element={<SignupForm setAuth={setAuth} />} />
+                <Route path="/" element={<HomePage isAuthenticated={isAuthenticated} />} />
+                <Route path="/deal/:id" element={<DealPage isAuthenticated={isAuthenticated} />} />
+                <Route path="/profile" element={isAuthenticated ? <UserProfile /> : <Navigate to="/login" />} />
+                <Route path="/settings" element={isAuthenticated ? <UserSettings /> : <Navigate to="/login" />} />
+                <Route path="/login" element={<LoginForm setIsAuthenticated={setIsAuthenticated} />} />
+                <Route path="/signup" element={<SignupForm setIsAuthenticated={setIsAuthenticated} />} />
               </Routes>
             </AnimatePresence>
           </Box>
