@@ -51,7 +51,9 @@ const userSchema = new mongoose.Schema({
   location: {
     country: String,
     city: String
-  }
+  },
+  boughtDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
+  followedDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }]
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

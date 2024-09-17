@@ -13,25 +13,30 @@ const upload = multer({
   }
 });
 
+// Public routes
 router.get('/', dealController.getDeals);
-router.post('/', auth, dealController.createDeal);
 router.get('/search', dealController.searchDeals);
 router.get('/categories', dealController.getCategories);
 router.get('/stores', dealController.getStores);
 router.get('/trending', dealController.getTrendingDeals);
 router.get('/expiring-soon', dealController.getExpiringSoonDeals);
-
-// Add the new route for fetching image
-router.post('/fetch-image', dealController.fetchImage);
-
-// Updated route for uploading image
-router.post('/upload-image', auth, upload.single('image'), dealController.uploadImage);
-
-// Move these routes to the bottom
 router.get('/:id', dealController.getDeal);
-router.put('/:id', auth, dealController.updateDeal);
-router.delete('/:id', auth, dealController.deleteDeal);
-router.post('/:id/vote', auth, dealController.voteDeal);
 router.get('/:id/comments', dealController.getDealComments);
+
+// Routes that require authentication
+router.use(auth);
+
+router.post('/', dealController.createDeal);
+router.put('/:id', dealController.updateDeal);
+router.delete('/:id', dealController.deleteDeal);
+router.post('/:id/vote', dealController.voteDeal);
+router.post('/:id/buy', dealController.markAsBought);
+router.post('/:id/follow', dealController.followDeal);
+router.delete('/:id/follow', dealController.unfollowDeal);
+router.post('/:id/comments', dealController.addComment);
+
+// Image-related routes
+router.post('/fetch-image', dealController.fetchImage);
+router.post('/upload-image', upload.single('image'), dealController.uploadImage);
 
 module.exports = router;

@@ -2,9 +2,10 @@
 
 const Deal = require('../models/Deal.Model');
 const User = require('../models/User.Model');
+const Comment = require('../models/Comment.Model');
+const Vote = require('../models/Vote.Model');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
-const Comment = require('../models/Comment.Model');
 const ImageFetcherService = require('../services/imageFetcherService');
 const sharp = require('sharp');
 const path = require('path');
@@ -34,50 +35,35 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.createDeal = catchAsync(async (req, res, next) => {
-  try {
-    const { title, description, price, originalPrice, url, store, category, tags, imageUrl, link } = req.body;
+  const { title, description, price, originalPrice, url, store, category, tags, imageUrl, link } = req.body;
 
-    console.log('Received deal data:', req.body);
-
-    if (!imageUrl) {
-      console.error('Image URL is missing');
-      return next(new AppError('Image URL is required', 400));
-    }
-
-    // Use the link as the URL if the URL is empty
-    const dealUrl = url || link;
-
-    if (!dealUrl) {
-      return next(new AppError('URL is required', 400));
-    }
-
-    const deal = await Deal.create({
-      title,
-      description,
-      price,
-      originalPrice,
-      url: dealUrl,
-      imageUrl,
-      store,
-      category,
-      tags,
-      user: req.user.id
-    });
-
-    console.log('Deal created successfully:', deal);
-
-    res.status(201).json({
-      status: 'success',
-      data: { deal }
-    });
-  } catch (error) {
-    console.error('Error in createDeal:', error);
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      return next(new AppError(`Validation Error: ${messages.join(', ')}`, 400));
-    }
-    return next(new AppError('Error creating deal', 500));
+  if (!imageUrl) {
+    return next(new AppError('Image URL is required', 400));
   }
+
+  const dealUrl = url || link;
+
+  if (!dealUrl) {
+    return next(new AppError('URL is required', 400));
+  }
+
+  const deal = await Deal.create({
+    title,
+    description,
+    price,
+    originalPrice,
+    url: dealUrl,
+    imageUrl,
+    store,
+    category,
+    tags,
+    user: req.user.id
+  });
+
+  res.status(201).json({
+    status: 'success',
+    data: { deal }
+  });
 });
 
 exports.getDeal = catchAsync(async (req, res, next) => {
@@ -147,14 +133,21 @@ exports.voteDeal = catchAsync(async (req, res, next) => {
     return next(new AppError('No deal found with that ID', 404));
   }
 
-  const existingVote = deal.votes.find(vote => vote.user.toString() === req.user.id);
+  let vote = await Vote.findOne({ user: req.user.id, deal: id });
 
-  if (existingVote) {
-    existingVote.vote = value;
+  if (vote) {
+    vote.value = value;
+    await vote.save();
   } else {
-    deal.votes.push({ user: req.user.id, vote: value });
+    vote = await Vote.create({ user: req.user.id, deal: id, value });
   }
 
+  const voteCount = await Vote.aggregate([
+    { $match: { deal: deal._id } },
+    { $group: { _id: null, total: { $sum: '$value' } } }
+  ]);
+
+  deal.voteCount = voteCount.length > 0 ? voteCount[0].total : 0;
   await deal.save();
 
   res.status(200).json({
@@ -179,9 +172,6 @@ exports.addComment = catchAsync(async (req, res, next) => {
     deal: id
   });
 
-  deal.comments.push(comment._id);
-  await deal.save();
-
   res.status(201).json({
     status: 'success',
     data: { comment }
@@ -205,63 +195,179 @@ exports.getDealComments = catchAsync(async (req, res, next) => {
 });
 
 exports.searchDeals = catchAsync(async (req, res, next) => {
-  // TODO: Implement search logic
-  res.status(501).json({ message: 'searchDeals not implemented yet' });
+  const { query, category, store, minPrice, maxPrice } = req.query;
+
+  const searchCriteria = { status: 'active' };
+
+  if (query) {
+    searchCriteria.$text = { $search: query };
+  }
+
+  if (category) {
+    searchCriteria.category = category;
+  }
+
+  if (store) {
+    searchCriteria.store = store;
+  }
+
+  if (minPrice || maxPrice) {
+    searchCriteria.price = {};
+    if (minPrice) searchCriteria.price.$gte = parseFloat(minPrice);
+    if (maxPrice) searchCriteria.price.$lte = parseFloat(maxPrice);
+  }
+
+  const deals = await Deal.find(searchCriteria)
+    .sort('-createdAt')
+    .populate('user', 'username profilePicture');
+
+  res.status(200).json({
+    status: 'success',
+    results: deals.length,
+    data: { deals }
+  });
 });
 
 exports.getCategories = catchAsync(async (req, res, next) => {
-  // TODO: Implement get categories logic
-  res.status(501).json({ message: 'getCategories not implemented yet' });
+  const categories = await Deal.distinct('category');
+  res.status(200).json({
+    status: 'success',
+    data: { categories }
+  });
 });
 
 exports.getStores = catchAsync(async (req, res, next) => {
-  // TODO: Implement get stores logic
-  res.status(501).json({ message: 'getStores not implemented yet' });
+  const stores = await Deal.distinct('store');
+  res.status(200).json({
+    status: 'success',
+    data: { stores }
+  });
 });
 
 exports.getTrendingDeals = catchAsync(async (req, res, next) => {
-  // TODO: Implement get trending deals logic
-  res.status(501).json({ message: 'getTrendingDeals not implemented yet' });
+  const deals = await Deal.find({ status: 'active' })
+    .sort('-voteCount -createdAt')
+    .limit(10)
+    .populate('user', 'username profilePicture');
+
+  res.status(200).json({
+    status: 'success',
+    results: deals.length,
+    data: { deals }
+  });
 });
 
 exports.getExpiringSoonDeals = catchAsync(async (req, res, next) => {
-  // TODO: Implement get expiring soon deals logic
-  res.status(501).json({ message: 'getExpiringSoonDeals not implemented yet' });
+  const now = new Date();
+  const deals = await Deal.find({
+    status: 'active',
+    expiresAt: { $gt: now, $lt: new Date(now.getTime() + 24 * 60 * 60 * 1000) }
+  })
+    .sort('expiresAt')
+    .limit(10)
+    .populate('user', 'username profilePicture');
+
+  res.status(200).json({
+    status: 'success',
+    results: deals.length,
+    data: { deals }
+  });
+});
+
+exports.markAsBought = catchAsync(async (req, res, next) => {
+  const deal = await Deal.findById(req.params.id);
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  if (!user.boughtDeals) {
+    user.boughtDeals = [];
+  }
+
+  if (!user.boughtDeals.includes(deal._id)) {
+    user.boughtDeals.push(deal._id);
+    await user.save();
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Deal marked as bought'
+  });
+});
+
+exports.followDeal = catchAsync(async (req, res, next) => {
+  const deal = await Deal.findById(req.params.id);
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  if (!user.followedDeals) {
+    user.followedDeals = [];
+  }
+
+  if (!user.followedDeals.includes(deal._id)) {
+    user.followedDeals.push(deal._id);
+    await user.save();
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Deal followed successfully'
+  });
+});
+
+exports.unfollowDeal = catchAsync(async (req, res, next) => {
+  const deal = await Deal.findById(req.params.id);
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  if (!user.followedDeals) {
+    user.followedDeals = [];
+  }
+
+  user.followedDeals = user.followedDeals.filter(id => id.toString() !== deal._id.toString());
+  await user.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Deal unfollowed successfully'
+  });
 });
 
 exports.fetchImage = catchAsync(async (req, res, next) => {
-  try {
-    console.log('Received request to fetch image:', req.body);
-    const { url } = req.body;
+  const { url } = req.body;
     
-    if (!url) {
-      console.log('URL is missing from request body');
-      return next(new AppError('URL is required', 400));
-    }
-
-    console.log(`Fetching image for URL: ${url}`);
-
-    const imageFetcher = new ImageFetcherService();
-    console.log('ImageFetcherService instance created');
-    
-    const imageUrl = await imageFetcher.fetchAndSaveImage(url);
-    console.log('fetchAndSaveImage completed, result:', imageUrl);
-
-    if (!imageUrl) {
-      console.log('No image URL returned from ImageFetcherService');
-      return next(new AppError('Unable to fetch image for the provided URL', 404));
-    }
-
-    console.log(`Image URL fetched and saved: ${imageUrl}`);
-
-    res.status(200).json({
-      status: 'success',
-      data: { imageUrl }
-    });
-  } catch (error) {
-    console.error('Detailed error in fetchImage:', error);
-    return next(new AppError(`An error occurred while fetching the image: ${error.message}`, 500));
+  if (!url) {
+    return next(new AppError('URL is required', 400));
   }
+
+  const imageFetcher = new ImageFetcherService();
+  const imageUrl = await imageFetcher.fetchAndSaveImage(url);
+
+  if (!imageUrl) {
+    return next(new AppError('Unable to fetch image for the provided URL', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: { imageUrl }
+  });
 });
 
 exports.uploadImage = catchAsync(async (req, res, next) => {
@@ -285,21 +391,3 @@ exports.uploadImage = catchAsync(async (req, res, next) => {
     data: { imageUrl }
   });
 });
-
-module.exports = {
-  getDeals: exports.getDeals,
-  createDeal: exports.createDeal,
-  getDeal: exports.getDeal,
-  updateDeal: exports.updateDeal,
-  deleteDeal: exports.deleteDeal,
-  voteDeal: exports.voteDeal,
-  addComment: exports.addComment,
-  getDealComments: exports.getDealComments,
-  searchDeals: exports.searchDeals,
-  getCategories: exports.getCategories,
-  getStores: exports.getStores,
-  getTrendingDeals: exports.getTrendingDeals,
-  getExpiringSoonDeals: exports.getExpiringSoonDeals,
-  fetchImage: exports.fetchImage,
-  uploadImage: exports.uploadImage
-};
