@@ -15,34 +15,36 @@ class ImageFetcherService {
     try {
       console.log('Fetching image from URL:', url);
       
-      // First, try to fetch the page content
-      const pageResponse = await axios.get(url, { timeout: 10000 });
+      // Fetch the page content
+      const pageResponse = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+      
       const $ = cheerio.load(pageResponse.data);
       
       // Try to find the main image URL
-      let imageUrl = $('meta[property="og:image"]').attr('content') ||
-                     $('meta[name="twitter:image"]').attr('content') ||
-                     $('img[itemprop="image"]').attr('src') ||
-                     $('img').first().attr('src');
+      let imageUrl = this.findImageUrl($, url);
 
       if (!imageUrl) {
-        throw new Error('No image found on the page');
-      }
-
-      // If the image URL is relative, make it absolute
-      if (imageUrl.startsWith('/')) {
-        const urlObj = new URL(url);
-        imageUrl = `${urlObj.protocol}//${urlObj.host}${imageUrl}`;
-      } else if (!imageUrl.startsWith('http')) {
-        imageUrl = new URL(imageUrl, url).href;
+        throw new Error('No suitable image found on the page');
       }
 
       console.log('Found image URL:', imageUrl);
 
-      // Now fetch the actual image
+      // Ensure the image URL is absolute
+      imageUrl = new URL(imageUrl, url).href;
+
+      console.log('Resolved image URL:', imageUrl);
+
+      // Fetch the actual image
       const imageResponse = await axios.get(imageUrl, { 
         responseType: 'arraybuffer',
-        timeout: 10000
+        timeout: 10000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
       });
 
       console.log('Image fetched successfully');
@@ -59,9 +61,35 @@ class ImageFetcherService {
       console.log('Returning image URL:', savedImageUrl);
       return savedImageUrl;
     } catch (error) {
-      console.error('Error in fetchAndSaveImage:', error.message);
+      console.error('Detailed error in fetchAndSaveImage:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.status, error.response.statusText);
+        console.error('Error data:', error.response.data);
+      }
       return null;
     }
+  }
+
+  findImageUrl($, pageUrl) {
+    // Check if it's an Amazon URL
+    if (pageUrl.includes('amazon.com')) {
+      return this.getAmazonImageUrl($);
+    }
+
+    // Generic image finding logic
+    return $('meta[property="og:image"]').attr('content') ||
+           $('meta[name="twitter:image"]').attr('content') ||
+           $('link[rel="image_src"]').attr('href') ||
+           $('img[itemprop="image"]').attr('src') ||
+           $('img').first().attr('src');
+  }
+
+  getAmazonImageUrl($) {
+    return $('#landingImage').attr('data-old-hires') ||
+           $('#imgBlkFront').attr('src') ||
+           $('#ebooksImgBlkFront').attr('src') ||
+           $('img[data-old-hires]').attr('data-old-hires') ||
+           $('img[data-a-dynamic-image]').attr('src');
   }
 }
 

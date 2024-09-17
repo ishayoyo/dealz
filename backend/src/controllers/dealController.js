@@ -34,29 +34,50 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.createDeal = catchAsync(async (req, res, next) => {
-  const { title, description, price, originalPrice, url, store, category, tags, imageUrl } = req.body;
+  try {
+    const { title, description, price, originalPrice, url, store, category, tags, imageUrl, link } = req.body;
 
-  if (!imageUrl) {
-    return next(new AppError('Image URL is required', 400));
+    console.log('Received deal data:', req.body);
+
+    if (!imageUrl) {
+      console.error('Image URL is missing');
+      return next(new AppError('Image URL is required', 400));
+    }
+
+    // Use the link as the URL if the URL is empty
+    const dealUrl = url || link;
+
+    if (!dealUrl) {
+      return next(new AppError('URL is required', 400));
+    }
+
+    const deal = await Deal.create({
+      title,
+      description,
+      price,
+      originalPrice,
+      url: dealUrl,
+      imageUrl,
+      store,
+      category,
+      tags,
+      user: req.user.id
+    });
+
+    console.log('Deal created successfully:', deal);
+
+    res.status(201).json({
+      status: 'success',
+      data: { deal }
+    });
+  } catch (error) {
+    console.error('Error in createDeal:', error);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return next(new AppError(`Validation Error: ${messages.join(', ')}`, 400));
+    }
+    return next(new AppError('Error creating deal', 500));
   }
-
-  const deal = await Deal.create({
-    title,
-    description,
-    price,
-    originalPrice,
-    url,
-    imageUrl,
-    store,
-    category,
-    tags,
-    user: req.user.id
-  });
-
-  res.status(201).json({
-    status: 'success',
-    data: { deal }
-  });
 });
 
 exports.getDeal = catchAsync(async (req, res, next) => {

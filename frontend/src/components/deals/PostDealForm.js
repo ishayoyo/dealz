@@ -18,6 +18,7 @@ import {
   Progress,
   useToast,
   HStack,
+  Text,
 } from '@chakra-ui/react';
 import axios from 'axios';
 
@@ -122,7 +123,11 @@ const PostDealForm = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/v1/deals', formData, {
+      const dealData = {
+        ...formData,
+        url: formData.url || formData.link, // Use link if url is empty
+      };
+      const response = await axios.post('http://localhost:5000/api/v1/deals', dealData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
@@ -138,9 +143,15 @@ const PostDealForm = () => {
       setStep(1);
       setFormData({ link: '', url: '', title: '', description: '', price: '', originalPrice: '', category: '', imageUrl: '', userUploadedImage: false });
     } catch (error) {
+      console.error('Error submitting deal:', error);
+      let errorMessage = "An error occurred while posting the deal.";
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        errorMessage = error.response.data.message || errorMessage;
+      }
       toast({
         title: "Error",
-        description: error.response?.data?.message || "An error occurred while posting the deal.",
+        description: errorMessage,
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -182,11 +193,7 @@ const PostDealForm = () => {
                       alt="Deal preview" 
                       maxHeight="200px" 
                       objectFit="contain" 
-                      onError={(e) => {
-                        console.error('Image failed to load:', e.target.src);
-                        e.target.src = fallbackImageUrl;
-                      }}
-                      onLoad={() => console.log('Image loaded successfully:', getImageUrl(formData.imageUrl))}
+                      fallbackSrc={fallbackImageUrl}
                     />
                   )}
                   <HStack>
