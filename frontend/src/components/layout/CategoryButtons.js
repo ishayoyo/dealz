@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flex, Button, Icon, Text, useColorModeValue } from '@chakra-ui/react';
+import { Flex, Button, Icon, useColorModeValue, Box } from '@chakra-ui/react';
 import { FaLaptop, FaTshirt, FaHome, FaUtensils, FaPlane, FaGamepad, FaBook, FaDumbbell } from 'react-icons/fa';
 
 const categories = [
@@ -14,42 +14,51 @@ const categories = [
 ];
 
 const CategoryButtons = () => {
-  const bgColor = useColorModeValue('gray.100', 'gray.700');
-  const textColor = useColorModeValue('gray.600', 'gray.200');
+  const bgColor = useColorModeValue('gray.50', 'gray.700');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
 
   return (
-    <Flex justifyContent="center" py={4} px={2}>
-      <Flex
-        maxW="container.md"
-        overflowX="auto"
-        css={{
-          '&::-webkit-scrollbar': {
-            display: 'none',
-          },
-          'scrollbarWidth': 'none',
-        }}
+    <Box 
+      overflowX="auto"
+      css={{
+        '&::-webkit-scrollbar': {
+          display: 'none',
+        },
+        'scrollbarWidth': 'none',
+      }}
+      borderBottom="1px" 
+      borderColor={borderColor}
+      bg={bgColor}
+    >
+      <Flex 
+        justifyContent={["flex-start", "center"]}
+        py={2} 
+        px={2} 
+        maxW="container.xl"
+        mx="auto"
       >
         {categories.map((category) => (
           <Button
             key={category.name}
-            leftIcon={<Icon as={category.icon} boxSize={5} />}
+            leftIcon={<Icon as={category.icon} boxSize={4} />}
             mr={2}
-            mb={2}
-            px={4}
-            py={2}
-            borderRadius="md" // Changed from "full" to "md" for less rounded edges
-            bg={bgColor}
-            color={textColor}
-            _hover={{ bg: category.color, color: 'white' }}
+            px={3}
+            py={1}
+            borderRadius="full"
+            variant="ghost"
+            color={category.color}
+            _hover={{ bg: `${category.color}Alpha.100` }}
+            _active={{ bg: `${category.color}Alpha.200` }}
             transition="all 0.2s"
-            fontSize="sm"
+            fontSize={["xs", "sm"]}
             fontWeight="medium"
+            flexShrink={0}
           >
             {category.name}
           </Button>
         ))}
       </Flex>
-    </Flex>
+    </Box>
   );
 };
 
