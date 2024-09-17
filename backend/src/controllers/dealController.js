@@ -127,6 +127,11 @@ exports.voteDeal = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const { value } = req.body;
 
+  // Validate vote value
+  if (value !== 1 && value !== -1) {
+    return next(new AppError('Invalid vote value. Must be 1 or -1', 400));
+  }
+
   const deal = await Deal.findById(id);
 
   if (!deal) {
@@ -152,7 +157,10 @@ exports.voteDeal = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    data: { voteCount: deal.voteCount }
+    data: { 
+      voteCount: deal.voteCount,
+      userVote: value
+    }
   });
 });
 
