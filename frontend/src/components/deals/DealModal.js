@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { createSelector } from '@reduxjs/toolkit';
+import { fetchComments, addComment } from '../../redux/slices/dealSlice';
 import {
   Modal,
   ModalOverlay,
@@ -20,52 +22,63 @@ import {
   Box,
   Link,
   Avatar,
+  Spinner,
 } from '@chakra-ui/react';
 import { FaFacebook, FaTwitter, FaInstagram, FaExternalLinkAlt, FaHeart, FaShoppingCart, FaComment, FaUsers } from 'react-icons/fa';
 import { markDealAsBought, followDeal, unfollowDeal } from '../../utils/api';
 import { updateUserDeals } from '../../redux/slices/userSlice';
-import axios from 'axios';
+
+// Memoized selectors
+const selectComments = createSelector(
+  [(state) => state.deals.comments, (_, dealId) => dealId],
+  (comments, dealId) => comments[dealId] || []
+);
+
+const selectCommentsError = (state) => state.deals.error;
+const selectCommentsLoading = (state) => state.deals.loading;
 
 const DealModal = ({ isOpen, onClose, deal }) => {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const comments = useSelector((state) => selectComments(state, deal?._id));
+  const commentsError = useSelector(selectCommentsError);
+  const isCommentsLoading = useSelector(selectCommentsLoading);
   const [comment, setComment] = useState('');
-  const [comments, setComments] = useState(deal.comments || []);
   const [isFollowing, setIsFollowing] = useState(false);
   const [hasBought, setHasBought] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [isBoughtLoading, setIsBoughtLoading] = useState(false);
-  const [boughtCount, setBoughtCount] = useState(deal.boughtCount || 0);
-  const [followCount, setFollowCount] = useState(deal.followCount || 0);
+  const [boughtCount, setBoughtCount] = useState(deal?.boughtCount || 0);
+  const [followCount, setFollowCount] = useState(deal?.followCount || 0);
   const [isCommentLoading, setIsCommentLoading] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
     if (user && deal) {
-      setIsFollowing(user.followedDeals.includes(deal._id));
-      setHasBought(user.boughtDeals.includes(deal._id));
+      setIsFollowing(user.followedDeals?.includes(deal._id) || false);
+      setHasBought(user.boughtDeals?.includes(deal._id) || false);
     }
   }, [user, deal]);
 
   useEffect(() => {
-    fetchComments();
-  }, [deal._id]);
-
-  const fetchComments = async () => {
-    try {
-      const response = await axios.get(`http://localhost:5000/api/v1/deals/${deal._id}/comments`);
-      setComments(response.data.data.comments);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch comments. Please try again.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+    if (deal && deal._id && isOpen) {
+      dispatch(fetchComments(deal._id))
+        .unwrap()
+        .then(() => {
+          console.log('Comments fetched successfully');
+        })
+        .catch((error) => {
+          console.error('Error fetching comments:', error);
+          toast({
+            title: "Error",
+            description: `Failed to fetch comments: ${error.message}`,
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+        });
     }
-  };
+  }, [dispatch, deal, isOpen, toast]);
 
   const fallbackImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
@@ -74,7 +87,9 @@ const DealModal = ({ isOpen, onClose, deal }) => {
     return url.startsWith('http') ? url : `http://localhost:5000${url}`;
   };
 
-  const handleCommentSubmit = async () => {
+  const imageUrl = useMemo(() => getImageUrl(deal?.imageUrl), [deal?.imageUrl]);
+
+  const handleCommentSubmit = useCallback(async () => {
     if (!isAuthenticated) {
       toast({
         title: "Authentication required",
@@ -89,15 +104,10 @@ const DealModal = ({ isOpen, onClose, deal }) => {
     if (comment.trim()) {
       setIsCommentLoading(true);
       try {
-        const response = await axios.post(`http://localhost:5000/api/v1/deals/${deal._id}/comments`, {
-          content: comment
-        }, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        setComments([...comments, response.data.data.comment]);
+        await dispatch(addComment({ dealId: deal._id, content: comment })).unwrap();
         setComment('');
+        // Fetch comments again after adding a new one
+        dispatch(fetchComments(deal._id));
         toast({
           title: 'Comment added',
           status: 'success',
@@ -117,7 +127,7 @@ const DealModal = ({ isOpen, onClose, deal }) => {
         setIsCommentLoading(false);
       }
     }
-  };
+  }, [isAuthenticated, comment, deal._id, dispatch, toast]);
 
   const handleFollow = async () => {
     if (!isAuthenticated) {
@@ -220,21 +230,21 @@ const DealModal = ({ isOpen, onClose, deal }) => {
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay backdropFilter="blur(5px)" />
       <ModalContent borderRadius="xl" boxShadow="xl">
-        <ModalHeader fontWeight="bold" fontSize="2xl">{deal.title}</ModalHeader>
+        <ModalHeader fontWeight="bold" fontSize="2xl">{deal?.title}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack align="stretch" spacing={6}>
             <Box borderRadius="lg" overflow="hidden" boxShadow="md" height="300px">
               <Image 
-                src={getImageUrl(deal.imageUrl)}
-                alt={deal.title}
+                src={imageUrl}
+                alt={deal?.title}
                 objectFit="contain"
                 width="100%"
                 height="100%"
                 fallbackSrc={fallbackImageUrl}
               />
             </Box>
-            <Link href={deal.url} isExternal>
+            <Link href={deal?.url} isExternal>
               <Button 
                 colorScheme="green" 
                 size="lg" 
@@ -247,10 +257,10 @@ const DealModal = ({ isOpen, onClose, deal }) => {
                 Grab This Deal Now!
               </Button>
             </Link>
-            <Text fontSize="md">{deal.description}</Text>
+            <Text fontSize="md">{deal?.description}</Text>
             <HStack justifyContent="space-between" backgroundColor="gray.100" p={3} borderRadius="md">
-              <Text fontWeight="bold" fontSize="xl">Price: ${deal.price}</Text>
-              {deal.originalPrice && (
+              <Text fontWeight="bold" fontSize="xl">Price: ${deal?.price}</Text>
+              {deal?.originalPrice && (
                 <Text textDecoration="line-through" color="gray.500">
                   Original: ${deal.originalPrice}
                 </Text>
@@ -311,17 +321,32 @@ const DealModal = ({ isOpen, onClose, deal }) => {
               </VStack>
             </HStack>
             <Divider />
-            <Text fontWeight="bold" fontSize="lg">Comments</Text>
+            <Text fontWeight="bold" fontSize="lg">Comments ({comments.length})</Text>
             <VStack align="stretch" maxHeight="200px" overflowY="auto" spacing={2}>
-              {comments.map((c) => (
-                <HStack key={c._id} p={2} backgroundColor="gray.50" borderRadius="md" alignItems="flex-start">
-                  <Avatar size="sm" src={c.user.profilePicture} name={c.user.username} />
-                  <Box>
-                    <Text fontWeight="bold">{c.user.username}</Text>
-                    <Text>{c.content}</Text>
-                  </Box>
-                </HStack>
-              ))}
+              {isCommentsLoading ? (
+                <Spinner />
+              ) : commentsError ? (
+                <Text color="red.500">Error loading comments: {commentsError}</Text>
+              ) : comments && comments.length > 0 ? (
+                comments.map((c) => (
+                  <HStack key={c.id || c._id} p={2} backgroundColor="gray.50" borderRadius="md" alignItems="flex-start">
+                    <Avatar 
+                      size="sm" 
+                      src={c.user?.profilePicture} 
+                      name={c.user?.username || 'Anonymous'} 
+                    />
+                    <Box>
+                      <Text fontWeight="bold">{c.user?.username || 'Anonymous'}</Text>
+                      <Text>{c.content}</Text>
+                      <Text fontSize="xs" color="gray.500">
+                        {new Date(c.createdAt).toLocaleString()}
+                      </Text>
+                    </Box>
+                  </HStack>
+                ))
+              ) : (
+                <Text>No comments yet. Be the first to comment!</Text>
+              )}
             </VStack>
             <Textarea
               value={comment}
@@ -372,4 +397,4 @@ const DealModal = ({ isOpen, onClose, deal }) => {
   );
 };
 
-export default DealModal;
+export default React.memo(DealModal);

@@ -187,18 +187,19 @@ exports.addComment = catchAsync(async (req, res, next) => {
 });
 
 exports.getDealComments = catchAsync(async (req, res, next) => {
-  const deal = await Deal.findById(req.params.id).populate({
-    path: 'comments',
-    populate: { path: 'user', select: 'username profilePicture' }
-  });
+  const dealId = req.params.id;
+  
+  console.log('Fetching comments for dealId:', dealId);
 
-  if (!deal) {
-    return next(new AppError('No deal found with that ID', 404));
-  }
+  const comments = await Comment.find({ deal: dealId, status: 'active' })
+    .populate('user', 'username profilePicture')
+    .sort('-createdAt');
+
+  console.log('Number of comments found:', comments.length);
 
   res.status(200).json({
     status: 'success',
-    data: { comments: deal.comments }
+    data: { comments }
   });
 });
 

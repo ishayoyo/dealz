@@ -10,7 +10,7 @@ export const signup = async (userData) => {
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       store.dispatch(setAuthenticated(true));
-      store.dispatch(setUser(response.data.user));
+      store.dispatch(setUser({ ...response.data.user, followedDeals: [], boughtDeals: [] }));
     }
     return response.data;
   } catch (error) {
@@ -25,7 +25,7 @@ export const login = async (credentials) => {
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       store.dispatch(setAuthenticated(true));
-      store.dispatch(setUser(response.data.user));
+      store.dispatch(setUser({ ...response.data.user, followedDeals: [], boughtDeals: [] }));
     }
     return response.data;
   } catch (error) {

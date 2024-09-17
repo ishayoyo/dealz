@@ -1,14 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { setAuthenticated, setUser, logout } from '../../redux/slices/authSlice';
 import { Link as RouterLink } from 'react-router-dom';
-import { Flex, Box, Link, Button, useColorMode, useColorModeValue, Menu, MenuButton, MenuList, MenuItem, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Input, InputGroup, InputLeftElement, IconButton } from '@chakra-ui/react';
-import { MoonIcon, SunIcon, ChevronDownIcon, SearchIcon, BellIcon, HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
+import {
+  Flex,
+  Box,
+  Link,
+  Button,
+  useColorMode,
+  useColorModeValue,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  IconButton,
+  VStack
+} from '@chakra-ui/react';
+import {
+  MoonIcon,
+  SunIcon,
+  ChevronDownIcon,
+  SearchIcon,
+  BellIcon,
+  HamburgerIcon,
+  CloseIcon
+} from '@chakra-ui/icons';
 import LoginForm from '../auth/LoginForm';
 import SignupForm from '../auth/SignupForm';
 import PostDealForm from '../deals/PostDealForm';
-import { checkAuthStatus, logoutUser } from '../../utils/auth';
 
 const Header = () => {
+  const dispatch = useDispatch();
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const { colorMode, toggleColorMode } = useColorMode();
   const bg = useColorModeValue('white', 'gray.800');
@@ -18,20 +49,20 @@ const Header = () => {
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const handleLogin = () => {
+  const handleLogin = (userData) => {
+    dispatch(setAuthenticated(true));
+    dispatch(setUser(userData));
     setIsLoginModalOpen(false);
   };
 
-  const handleSignup = () => {
+  const handleSignup = (userData) => {
+    dispatch(setAuthenticated(true));
+    dispatch(setUser(userData));
     setIsSignupModalOpen(false);
   };
 
   const handleLogout = () => {
-    logoutUser();
+    dispatch(logout());
   };
 
   return (
@@ -102,7 +133,7 @@ const Header = () => {
         </Flex>
       </Flex>
 
-      {/* Add a mobile menu */}
+      {/* Mobile menu */}
       <Box
         display={[isMenuOpen ? "block" : "none", "none"]}
         position="fixed"
@@ -129,20 +160,21 @@ const Header = () => {
             <Input placeholder="Search deals..." borderRadius="full" />
           </InputGroup>
           {isAuthenticated ? (
-            <>
-              <Button as={RouterLink} to="/profile" mb={4} w="full">Profile</Button>
-              <Button as={RouterLink} to="/settings" mb={4} w="full">Settings</Button>
-              <Button onClick={handleLogout} mb={4} w="full">Logout</Button>
-            </>
+            <VStack spacing={4} align="stretch" width="100%">
+              <Button as={RouterLink} to="/profile" w="full">Profile</Button>
+              <Button as={RouterLink} to="/settings" w="full">Settings</Button>
+              <Button onClick={handleLogout} w="full">Logout</Button>
+            </VStack>
           ) : (
-            <>
-              <Button onClick={() => setIsLoginModalOpen(true)} mb={4} w="full">Login</Button>
-              <Button onClick={() => setIsSignupModalOpen(true)} colorScheme="blue" mb={4} w="full">Sign Up</Button>
-            </>
+            <VStack spacing={4} align="stretch" width="100%">
+              <Button onClick={() => setIsLoginModalOpen(true)} w="full">Login</Button>
+              <Button onClick={() => setIsSignupModalOpen(true)} colorScheme="blue" w="full">Sign Up</Button>
+            </VStack>
           )}
         </Flex>
       </Box>
 
+      {/* Login Modal */}
       <Modal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)}>
         <ModalOverlay />
         <ModalContent>
@@ -154,6 +186,7 @@ const Header = () => {
         </ModalContent>
       </Modal>
 
+      {/* Signup Modal */}
       <Modal isOpen={isSignupModalOpen} onClose={() => setIsSignupModalOpen(false)}>
         <ModalOverlay />
         <ModalContent>

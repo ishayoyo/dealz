@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchDealById as fetchDealByIdApi } from '../../utils/api';
+import { fetchDealById as fetchDealByIdApi, fetchComments as fetchCommentsApi, addComment as addCommentApi } from '../../utils/api';
 
 export const fetchDealById = createAsyncThunk(
   'deals/fetchDealById',
@@ -13,8 +13,65 @@ export const fetchDealById = createAsyncThunk(
   }
 );
 
+export const fetchComments = createAsyncThunk(
+  'deals/fetchComments',
+  async (dealId, { rejectWithValue }) => {
+    try {
+      const response = await fetchCommentsApi(dealId);
+      console.log('Fetched comments response in slice:', JSON.stringify(response, null, 2));
+      
+      let comments = [];
+      if (Array.isArray(response)) {
+        comments = response;
+      } else if (response.data && Array.isArray(response.data)) {
+        comments = response.data;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data.comments)) {
+        comments = response.data.data.comments;
+      } else if (response.data && response.data.comments && Array.isArray(response.data.comments)) {
+        comments = response.data.comments;
+      } else {
+        console.error('Unexpected response structure:', response);
+        throw new Error('Unexpected response structure');
+      }
+      
+      console.log('Extracted comments:', comments);
+      return { dealId, comments };
+    } catch (error) {
+      console.error('Error in fetchComments:', error);
+      return rejectWithValue(error.message || 'An error occurred');
+    }
+  }
+);
+
+export const addComment = createAsyncThunk(
+  'deals/addComment',
+  async ({ dealId, content }, { rejectWithValue }) => {
+    try {
+      const response = await addCommentApi(dealId, content);
+      console.log('Add comment response:', JSON.stringify(response, null, 2));
+      
+      // Check for different possible structures of the response
+      let comment;
+      if (response.data?.comment) {
+        comment = response.data.comment;
+      } else if (response.data?.data?.comment) {
+        comment = response.data.data.comment;
+      } else {
+        console.error('Unexpected response structure:', response);
+        throw new Error('Unexpected response structure');
+      }
+      
+      return { dealId, comment };
+    } catch (error) {
+      console.error('Error in addComment:', error);
+      return rejectWithValue(error.message || 'An error occurred');
+    }
+  }
+);
+
 const initialState = {
   currentDeal: null,
+  comments: {},
   loading: false,
   error: null,
 };
@@ -35,6 +92,31 @@ export const dealSlice = createSlice({
       .addCase(fetchDealById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(fetchComments.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchComments.fulfilled, (state, action) => {
+        state.loading = false;
+        const { dealId, comments } = action.payload;
+        state.comments[dealId] = comments;
+      })
+      .addCase(fetchComments.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        console.error('Failed to fetch comments:', action.payload);
+      })
+      .addCase(addComment.fulfilled, (state, action) => {
+        const { dealId, comment } = action.payload;
+        if (!state.comments[dealId]) {
+          state.comments[dealId] = [];
+        }
+        state.comments[dealId].unshift(comment);
+      })
+      .addCase(addComment.rejected, (state, action) => {
+        state.error = action.payload;
+        console.error('Failed to add comment:', action.payload);
       });
   },
 });

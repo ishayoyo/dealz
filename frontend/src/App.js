@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { persistor } from './redux/store'; // adjust path if needed
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ChakraProvider, CSSReset, Box } from '@chakra-ui/react';
 import { AnimatePresence } from 'framer-motion';
@@ -8,19 +10,18 @@ import Footer from './components/layout/Footer';
 import CategoryButtons from './components/layout/CategoryButtons';
 import HomePage from './pages/HomePage';
 import DealPage from './pages/DealPage';
-import LoginForm from './components/auth/LoginForm';
-import SignupForm from './components/auth/SignupForm';
 import UserProfile from './components/user/UserProfile';
 import UserSettings from './components/user/UserSettings';
 import theme from './theme';
-import { checkAuthStatus } from './utils/auth';
+import { checkAuthStatus } from './redux/slices/authSlice'; // adjust path if needed
 
-function App() {
+function AppContent() {
+  const dispatch = useDispatch();
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
+    dispatch(checkAuthStatus());
+  }, [dispatch]);
 
   return (
     <ChakraProvider theme={theme}>
@@ -34,10 +35,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/deal/:id" element={<DealPage />} />
-                <Route path="/profile" element={isAuthenticated ? <UserProfile /> : <Navigate to="/login" />} />
-                <Route path="/settings" element={isAuthenticated ? <UserSettings /> : <Navigate to="/login" />} />
-                <Route path="/login" element={<LoginForm />} />
-                <Route path="/signup" element={<SignupForm />} />
+                <Route path="/profile" element={isAuthenticated ? <UserProfile /> : <Navigate to="/" />} />
+                <Route path="/settings" element={isAuthenticated ? <UserSettings /> : <Navigate to="/" />} />
               </Routes>
             </AnimatePresence>
           </Box>
@@ -45,6 +44,14 @@ function App() {
         </Box>
       </Router>
     </ChakraProvider>
+  );
+}
+
+function App() {
+  return (
+    <PersistGate loading={null} persistor={persistor}>
+      <AppContent />
+    </PersistGate>
   );
 }
 

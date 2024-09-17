@@ -126,3 +126,61 @@ export const fetchDealById = async (id) => {
     throw error;
   }
 };
+
+export const fetchComments = async (dealId) => {
+  try {
+    console.log('Fetching comments for deal:', dealId);
+    const response = await axios.get(`${API_BASE_URL}/deals/${dealId}/comments`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+      },
+    });
+    console.log('Full API response:', JSON.stringify(response, null, 2));
+    console.log('Response data:', JSON.stringify(response.data, null, 2));
+    console.log('Response status:', response.status);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    console.error('Error response:', error.response);
+    throw error;
+  }
+};
+
+export const addComment = async (dealId, content) => {
+  try {
+    console.log('Adding comment to deal:', dealId);
+    const response = await axios.post(`${API_BASE_URL}/deals/${dealId}/comments`, 
+      { content },
+      {
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+        },
+      }
+    );
+    console.log('Added comment:', JSON.stringify(response.data, null, 2));
+    return response.data;
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    throw error;
+  }
+};
+
+export const updateComment = async (dealId, commentId, content) => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/deals/${dealId}/comments/${commentId}`, { content });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating comment:', error);
+    throw error;
+  }
+};
+
+export const deleteComment = async (dealId, commentId) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/deals/${dealId}/comments/${commentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    throw error;
+  }
+};

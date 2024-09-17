@@ -8,7 +8,16 @@ const commentSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'deleted'], default: 'active' }
 }, { 
   timestamps: true,
-  toJSON: { virtuals: true },
+  toJSON: { 
+    virtuals: true,
+    transform: function(doc, ret) {
+      ret.id = ret._id;
+      delete ret._id;
+      ret.createdAt = ret.createdAt.toISOString();
+      ret.updatedAt = ret.updatedAt.toISOString();
+      return ret;
+    }
+  },
   toObject: { virtuals: true }
 });
 

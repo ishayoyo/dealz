@@ -46,3 +46,15 @@ exports.deleteComment = catchAsync(async (req, res, next) => {
 
   res.status(204).json({ status: 'success', data: null });
 });
+
+exports.getComments = catchAsync(async (req, res, next) => {
+  const dealId = req.params.dealId;
+  const comments = await Comment.find({ deal: dealId, status: 'active' })
+    .populate('user', 'username profilePicture')
+    .sort('-createdAt');
+
+  res.status(200).json({
+    status: 'success',
+    data: { comments }
+  });
+});
