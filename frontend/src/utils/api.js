@@ -116,3 +116,13 @@ export const updateUserProfile = async (userId, profileData) => {
     throw error;
   }
 };
+
+export const fetchDealById = async (id) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/deals/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching deal by ID:', error);
+    throw error;
+  }
+};

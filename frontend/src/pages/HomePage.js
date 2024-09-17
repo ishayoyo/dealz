@@ -3,7 +3,8 @@ import { Box, Spinner, Center, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import DealGrid from '../components/deals/DealGrid';
 import { fetchDeals } from '../utils/api';
-import { isAuthenticated as checkIsAuthenticated } from '../utils/auth';
+import { useSelector } from 'react-redux';
+import { checkAuthStatus } from '../utils/auth';
 
 const MotionBox = motion(Box);
 
@@ -11,10 +12,10 @@ const HomePage = () => {
   const [deals, setDeals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   useEffect(() => {
-    setIsAuthenticated(checkIsAuthenticated());
+    checkAuthStatus();
     const getDeals = async () => {
       try {
         setIsLoading(true);

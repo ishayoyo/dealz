@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   Modal,
   ModalOverlay,
@@ -21,8 +22,11 @@ import {
 } from '@chakra-ui/react';
 import { FaFacebook, FaTwitter, FaInstagram, FaExternalLinkAlt } from 'react-icons/fa';
 import { markDealAsBought, followDeal, unfollowDeal } from '../../utils/api';
+import { updateUserDeals } from '../../redux/slices/userSlice';
 
-const DealModal = ({ isOpen, onClose, deal, isAuthenticated, user }) => {
+const DealModal = ({ isOpen, onClose, deal }) => {
+  const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState(deal.comments || []);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -74,6 +78,7 @@ const DealModal = ({ isOpen, onClose, deal, isAuthenticated, user }) => {
     try {
       if (isFollowing) {
         await unfollowDeal(deal._id);
+        dispatch(updateUserDeals({ dealId: deal._id, action: 'unfollow' }));
         setIsFollowing(false);
         toast({
           title: "Deal unfollowed",
@@ -83,6 +88,7 @@ const DealModal = ({ isOpen, onClose, deal, isAuthenticated, user }) => {
         });
       } else {
         await followDeal(deal._id);
+        dispatch(updateUserDeals({ dealId: deal._id, action: 'follow' }));
         setIsFollowing(true);
         toast({
           title: "Deal followed",
@@ -119,6 +125,7 @@ const DealModal = ({ isOpen, onClose, deal, isAuthenticated, user }) => {
     setIsBoughtLoading(true);
     try {
       await markDealAsBought(deal._id);
+      dispatch(updateUserDeals({ dealId: deal._id, action: 'bought' }));
       setHasBought(true);
       toast({
         title: "Marked as bought",

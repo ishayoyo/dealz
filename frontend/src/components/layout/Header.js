@@ -1,42 +1,36 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
 import { Flex, Box, Link, Button, useColorMode, useColorModeValue, Menu, MenuButton, MenuList, MenuItem, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton } from '@chakra-ui/react';
 import { MoonIcon, SunIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import LoginForm from '../auth/LoginForm';
 import SignupForm from '../auth/SignupForm';
 import PostDealForm from '../deals/PostDealForm';
-import { isAuthenticated, logout } from '../../utils/auth';
+import { checkAuthStatus, logoutUser } from '../../utils/auth';
 
-const Header = ({ setIsAuthenticated }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+const Header = () => {
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const { colorMode, toggleColorMode } = useColorMode();
   const bg = useColorModeValue('white', 'gray.800');
   const color = useColorModeValue('gray.800', 'white');
 
-  useEffect(() => {
-    const authStatus = isAuthenticated();
-    setIsLoggedIn(authStatus);
-    setIsAuthenticated(authStatus);
-  }, [setIsAuthenticated]);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
 
-  const handleLogin = (data) => {
-    setIsLoggedIn(true);
-    setIsAuthenticated(true);
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const handleLogin = () => {
     setIsLoginModalOpen(false);
   };
 
-  const handleSignup = (data) => {
-    setIsLoggedIn(true);
-    setIsAuthenticated(true);
+  const handleSignup = () => {
     setIsSignupModalOpen(false);
   };
 
   const handleLogout = () => {
-    logout();
-    setIsLoggedIn(false);
-    setIsAuthenticated(false);
+    logoutUser();
   };
 
   return (
@@ -46,7 +40,7 @@ const Header = ({ setIsAuthenticated }) => {
           DealFinder
         </Link>
         <Flex align="center">
-          {isLoggedIn ? (
+          {isAuthenticated ? (
             <>
               <PostDealForm />
               <Menu>

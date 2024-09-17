@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ChakraProvider, CSSReset, Box } from '@chakra-ui/react';
 import { AnimatePresence } from 'framer-motion';
@@ -12,13 +13,13 @@ import SignupForm from './components/auth/SignupForm';
 import UserProfile from './components/user/UserProfile';
 import UserSettings from './components/user/UserSettings';
 import theme from './theme';
-import { isAuthenticated as checkIsAuthenticated } from './utils/auth';
+import { checkAuthStatus } from './utils/auth';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   useEffect(() => {
-    setIsAuthenticated(checkIsAuthenticated());
+    checkAuthStatus();
   }, []);
 
   return (
@@ -26,17 +27,17 @@ function App() {
       <CSSReset />
       <Router>
         <Box minHeight="100vh" display="flex" flexDirection="column">
-          <Header isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
+          <Header />
           <Box flex={1} px={4}>
             <CategoryButtons />
             <AnimatePresence mode="wait">
               <Routes>
-                <Route path="/" element={<HomePage isAuthenticated={isAuthenticated} />} />
-                <Route path="/deal/:id" element={<DealPage isAuthenticated={isAuthenticated} />} />
+                <Route path="/" element={<HomePage />} />
+                <Route path="/deal/:id" element={<DealPage />} />
                 <Route path="/profile" element={isAuthenticated ? <UserProfile /> : <Navigate to="/login" />} />
                 <Route path="/settings" element={isAuthenticated ? <UserSettings /> : <Navigate to="/login" />} />
-                <Route path="/login" element={<LoginForm setIsAuthenticated={setIsAuthenticated} />} />
-                <Route path="/signup" element={<SignupForm setIsAuthenticated={setIsAuthenticated} />} />
+                <Route path="/login" element={<LoginForm />} />
+                <Route path="/signup" element={<SignupForm />} />
               </Routes>
             </AnimatePresence>
           </Box>

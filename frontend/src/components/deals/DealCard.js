@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import { Box, Image, Text, VStack, Heading, Badge, HStack, IconButton, useDisclosure, useToast, Tooltip } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
@@ -7,9 +8,10 @@ import { voteDeal } from '../../utils/api';
 
 const MotionBox = motion(Box);
 
-const DealCard = ({ deal, isAuthenticated, onVote }) => {
+const DealCard = ({ deal, onVote }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   const handleVote = async (e, value) => {
     e.stopPropagation(); // Prevent opening the modal
