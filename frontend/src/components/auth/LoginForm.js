@@ -1,43 +1,34 @@
 import React, { useState } from 'react';
 import { VStack, FormControl, FormLabel, Input, Button, useToast } from '@chakra-ui/react';
-import { login } from '../../utils/auth'; // Changed import
 
-const LoginForm = ({ onSubmit }) => {
+const LoginForm = ({ onSubmit, isLoading }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      const data = await login(formData); // Changed function call
+    if (!formData.email || !formData.password) {
       toast({
-        title: "Login successful.",
-        description: "You've been logged in.",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-      onSubmit(data); // Removed localStorage.setItem
-    } catch (error) {
-      toast({
-        title: "An error occurred.",
-        description: error.message || "Unable to login.",
+        title: "Error",
+        description: "Please provide both email and password.",
         status: "error",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
       });
-    } finally {
-      setIsLoading(false);
+      return;
     }
+    onSubmit(formData);
   };
 
   return (
@@ -63,7 +54,7 @@ const LoginForm = ({ onSubmit }) => {
             placeholder="Password"
           />
         </FormControl>
-        <Button type="submit" colorScheme="blue" isLoading={isLoading}>
+        <Button type="submit" colorScheme="blue" isLoading={isLoading} width="100%">
           Login
         </Button>
       </VStack>

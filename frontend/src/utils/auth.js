@@ -1,36 +1,42 @@
 import axios from 'axios';
 import { store } from '../redux/store';
-import { setAuthenticated, setUser, logout as logoutAction } from '../redux/slices/authSlice';
+import { login as loginAction, signup as signupAction, logout as logoutAction, setLoading, setError } from '../redux/slices/authSlice';
 
 const API_URL = 'http://localhost:5000/api/v1/users';
 
-export const signup = async (userData) => {
-  try {
-    const response = await axios.post(`${API_URL}/register`, userData);
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-      store.dispatch(setAuthenticated(true));
-      store.dispatch(setUser({ ...response.data.user, followedDeals: [], boughtDeals: [] }));
-    }
-    return response.data;
-  } catch (error) {
-    console.error('Error signing up:', error);
-    throw new Error(error.response?.data?.message || 'An unexpected error occurred during signup.');
-  }
-};
-
 export const login = async (credentials) => {
   try {
+    store.dispatch(setLoading(true));
     const response = await axios.post(`${API_URL}/login`, credentials);
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
-      store.dispatch(setAuthenticated(true));
-      store.dispatch(setUser({ ...response.data.user, followedDeals: [], boughtDeals: [] }));
+      store.dispatch(loginAction(response.data));
     }
     return response.data;
   } catch (error) {
-    console.error('Error logging in:', error);
-    throw new Error(error.response?.data?.message || 'An error occurred during login');
+    const errorMessage = error.response?.data?.message || 'An error occurred during login';
+    store.dispatch(setError(errorMessage));
+    throw new Error(errorMessage);
+  } finally {
+    store.dispatch(setLoading(false));
+  }
+};
+
+export const signup = async (userData) => {
+  try {
+    store.dispatch(setLoading(true));
+    const response = await axios.post(`${API_URL}/register`, userData);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      store.dispatch(signupAction(response.data));
+    }
+    return response.data;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 'An error occurred during signup';
+    store.dispatch(setError(errorMessage));
+    throw new Error(errorMessage);
+  } finally {
+    store.dispatch(setLoading(false));
   }
 };
 
@@ -39,13 +45,24 @@ export const logoutUser = () => {
   store.dispatch(logoutAction());
 };
 
-export const checkAuthStatus = () => {
+export const checkAuthStatus = async () => {
   const token = localStorage.getItem('token');
   if (token) {
-    store.dispatch(setAuthenticated(true));
-    // You might want to fetch user data here and dispatch setUser
+    try {
+      store.dispatch(setLoading(true));
+      const response = await axios.get(`${API_URL}/validate-token`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      store.dispatch(loginAction({ user: response.data.user, token }));
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      localStorage.removeItem('token');
+      store.dispatch(logoutAction());
+    } finally {
+      store.dispatch(setLoading(false));
+    }
   } else {
-    store.dispatch(setAuthenticated(false));
+    store.dispatch(logoutAction());
   }
 };
 

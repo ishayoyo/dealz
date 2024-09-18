@@ -1,42 +1,33 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
 import { Box, Image, Text, VStack, Heading, Badge, HStack, IconButton, useDisclosure, useToast, Tooltip } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import DealModal from './DealModal';
 import { voteDeal } from '../../utils/api';
+import withAuth from '../../hocs/withAuth'; // Make sure this path is correct
 
 const MotionBox = motion(Box);
 
-const DealCard = ({ deal, onVote }) => {
+const DealCard = ({ deal, onVote, onAuthRequired }) => { // Add onAuthRequired prop
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
-  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  // Remove isAuthenticated from useSelector
 
   const handleVote = async (e, value) => {
-    e.stopPropagation(); // Prevent opening the modal
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to vote on deals.",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    try {
-      const response = await voteDeal(deal._id, value);
-      onVote(deal._id, response.data.voteCount);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to vote on the deal. Please try again.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+    e.stopPropagation();
+    if (onAuthRequired()) { // Use onAuthRequired instead of checking isAuthenticated
+      try {
+        const response = await voteDeal(deal._id, value);
+        onVote(deal._id, response.data.voteCount);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to vote on the deal. Please try again.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
     }
   };
 
@@ -122,9 +113,9 @@ const DealCard = ({ deal, onVote }) => {
           </VStack>
         </Box>
       </MotionBox>
-      <DealModal isOpen={isOpen} onClose={onClose} deal={deal} isAuthenticated={isAuthenticated} />
+      <DealModal isOpen={isOpen} onClose={onClose} deal={deal} onAuthRequired={onAuthRequired} />
     </>
   );
 };
 
-export default DealCard;
+export default withAuth(DealCard); // Wrap DealCard with withAuth HOC

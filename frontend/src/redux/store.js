@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
+import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { combineReducers } from 'redux';
 
@@ -8,9 +8,9 @@ import userReducer from './slices/userSlice';
 import dealReducer from './slices/dealSlice';
 
 const rootReducer = combineReducers({
-  auth: persistReducer({ key: 'auth', storage }, authReducer),
+  auth: authReducer, // Not persisted
   user: persistReducer({ key: 'user', storage }, userReducer),
-  deals: dealReducer, // Not persisted
+  deals: dealReducer,
 });
 
 export const store = configureStore({
@@ -18,7 +18,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST'],
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }),
 });

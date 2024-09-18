@@ -1,44 +1,35 @@
 import React, { useState } from 'react';
 import { VStack, FormControl, FormLabel, Input, Button, useToast } from '@chakra-ui/react';
-import { signup } from '../../utils/auth'; // Changed from registerUser to signup
 
-const SignupForm = ({ onSubmit }) => {
+const SignupForm = ({ onSubmit, isLoading }) => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
   });
-  const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      const data = await signup(formData); // Changed from registerUser to signup
+    if (!formData.username || !formData.email || !formData.password) {
       toast({
-        title: "Account created.",
-        description: "We've created your account for you.",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-      onSubmit(data);
-    } catch (error) {
-      toast({
-        title: "An error occurred.",
-        description: error.message || "Unable to create account.",
+        title: "Error",
+        description: "Please fill in all fields.",
         status: "error",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
       });
-    } finally {
-      setIsLoading(false);
+      return;
     }
+    onSubmit(formData);
   };
 
   return (
@@ -74,7 +65,7 @@ const SignupForm = ({ onSubmit }) => {
             placeholder="Password"
           />
         </FormControl>
-        <Button type="submit" colorScheme="blue" isLoading={isLoading}>
+        <Button type="submit" colorScheme="blue" isLoading={isLoading} width="100%">
           Sign Up
         </Button>
       </VStack>

@@ -1,50 +1,47 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-
-export const checkAuthStatus = createAsyncThunk(
-  'auth/checkAuthStatus',
-  async () => {
-    // Mock authenticated state
-    return { isAuthenticated: true, user: { id: 1, name: 'Test User', followedDeals: [], boughtDeals: [] } };
-  }
-);
+// src/redux/slices/authSlice.js
+import { createSlice } from '@reduxjs/toolkit';
 
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
     isAuthenticated: false,
-    user: { followedDeals: [], boughtDeals: [] }, // Initialize with empty arrays
+    user: null,
+    token: null,
     loading: false,
     error: null,
   },
   reducers: {
-    setAuthenticated: (state, action) => {
-      state.isAuthenticated = action.payload;
+    login: (state, action) => {
+      state.isAuthenticated = true;
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.loading = false;
+      state.error = null;
     },
-    setUser: (state, action) => {
-      state.user = { ...state.user, ...action.payload };
+    signup: (state, action) => {
+      state.isAuthenticated = true;
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.loading = false;
+      state.error = null;
     },
     logout: (state) => {
       state.isAuthenticated = false;
-      state.user = { followedDeals: [], boughtDeals: [] };
+      state.user = null;
+      state.token = null;
+      state.loading = false;
+      state.error = null;
     },
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(checkAuthStatus.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(checkAuthStatus.fulfilled, (state, action) => {
-        state.isAuthenticated = action.payload.isAuthenticated;
-        state.user = { ...state.user, ...action.payload.user };
-        state.loading = false;
-      })
-      .addCase(checkAuthStatus.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+    },
+    setError: (state, action) => {
+      state.error = action.payload;
+      state.loading = false;
+    },
   },
 });
 
-export const { setAuthenticated, setUser, logout } = authSlice.actions;
+export const { login, signup, logout, setLoading, setError } = authSlice.actions;
 
 export default authSlice.reducer;
