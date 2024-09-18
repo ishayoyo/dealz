@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Modal,
@@ -13,17 +13,26 @@ import {
   Tab,
   TabPanel,
   useToast,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 import { login as loginApi, signup as signupApi } from '../../utils/auth';
-import { login, signup } from '../../redux/slices/authSlice';
+import { login, signup, setError } from '../../redux/slices/authSlice';
 
 const AuthModal = ({ isOpen, onClose }) => {
   const [tabIndex, setTabIndex] = useState(0);
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
   const toast = useToast();
+
+  useEffect(() => {
+    // Clear any existing errors when the modal is opened
+    if (isOpen) {
+      dispatch(setError(null));
+    }
+  }, [isOpen, dispatch]);
 
   const handleLogin = async (credentials) => {
     try {
@@ -37,13 +46,7 @@ const AuthModal = ({ isOpen, onClose }) => {
         isClosable: true,
       });
     } catch (error) {
-      toast({
-        title: "Login Failed",
-        description: error.message,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      dispatch(setError(error.message));
     }
   };
 
@@ -59,13 +62,7 @@ const AuthModal = ({ isOpen, onClose }) => {
         isClosable: true,
       });
     } catch (error) {
-      toast({
-        title: "Signup Failed",
-        description: error.message,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      dispatch(setError(error.message));
     }
   };
 
@@ -76,6 +73,12 @@ const AuthModal = ({ isOpen, onClose }) => {
         <ModalHeader>Authentication</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
+          {error && (
+            <Alert status="error" mb={4}>
+              <AlertIcon />
+              {error}
+            </Alert>
+          )}
           <Tabs index={tabIndex} onChange={setTabIndex}>
             <TabList>
               <Tab>Login</Tab>

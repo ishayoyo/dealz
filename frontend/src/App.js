@@ -13,7 +13,7 @@ function App() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    checkAuthStatus();
+    dispatch(checkAuthStatus());
   }, [dispatch]);
 
   return (

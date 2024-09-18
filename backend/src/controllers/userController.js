@@ -48,9 +48,13 @@ exports.login = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: 'success', token });
 });
 
-exports.logout = (req, res) => {
-  res.status(200).json({ status: 'success' });
-};
+exports.logout = catchAsync(async (req, res) => {
+  // If you're keeping track of valid tokens, invalidate this token
+  // For example, if you're using a blacklist of invalid tokens:
+  // await BlacklistedToken.create({ token: req.token });
+
+  res.status(200).json({ status: 'success', message: 'Logged out successfully' });
+});
 
 exports.getCurrentUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id);
@@ -117,4 +121,25 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 exports.verifyEmail = catchAsync(async (req, res, next) => {
   // Implement email verification logic here
   res.status(200).json({ status: 'success', message: 'Email verified successfully' });
+});
+
+exports.validateToken = catchAsync(async (req, res, next) => {
+  // The user ID should be available in req.user.id, set by the auth middleware
+  const user = await User.findById(req.user.id).select('-password');
+  
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+  
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        // You can add more fields here as needed
+      }
+    }
+  });
 });

@@ -16,7 +16,7 @@ import {
   IconButton,
 } from '@chakra-ui/react';
 import { MoonIcon, SunIcon, ChevronDownIcon, BellIcon } from '@chakra-ui/icons';
-import { logout } from '../../redux/slices/authSlice';
+import { logout } from '../../utils/auth';  // Updated import
 import AuthModal from '../auth/AuthModal';
 import PostDealForm from '../deals/PostDealForm';
 import { checkAuthStatus } from '../../utils/auth';
@@ -28,11 +28,11 @@ const Header = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
+    dispatch(checkAuthStatus());  // Dispatch the thunk
+  }, [dispatch]);  // Add dispatch to dependency array
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logout());  // Dispatch the logout thunk
   };
 
   return (

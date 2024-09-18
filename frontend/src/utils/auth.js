@@ -40,29 +40,39 @@ export const signup = async (userData) => {
   }
 };
 
-export const logoutUser = () => {
-  localStorage.removeItem('token');
-  store.dispatch(logoutAction());
+export const logout = () => async (dispatch) => {
+  try {
+    // Call the backend logout endpoint if you have one
+    await axios.post(`${API_URL}/logout`, {}, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    // Always clear local storage and update Redux state
+    localStorage.removeItem('token');
+    dispatch(logoutAction());
+  }
 };
 
-export const checkAuthStatus = async () => {
+export const checkAuthStatus = () => async (dispatch) => {
   const token = localStorage.getItem('token');
   if (token) {
     try {
-      store.dispatch(setLoading(true));
+      dispatch(setLoading(true));
       const response = await axios.get(`${API_URL}/validate-token`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      store.dispatch(loginAction({ user: response.data.user, token }));
+      dispatch(loginAction({ user: response.data.data.user, token }));
     } catch (error) {
       console.error('Token validation failed:', error);
       localStorage.removeItem('token');
-      store.dispatch(logoutAction());
+      dispatch(logoutAction());
     } finally {
-      store.dispatch(setLoading(false));
+      dispatch(setLoading(false));
     }
   } else {
-    store.dispatch(logoutAction());
+    dispatch(logoutAction());
   }
 };
 
