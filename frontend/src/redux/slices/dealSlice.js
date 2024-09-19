@@ -45,12 +45,11 @@ export const fetchComments = createAsyncThunk(
 
 export const addComment = createAsyncThunk(
   'deals/addComment',
-  async ({ dealId, content }, { rejectWithValue }) => {
+  async ({ dealId, content }, { rejectWithValue, getState }) => {
     try {
       const response = await addCommentApi(dealId, content);
       console.log('Add comment response:', JSON.stringify(response, null, 2));
       
-      // Check for different possible structures of the response
       let comment;
       if (response.data?.comment) {
         comment = response.data.comment;
@@ -60,6 +59,16 @@ export const addComment = createAsyncThunk(
         console.error('Unexpected response structure:', response);
         throw new Error('Unexpected response structure');
       }
+      
+      // Get the current user from the state
+      const user = getState().auth.user;
+      
+      // Add user information to the comment
+      comment.user = {
+        _id: user.id,
+        username: user.username,
+        profilePicture: user.profilePicture
+      };
       
       return { dealId, comment };
     } catch (error) {

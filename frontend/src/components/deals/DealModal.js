@@ -23,6 +23,10 @@ import {
   Link,
   Avatar,
   Spinner,
+  Grid,
+  GridItem,
+  Flex,
+  Badge,
 } from '@chakra-ui/react';
 import { FaFacebook, FaTwitter, FaInstagram, FaExternalLinkAlt, FaHeart, FaShoppingCart, FaComment, FaUsers } from 'react-icons/fa';
 import { markDealAsBought, followDeal, unfollowDeal } from '../../utils/api';
@@ -100,13 +104,26 @@ const DealModal = ({ isOpen, onClose, deal }) => {
       });
       return;
     }
-
+  
     if (comment.trim()) {
       setIsCommentLoading(true);
       try {
-        await dispatch(addComment({ dealId: deal._id, content: comment })).unwrap();
-        setComment('');
+        const result = await dispatch(addComment({ dealId: deal._id, content: comment })).unwrap();
+        
+        // Create a new comment object with the current user's information
+        const newComment = {
+          ...result.comment,
+          user: {
+            _id: user.id,
+            username: user.username,
+            profilePicture: user.profilePicture
+          }
+        };
+  
+        // Update the Redux store with the new comment
         dispatch(fetchComments(deal._id));
+  
+        setComment('');
         toast({
           title: 'Comment added',
           status: 'success',
@@ -126,7 +143,7 @@ const DealModal = ({ isOpen, onClose, deal }) => {
         setIsCommentLoading(false);
       }
     }
-  }, [isAuthenticated, comment, deal, dispatch, toast]);
+  }, [isAuthenticated, comment, deal, dispatch, toast, user]);
 
   const handleFollow = async () => {
     if (!isAuthenticated) {
@@ -230,144 +247,138 @@ const DealModal = ({ isOpen, onClose, deal }) => {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="6xl">
       <ModalOverlay backdropFilter="blur(5px)" />
-      <ModalContent borderRadius="xl" boxShadow="xl">
+      <ModalContent borderRadius="xl" boxShadow="xl" maxHeight="90vh" overflowY="auto">
         <ModalHeader fontWeight="bold" fontSize="2xl">{deal.title}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <VStack align="stretch" spacing={6}>
-            <Box borderRadius="lg" overflow="hidden" boxShadow="md" height="300px">
-              <Image 
-                src={imageUrl}
-                alt={deal.title}
-                objectFit="contain"
-                width="100%"
-                height="100%"
-                fallbackSrc={fallbackImageUrl}
-              />
-            </Box>
-            <Link href={deal.url} isExternal>
-              <Button 
-                colorScheme="green" 
-                size="lg" 
-                width="100%" 
-                rightIcon={<FaExternalLinkAlt />}
-                fontWeight="bold"
-                _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                transition="all 0.2s"
-              >
-                Grab This Deal Now!
-              </Button>
-            </Link>
-            <Text fontSize="md">{deal.description}</Text>
-            <HStack justifyContent="space-between" backgroundColor="gray.100" p={3} borderRadius="md">
-              <Text fontWeight="bold" fontSize="xl">Price: ${deal.price}</Text>
-              {deal.originalPrice && (
-                <Text textDecoration="line-through" color="gray.500">
-                  Original: ${deal.originalPrice}
-                </Text>
-              )}
-            </HStack>
-            <HStack spacing={4}>
-              <VStack flex={1} spacing={1}>
-                <Button 
-                  onClick={handleFollow} 
-                  colorScheme={isFollowing ? 'pink' : 'gray'}
-                  isDisabled={!isAuthenticated || isFollowLoading}
-                  isLoading={isFollowLoading}
-                  loadingText={isFollowing ? 'Unfollowing...' : 'Following...'}
-                  leftIcon={<FaHeart />}
-                  width="100%"
-                >
-                  {isFollowing ? 'Following' : 'Follow Deal'}
-                </Button>
-                <HStack 
-                  justifyContent="center" 
-                  backgroundColor="pink.100" 
-                  borderRadius="md" 
-                  py={1} 
-                  px={3}
-                  width="100%"
-                >
-                  <FaUsers />
-                  <Text fontSize="sm" fontWeight="bold">
-                    {followCount} {followCount === 1 ? 'follower' : 'followers'}
-                  </Text>
-                </HStack>
+          <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={6}>
+            <GridItem>
+              <VStack align="stretch" spacing={6}>
+                <Box borderRadius="lg" overflow="hidden" boxShadow="md" height={{ base: "300px", md: "400px", lg: "500px" }}>
+                  <Image 
+                    src={imageUrl}
+                    alt={deal.title}
+                    objectFit="cover"
+                    width="100%"
+                    height="100%"
+                    fallbackSrc={fallbackImageUrl}
+                  />
+                </Box>
+                <Flex justifyContent="space-between" alignItems="center">
+                  <Badge colorScheme="green" fontSize="lg" p={2}>
+                    ${deal.price}
+                  </Badge>
+                  {deal.originalPrice && (
+                    <Text textDecoration="line-through" color="gray.500">
+                      Original: ${deal.originalPrice}
+                    </Text>
+                  )}
+                </Flex>
               </VStack>
-              <VStack flex={1} spacing={1}>
-                <Button 
-                  onClick={handleBought} 
-                  colorScheme={hasBought ? 'blue' : 'gray'} 
-                  isDisabled={hasBought || !isAuthenticated || isBoughtLoading}
-                  isLoading={isBoughtLoading}
-                  loadingText="Marking as Bought..."
-                  leftIcon={<FaShoppingCart />}
-                  width="100%"
-                >
-                  {hasBought ? 'Bought' : 'Mark as Bought'}
-                </Button>
-                <HStack 
-                  justifyContent="center" 
-                  backgroundColor="blue.100" 
-                  borderRadius="md" 
-                  py={1} 
-                  px={3}
-                  width="100%"
-                >
-                  <FaUsers />
-                  <Text fontSize="sm" fontWeight="bold">
-                    {boughtCount} {boughtCount === 1 ? 'buyer' : 'buyers'}
-                  </Text>
+            </GridItem>
+            <GridItem>
+              <VStack align="stretch" spacing={6} height="100%">
+                <Text fontSize="md">{deal.description}</Text>
+                <Link href={deal.url} isExternal marginTop="auto">
+                  <Button 
+                    colorScheme="green" 
+                    size="lg" 
+                    width="100%" 
+                    rightIcon={<FaExternalLinkAlt />}
+                    fontWeight="bold"
+                    _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                    transition="all 0.2s"
+                  >
+                    Grab This Deal Now!
+                  </Button>
+                </Link>
+                <HStack spacing={4}>
+                  <Button 
+                    onClick={handleFollow} 
+                    colorScheme={isFollowing ? 'pink' : 'gray'}
+                    isDisabled={!isAuthenticated || isFollowLoading}
+                    isLoading={isFollowLoading}
+                    loadingText={isFollowing ? 'Unfollowing...' : 'Following...'}
+                    leftIcon={<FaHeart />}
+                    flex={1}
+                  >
+                    {isFollowing ? 'Following' : 'Follow Deal'}
+                  </Button>
+                  <Button 
+                    onClick={handleBought} 
+                    colorScheme={hasBought ? 'blue' : 'gray'} 
+                    isDisabled={hasBought || !isAuthenticated || isBoughtLoading}
+                    isLoading={isBoughtLoading}
+                    loadingText="Marking as Bought..."
+                    leftIcon={<FaShoppingCart />}
+                    flex={1}
+                  >
+                    {hasBought ? 'Bought' : 'Mark as Bought'}
+                  </Button>
                 </HStack>
-              </VStack>
-            </HStack>
-            <Divider />
-            <Text fontWeight="bold" fontSize="lg">Comments ({comments.length})</Text>
-            <VStack align="stretch" maxHeight="200px" overflowY="auto" spacing={2}>
-              {isCommentsLoading ? (
-                <Spinner />
-              ) : commentsError ? (
-                <Text color="red.500">Error loading comments: {commentsError}</Text>
-              ) : comments && comments.length > 0 ? (
-                comments.map((c) => (
-                  <HStack key={c.id || c._id} p={2} backgroundColor="gray.50" borderRadius="md" alignItems="flex-start">
-                    <Avatar 
-                      size="sm" 
-                      src={c.user?.profilePicture} 
-                      name={c.user?.username || 'Anonymous'} 
-                    />
-                    <Box>
-                      <Text fontWeight="bold">{c.user?.username || 'Anonymous'}</Text>
-                      <Text>{c.content}</Text>
-                      <Text fontSize="xs" color="gray.500">
-                        {new Date(c.createdAt).toLocaleString()}
-                      </Text>
-                    </Box>
+                <Flex justifyContent="space-between">
+                  <HStack>
+                    <FaUsers />
+                    <Text fontSize="sm" fontWeight="bold">
+                      {followCount} {followCount === 1 ? 'follower' : 'followers'}
+                    </Text>
                   </HStack>
-                ))
-              ) : (
-                <Text>No comments yet. Be the first to comment!</Text>
-              )}
-            </VStack>
-            <Textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Add a comment..."
-              resize="none"
-            />
-            <Button 
-              onClick={handleCommentSubmit} 
-              colorScheme="blue"
-              leftIcon={<FaComment />}
-              isLoading={isCommentLoading}
-              loadingText="Posting..."
-              isDisabled={!isAuthenticated || isCommentLoading}
-            >
-              Post Comment
-            </Button>
-          </VStack>
+                  <HStack>
+                    <FaUsers />
+                    <Text fontSize="sm" fontWeight="bold">
+                      {boughtCount} {boughtCount === 1 ? 'buyer' : 'buyers'}
+                    </Text>
+                  </HStack>
+                </Flex>
+                <Divider />
+                <Text fontWeight="bold" fontSize="lg">Comments ({comments.length})</Text>
+                <VStack align="stretch" maxHeight="200px" overflowY="auto" spacing={2}>
+                  {isCommentsLoading ? (
+                    <Spinner />
+                  ) : commentsError ? (
+                    <Text color="red.500">Error loading comments: {commentsError}</Text>
+                  ) : comments.length > 0 ? (
+                    comments.map((c) => (
+                      <HStack key={c._id} p={2} backgroundColor="gray.50" borderRadius="md" alignItems="flex-start">
+                        <Avatar 
+                          size="sm" 
+                          src={c.user?.profilePicture} 
+                          name={c.user?.username || 'Anonymous'} 
+                        />
+                        <Box>
+                          <Text fontWeight="bold">{c.user?.username || 'Anonymous'}</Text>
+                          <Text>{c.content}</Text>
+                          <Text fontSize="xs" color="gray.500">
+                            {new Date(c.createdAt).toLocaleString()}
+                          </Text>
+                        </Box>
+                      </HStack>
+                    ))
+                  ) : (
+                    <Text>No comments yet. Be the first to comment!</Text>
+                  )}
+                </VStack>
+                <Textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  resize="none"
+                />
+                <Button 
+                  onClick={handleCommentSubmit} 
+                  colorScheme="blue"
+                  leftIcon={<FaComment />}
+                  isLoading={isCommentLoading}
+                  loadingText="Posting..."
+                  isDisabled={!isAuthenticated || isCommentLoading}
+                >
+                  Post Comment
+                </Button>
+              </VStack>
+            </GridItem>
+          </Grid>
         </ModalBody>
         <ModalFooter>
           <HStack spacing={2}>
