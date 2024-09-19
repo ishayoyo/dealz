@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchDealById, fetchComments } from '../redux/slices/dealSlice';
 import { Box, Heading, Text, Spinner, VStack, Image } from '@chakra-ui/react';
@@ -7,13 +7,22 @@ import { Box, Heading, Text, Spinner, VStack, Image } from '@chakra-ui/react';
 const DealPage = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { currentDeal, loading, error } = useSelector((state) => state.deals);
   const comments = useSelector((state) => state.deals.comments[id] || []);
 
   useEffect(() => {
-    dispatch(fetchDealById(id));
-    dispatch(fetchComments(id));
-  }, [dispatch, id]);
+    const fetchData = async () => {
+      try {
+        await dispatch(fetchDealById(id)).unwrap();
+        await dispatch(fetchComments(id)).unwrap();
+      } catch (error) {
+        console.error('Error fetching deal data:', error);
+        navigate('/error', { state: { message: 'Failed to load deal. Please try again later.' } });
+      }
+    };
+    fetchData();
+  }, [dispatch, id, navigate]);
 
   if (loading) {
     return <Spinner />;

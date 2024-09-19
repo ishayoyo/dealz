@@ -164,6 +164,29 @@ exports.voteDeal = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.checkDealStatus = catchAsync(async (req, res, next) => {
+  const dealId = req.params.id;
+  const userId = req.user.id;
+
+  const user = await User.findById(userId);
+  const deal = await Deal.findById(dealId);
+
+  if (!user || !deal) {
+    return next(new AppError('User or Deal not found', 404));
+  }
+
+  const isFollowing = user.followedDeals.includes(dealId);
+  const hasBought = user.boughtDeals.includes(dealId);
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      isFollowing,
+      hasBought
+    }
+  });
+});
+
 exports.addComment = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const { content } = req.body;
@@ -294,18 +317,21 @@ exports.markAsBought = catchAsync(async (req, res, next) => {
     return next(new AppError('User not found', 404));
   }
 
-  if (!user.boughtDeals) {
-    user.boughtDeals = [];
-  }
-
   if (!user.boughtDeals.includes(deal._id)) {
     user.boughtDeals.push(deal._id);
     await user.save();
+
+    deal.boughtCount += 1;
+    await deal.save();
   }
 
   res.status(200).json({
     status: 'success',
-    message: 'Deal marked as bought'
+    message: 'Deal marked as bought',
+    data: {
+      boughtCount: deal.boughtCount,
+      hasBought: true
+    }
   });
 });
 
@@ -316,22 +342,23 @@ exports.followDeal = catchAsync(async (req, res, next) => {
   }
 
   const user = await User.findById(req.user.id);
-  if (!user) {
-    return next(new AppError('User not found', 404));
+  if (user.followedDeals.includes(deal._id)) {
+    return next(new AppError('You are already following this deal', 400));
   }
 
-  if (!user.followedDeals) {
-    user.followedDeals = [];
-  }
+  user.followedDeals.push(deal._id);
+  await user.save();
 
-  if (!user.followedDeals.includes(deal._id)) {
-    user.followedDeals.push(deal._id);
-    await user.save();
-  }
+  deal.followCount += 1;
+  await deal.save();
 
   res.status(200).json({
     status: 'success',
-    message: 'Deal followed successfully'
+    message: 'Deal followed successfully',
+    data: {
+      isFollowing: true,
+      followCount: deal.followCount
+    }
   });
 });
 
@@ -342,20 +369,23 @@ exports.unfollowDeal = catchAsync(async (req, res, next) => {
   }
 
   const user = await User.findById(req.user.id);
-  if (!user) {
-    return next(new AppError('User not found', 404));
-  }
-
-  if (!user.followedDeals) {
-    user.followedDeals = [];
+  if (!user.followedDeals.includes(deal._id)) {
+    return next(new AppError('You are not following this deal', 400));
   }
 
   user.followedDeals = user.followedDeals.filter(id => id.toString() !== deal._id.toString());
   await user.save();
 
+  deal.followCount = Math.max(0, deal.followCount - 1);
+  await deal.save();
+
   res.status(200).json({
     status: 'success',
-    message: 'Deal unfollowed successfully'
+    message: 'Deal unfollowed successfully',
+    data: {
+      isFollowing: false,
+      followCount: deal.followCount
+    }
   });
 });
 
@@ -398,5 +428,54 @@ exports.uploadImage = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: { imageUrl }
+  });
+});
+
+exports.getSavedDeals = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id).populate('savedDeals');
+  res.status(200).json({
+    status: 'success',
+    data: { savedDeals: user.savedDeals }
+  });
+});
+
+exports.saveDeal = catchAsync(async (req, res, next) => {
+  const deal = await Deal.findById(req.params.id);
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user.savedDeals.includes(deal._id)) {
+    user.savedDeals.push(deal._id);
+    await user.save();
+    deal.saveCount += 1;
+    await deal.save();
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Deal saved successfully'
+  });
+});
+
+
+exports.unsaveDeal = catchAsync(async (req, res, next) => {
+  const deal = await Deal.findById(req.params.id);
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  const user = await User.findById(req.user.id);
+  if (user.savedDeals.includes(deal._id)) {
+    user.savedDeals = user.savedDeals.filter(id => id.toString() !== deal._id.toString());
+    await user.save();
+    deal.saveCount = Math.max(0, deal.saveCount - 1);
+    await deal.save();
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Deal unsaved successfully'
   });
 });

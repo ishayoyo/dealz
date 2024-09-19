@@ -53,12 +53,24 @@ const userSchema = new mongoose.Schema({
     city: String
   },
   boughtDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
-  followedDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }]
+  followedDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
+  savedDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
+  postedDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
+  collections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Collection' }],
+  favoritePriceRanges: [String],
+  following: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: []
+  },
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
+
+// Add this index for efficient user search
+userSchema.index({ username: 'text', email: 'text' });
 
 userSchema.virtual('followersCount', {
   ref: 'Follow',

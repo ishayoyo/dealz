@@ -98,3 +98,49 @@ exports.getStats = catchAsync(async (req, res, next) => {
 });
 
 // More admin methods as needed
+
+exports.getCollections = catchAsync(async (req, res, next) => {
+  const users = await User.find().populate('collections');
+  const collections = users.flatMap(user => user.collections);
+  res.status(200).json({
+    status: 'success',
+    data: { collections }
+  });
+});
+
+exports.updateCollection = catchAsync(async (req, res, next) => {
+  const { name, description } = req.body;
+  const user = await User.findOne({ 'collections._id': req.params.id });
+  if (!user) {
+    return next(new AppError('No collection found with that ID', 404));
+  }
+  const collection = user.collections.id(req.params.id);
+  collection.name = name;
+  collection.description = description;
+  await user.save();
+  res.status(200).json({
+    status: 'success',
+    data: { collection }
+  });
+});
+
+exports.deleteCollection = catchAsync(async (req, res, next) => {
+  const user = await User.findOne({ 'collections._id': req.params.id });
+  if (!user) {
+    return next(new AppError('No collection found with that ID', 404));
+  }
+  user.collections.id(req.params.id).remove();
+  await user.save();
+  res.status(204).json({
+    status: 'success',
+    data: null
+  });
+});
+
+exports.getActivity = catchAsync(async (req, res, next) => {
+  // Implement this based on your Activity model
+  res.status(200).json({
+    status: 'success',
+    message: 'Not implemented yet'
+  });
+});

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAuthToken } from './auth';
 
-const API_BASE_URL = 'http://localhost:5000/api/v1';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 // Add a request interceptor to include the token in all requests
 axios.interceptors.request.use(
@@ -16,6 +16,23 @@ axios.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+const handleApiError = (error, customMessage) => {
+  if (error.response) {
+    // The request was made and the server responded with a status code
+    // that falls out of the range of 2xx
+    console.error(`${customMessage} Server responded with:`, error.response.data);
+    throw new Error(error.response.data.message || 'An error occurred');
+  } else if (error.request) {
+    // The request was made but no response was received
+    console.error(`${customMessage} No response received:`, error.request);
+    throw new Error('No response from server');
+  } else {
+    // Something happened in setting up the request that triggered an Error
+    console.error(`${customMessage} Error:`, error.message);
+    throw new Error('An unexpected error occurred');
+  }
+};
 
 export const fetchDeals = async () => {
   try {
@@ -72,8 +89,7 @@ export const markDealAsBought = async (dealId) => {
     const response = await axios.post(`${API_BASE_URL}/deals/${dealId}/buy`);
     return response.data;
   } catch (error) {
-    console.error('Error marking deal as bought:', error);
-    throw error;
+    handleApiError(error, 'Error marking deal as bought:');
   }
 };
 
@@ -82,8 +98,7 @@ export const followDeal = async (dealId) => {
     const response = await axios.post(`${API_BASE_URL}/deals/${dealId}/follow`);
     return response.data;
   } catch (error) {
-    console.error('Error following deal:', error);
-    throw error;
+    handleApiError(error, 'Error following deal:');
   }
 };
 
@@ -92,8 +107,7 @@ export const unfollowDeal = async (dealId) => {
     const response = await axios.delete(`${API_BASE_URL}/deals/${dealId}/follow`);
     return response.data;
   } catch (error) {
-    console.error('Error unfollowing deal:', error);
-    throw error;
+    handleApiError(error, 'Error unfollowing deal:');
   }
 };
 
@@ -181,6 +195,36 @@ export const deleteComment = async (dealId, commentId) => {
     return response.data;
   } catch (error) {
     console.error('Error deleting comment:', error);
+    throw error;
+  }
+};
+
+export const checkDealStatus = async (dealId) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/deals/${dealId}/status`);
+    return response.data;
+  } catch (error) {
+    console.error('Error checking deal status:', error);
+    throw error;
+  }
+};
+
+export const followUser = async (userId) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/users/${userId}/follow`);
+    return response.data;
+  } catch (error) {
+    console.error('Error following user:', error);
+    throw error;
+  }
+};
+
+export const unfollowUser = async (userId) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/users/${userId}/follow`);
+    return response.data;
+  } catch (error) {
+    console.error('Error unfollowing user:', error);
     throw error;
   }
 };

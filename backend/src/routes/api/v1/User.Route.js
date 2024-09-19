@@ -28,4 +28,13 @@ router.get('/:id/following', userController.getUserFollowing);
 router.post('/:id/follow', auth, userController.followUser);
 router.delete('/:id/follow', auth, userController.unfollowUser);
 
+// Add these new routes
+router.get('/me/collections', auth, userController.getCurrentUserCollections);
+router.post('/me/collections', auth, userController.createCollection);
+router.put('/me/collections/:id', auth, userController.updateCollection);
+router.delete('/me/collections/:id', auth, userController.deleteCollection);
+
+router.get('/me/activity', auth, userController.getCurrentUserActivity);
+router.get('/:id/activity', userController.getUserActivity);
+
 module.exports = router;

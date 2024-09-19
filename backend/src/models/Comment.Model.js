@@ -5,7 +5,9 @@ const commentSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   deal: { type: mongoose.Schema.Types.ObjectId, ref: 'Deal', required: true, index: true },
   parentComment: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment' },
-  status: { type: String, enum: ['active', 'deleted'], default: 'active' }
+  status: { type: String, enum: ['active', 'deleted'], default: 'active' },
+  voteCount: { type: Number, default: 0 },
+  voteScore: { type: Number, default: 0 }
 }, { 
   timestamps: true,
   toJSON: { 

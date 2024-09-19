@@ -93,19 +93,51 @@ exports.getUserFollowing = catchAsync(async (req, res, next) => {
 });
 
 exports.followUser = catchAsync(async (req, res, next) => {
-  const follow = await Follow.create({
-    follower: req.user.id,
-    followed: req.params.id
+  const userToFollow = await User.findById(req.params.id);
+  if (!userToFollow) {
+    return next(new AppError('No user found with that ID', 404));
+  }
+
+  const currentUser = await User.findById(req.user.id);
+  if (currentUser.following.some(id => id.toString() === userToFollow._id.toString())) {
+    return next(new AppError('You are already following this user', 400));
+  }
+
+  currentUser.following.push(userToFollow._id);
+  await currentUser.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'User followed successfully'
   });
-  res.status(201).json({ status: 'success', data: { follow } });
 });
 
 exports.unfollowUser = catchAsync(async (req, res, next) => {
-  await Follow.findOneAndDelete({
-    follower: req.user.id,
-    followed: req.params.id
+  const userToUnfollow = await User.findById(req.params.id);
+  const currentUser = await User.findById(req.user.id);
+
+  if (!userToUnfollow || !currentUser) {
+    return next(new AppError('User not found', 404));
+  }
+
+  if (!currentUser.following.includes(userToUnfollow._id)) {
+    return next(new AppError('You are not following this user', 400));
+  }
+
+  currentUser.following = currentUser.following.filter(
+    id => id.toString() !== userToUnfollow._id.toString()
+  );
+  userToUnfollow.followers = userToUnfollow.followers.filter(
+    id => id.toString() !== currentUser._id.toString()
+  );
+
+  await currentUser.save();
+  await userToUnfollow.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'User unfollowed successfully'
   });
-  res.status(204).json({ status: 'success', data: null });
 });
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
@@ -141,5 +173,67 @@ exports.validateToken = catchAsync(async (req, res, next) => {
         // You can add more fields here as needed
       }
     }
+  });
+});
+
+exports.getCurrentUserCollections = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id).populate('collections');
+  res.status(200).json({
+    status: 'success',
+    data: { collections: user.collections }
+  });
+});
+
+exports.createCollection = catchAsync(async (req, res, next) => {
+  const { name, description } = req.body;
+  const user = await User.findById(req.user.id);
+  const newCollection = { name, description, deals: [] };
+  user.collections.push(newCollection);
+  await user.save();
+  res.status(201).json({
+    status: 'success',
+    data: { collection: newCollection }
+  });
+});
+
+exports.updateCollection = catchAsync(async (req, res, next) => {
+  const { name, description } = req.body;
+  const user = await User.findById(req.user.id);
+  const collection = user.collections.id(req.params.id);
+  if (!collection) {
+    return next(new AppError('No collection found with that ID', 404));
+  }
+  collection.name = name;
+  collection.description = description;
+  await user.save();
+  res.status(200).json({
+    status: 'success',
+    data: { collection }
+  });
+});
+
+exports.deleteCollection = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  user.collections.id(req.params.id).remove();
+  await user.save();
+  res.status(204).json({
+    status: 'success',
+    data: null
+  });
+});
+
+exports.getCurrentUserActivity = catchAsync(async (req, res, next) => {
+  // Implement this based on your Activity model
+  res.status(200).json({
+    status: 'success',
+    message: 'Not implemented yet'
+  });
+});
+
+exports.getUserActivity = catchAsync(async (req, res, next) => {
+  // Implement this based on your Activity model
+  res.status(200).json({
+    status: 'success',
+    message: 'Not implemented yet'
   });
 });

@@ -29,14 +29,22 @@ const dealSchema = new mongoose.Schema({
   analytics: {
     views: { type: Number, default: 0 },
     clicks: { type: Number, default: 0 },
-    conversions: { type: Number, default: 0 }
+    conversions: { type: Number, default: 0 },
+    saves: { type: Number, default: 0 }
   },
   location: {
     country: String,
     city: String
   },
   comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
-  votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Vote' }]
+  votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Vote' }],
+  saveCount: { type: Number, default: 0 },
+  collections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Collection' }],
+  priceRange: { type: String, index: true },
+  followCount: { type: Number, default: 0 },
+  boughtCount: { type: Number, default: 0 },
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  buyers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },
@@ -58,5 +66,9 @@ dealSchema.virtual('commentCount', {
 });
 
 dealSchema.index({ title: 'text', description: 'text', tags: 'text' });
+
+dealSchema.index({ createdAt: -1, voteCount: -1, saveCount: -1 });
+
+dealSchema.index({ followCount: -1, boughtCount: -1 });
 
 module.exports = mongoose.model('Deal', dealSchema);
