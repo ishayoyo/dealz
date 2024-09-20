@@ -40,58 +40,44 @@ const selectComments = createSelector(
 const selectCommentsError = (state) => state.deals.error;
 const selectCommentsLoading = (state) => state.deals.loading;
 
-const DealModal = ({ isOpen, onClose, deal }) => {
+const Comment = React.memo(({ comment }) => (
+  <HStack p={2} backgroundColor="gray.50" borderRadius="md" alignItems="flex-start">
+    <Avatar 
+      size="sm" 
+      src={comment.user?.profilePicture} 
+      name={comment.user?.username || 'Anonymous'} 
+    />
+    <Box>
+      <Text fontWeight="bold">{comment.user?.username || 'Anonymous'}</Text>
+      <Text>{comment.content}</Text>
+      <Text fontSize="xs" color="gray.500">
+        {new Date(comment.createdAt).toLocaleString()}
+      </Text>
+    </Box>
+  </HStack>
+));
+
+const CommentsList = React.memo(({ comments }) => (
+  <VStack align="stretch" maxHeight="200px" overflowY="auto" spacing={2}>
+    {comments.map((comment) => (
+      <Comment key={comment._id} comment={comment} />
+    ))}
+  </VStack>
+));
+
+const CommentSection = ({ deal, isAuthenticated, user }) => {
   const dispatch = useDispatch();
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
-  const { followedDeals, boughtDeals } = useSelector((state) => state.user);
   const comments = useSelector((state) => selectComments(state, deal?._id));
-  const commentsError = useSelector(selectCommentsError);
-  const isCommentsLoading = useSelector(selectCommentsLoading);
+  const [localComments, setLocalComments] = useState([]);
   const [comment, setComment] = useState('');
-  const [isFollowLoading, setIsFollowLoading] = useState(false);
-  const [isBoughtLoading, setIsBoughtLoading] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [hasBought, setHasBought] = useState(false);
-  const [followCount, setFollowCount] = useState(deal?.followCount || 0);
-  const [boughtCount, setBoughtCount] = useState(deal?.boughtCount || 0);
   const [isCommentLoading, setIsCommentLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const toast = useToast();
 
   useEffect(() => {
-    if (user && deal && followedDeals && boughtDeals) {
-      setIsFollowing(followedDeals.includes(deal._id));
-      setHasBought(boughtDeals.includes(deal._id));
-    }
-  }, [user, deal, followedDeals, boughtDeals]);
-
-  useEffect(() => {
-    if (deal && deal._id && isOpen) {
-      dispatch(fetchComments(deal._id))
-        .unwrap()
-        .then(() => {
-          console.log('Comments fetched successfully');
-        })
-        .catch((error) => {
-          console.error('Error fetching comments:', error);
-          toast({
-            title: "Error",
-            description: `Failed to fetch comments: ${error.message}`,
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-          });
-        });
-    }
-  }, [dispatch, deal, isOpen, toast]);
-
-  const fallbackImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-
-  const getImageUrl = (url) => {
-    if (!url) return fallbackImageUrl;
-    return url.startsWith('http') ? url : `http://localhost:5000${url}`;
-  };
-
-  const imageUrl = useMemo(() => getImageUrl(deal?.imageUrl), [deal?.imageUrl]);
+    setLocalComments(comments);
+    setIsLoading(false);
+  }, [comments]);
 
   const handleCommentSubmit = useCallback(async () => {
     if (!isAuthenticated) {
@@ -108,33 +94,41 @@ const DealModal = ({ isOpen, onClose, deal }) => {
     if (comment.trim()) {
       setIsCommentLoading(true);
       try {
-        const result = await dispatch(addComment({ dealId: deal._id, content: comment })).unwrap();
-        
-        // Create a new comment object with the current user's information
         const newComment = {
-          ...result.comment,
+          _id: Date.now().toString(), // Temporary ID
+          content: comment,
           user: {
-            _id: user.id,
+            _id: user._id,
             username: user.username,
             profilePicture: user.profilePicture
-          }
+          },
+          createdAt: new Date().toISOString()
         };
-  
-        // Update the Redux store with the new comment
-        dispatch(fetchComments(deal._id));
-  
+
+        // Immediately add the new comment to localComments
+        setLocalComments(prevComments => [newComment, ...prevComments]);
         setComment('');
-        toast({
-          title: 'Comment added',
-          status: 'success',
-          duration: 2000,
-          isClosable: true,
-        });
+
+        const resultAction = await dispatch(addComment({ dealId: deal._id, content: comment }));
+        if (addComment.fulfilled.match(resultAction)) {
+          toast({
+            title: 'Comment added',
+            status: 'success',
+            duration: 2000,
+            isClosable: true,
+          });
+          // Fetch updated comments to sync with server
+          dispatch(fetchComments(deal._id));
+        } else if (addComment.rejected.match(resultAction)) {
+          // If the comment failed to post, remove it from localComments
+          setLocalComments(prevComments => prevComments.filter(c => c._id !== newComment._id));
+          throw new Error(resultAction.error.message);
+        }
       } catch (error) {
         console.error('Error posting comment:', error);
         toast({
           title: "Error",
-          description: "Failed to post comment. Please try again.",
+          description: `Failed to post comment: ${error.message}`,
           status: "error",
           duration: 3000,
           isClosable: true,
@@ -143,7 +137,75 @@ const DealModal = ({ isOpen, onClose, deal }) => {
         setIsCommentLoading(false);
       }
     }
-  }, [isAuthenticated, comment, deal, dispatch, toast, user]);
+  }, [isAuthenticated, comment, deal, dispatch, toast, user, setLocalComments]);
+
+  const memoizedCommentsList = useMemo(() => (
+    <CommentsList comments={localComments} />
+  ), [localComments]);
+
+  return (
+    <>
+      <Text fontWeight="bold" fontSize="lg">Comments ({localComments.length})</Text>
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        memoizedCommentsList
+      )}
+      <Textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Add a comment..."
+        resize="none"
+      />
+      <Button 
+        onClick={handleCommentSubmit} 
+        colorScheme="blue"
+        leftIcon={<FaComment />}
+        isLoading={isCommentLoading}
+        loadingText="Posting..."
+        isDisabled={!isAuthenticated || isCommentLoading}
+      >
+        Post Comment
+      </Button>
+    </>
+  );
+};
+
+const DealModal = ({ isOpen, onClose, deal }) => {
+  const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { followedDeals, boughtDeals } = useSelector((state) => state.user);
+  const commentsError = useSelector(selectCommentsError);
+  const isCommentsLoading = useSelector(selectCommentsLoading);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [isBoughtLoading, setIsBoughtLoading] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [hasBought, setHasBought] = useState(false);
+  const [followCount, setFollowCount] = useState(deal?.followCount || 0);
+  const [boughtCount, setBoughtCount] = useState(deal?.boughtCount || 0);
+  const toast = useToast();
+
+  useEffect(() => {
+    if (user && deal && followedDeals && boughtDeals) {
+      setIsFollowing(followedDeals.includes(deal._id));
+      setHasBought(boughtDeals.includes(deal._id));
+    }
+  }, [user, deal, followedDeals, boughtDeals]);
+
+  useEffect(() => {
+    if (isOpen && deal && deal._id) {
+      dispatch(fetchComments(deal._id));
+    }
+  }, [isOpen, deal, dispatch]);
+
+  const fallbackImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+  const getImageUrl = (url) => {
+    if (!url) return fallbackImageUrl;
+    return url.startsWith('http') ? url : `http://localhost:5000${url}`;
+  };
+
+  const imageUrl = useMemo(() => getImageUrl(deal?.imageUrl), [deal?.imageUrl]);
 
   const handleFollow = async () => {
     if (!isAuthenticated) {
@@ -333,49 +395,7 @@ const DealModal = ({ isOpen, onClose, deal }) => {
                   </HStack>
                 </Flex>
                 <Divider />
-                <Text fontWeight="bold" fontSize="lg">Comments ({comments.length})</Text>
-                <VStack align="stretch" maxHeight="200px" overflowY="auto" spacing={2}>
-                  {isCommentsLoading ? (
-                    <Spinner />
-                  ) : commentsError ? (
-                    <Text color="red.500">Error loading comments: {commentsError}</Text>
-                  ) : comments.length > 0 ? (
-                    comments.map((c) => (
-                      <HStack key={c._id} p={2} backgroundColor="gray.50" borderRadius="md" alignItems="flex-start">
-                        <Avatar 
-                          size="sm" 
-                          src={c.user?.profilePicture} 
-                          name={c.user?.username || 'Anonymous'} 
-                        />
-                        <Box>
-                          <Text fontWeight="bold">{c.user?.username || 'Anonymous'}</Text>
-                          <Text>{c.content}</Text>
-                          <Text fontSize="xs" color="gray.500">
-                            {new Date(c.createdAt).toLocaleString()}
-                          </Text>
-                        </Box>
-                      </HStack>
-                    ))
-                  ) : (
-                    <Text>No comments yet. Be the first to comment!</Text>
-                  )}
-                </VStack>
-                <Textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Add a comment..."
-                  resize="none"
-                />
-                <Button 
-                  onClick={handleCommentSubmit} 
-                  colorScheme="blue"
-                  leftIcon={<FaComment />}
-                  isLoading={isCommentLoading}
-                  loadingText="Posting..."
-                  isDisabled={!isAuthenticated || isCommentLoading}
-                >
-                  Post Comment
-                </Button>
+                <CommentSection deal={deal} isAuthenticated={isAuthenticated} user={user} />
               </VStack>
             </GridItem>
           </Grid>

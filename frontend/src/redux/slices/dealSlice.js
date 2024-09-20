@@ -65,7 +65,7 @@ export const addComment = createAsyncThunk(
       
       // Add user information to the comment
       comment.user = {
-        _id: user.id,
+        _id: user._id,
         username: user.username,
         profilePicture: user.profilePicture
       };
