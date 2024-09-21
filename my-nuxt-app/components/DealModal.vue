@@ -22,7 +22,7 @@
           <span class="font-bold text-green-500 text-2xl">{{ deal.price }}</span>
           <div class="flex items-center space-x-4">
             <button @click="followDeal" class="bg-blue-500 text-white rounded-md px-4 py-2 hover:bg-blue-600">
-              {{ isFollowing ? 'Unfollow' : 'Follow' }} Deal
+              {{ isFollowingDeal ? 'Unfollow' : 'Follow' }} Deal
             </button>
             <div class="flex flex-col items-center">
               <button @click="upvote" class="text-gray-500 hover:text-green-500">
@@ -36,9 +36,15 @@
           </div>
         </div>
         
-        <div class="mb-6">
-          <span class="text-sm text-gray-500">Posted by:</span>
-          <span class="font-semibold ml-1">{{ deal.postedBy }}</span>
+        <div class="mb-6 flex items-center">
+          <img :src="deal.userAvatar" :alt="deal.postedBy" class="w-10 h-10 rounded-full mr-3">
+          <div class="flex-grow">
+            <span class="text-sm text-gray-500">Posted by:</span>
+            <span class="font-semibold ml-1">{{ deal.postedBy }}</span>
+          </div>
+          <button @click="followUser" class="bg-blue-500 text-white rounded-md px-3 py-1 text-sm hover:bg-blue-600">
+            {{ isFollowingUser ? 'Unfollow' : 'Follow' }}
+          </button>
         </div>
         
         <div class="border-t pt-6">
@@ -61,7 +67,8 @@ export default {
   props: ['deal'],
   data() {
     return {
-      isFollowing: false,
+      isFollowingDeal: false,
+      isFollowingUser: false,
       votes: this.deal ? this.deal.upvotes : 0,
       comments: [
         { id: 1, username: 'User1', userAvatar: 'https://i.pravatar.cc/150?img=1', text: 'Great deal! Thanks for sharing.' },
@@ -75,8 +82,12 @@ export default {
       this.$emit('close-modal')
     },
     followDeal() {
-      this.isFollowing = !this.isFollowing
+      this.isFollowingDeal = !this.isFollowingDeal
       // Here you would typically make an API call to follow/unfollow the deal
+    },
+    followUser() {
+      this.isFollowingUser = !this.isFollowingUser
+      // Here you would typically make an API call to follow/unfollow the user
     },
     upvote() {
       this.votes++

@@ -7,8 +7,8 @@
       </div>
       <div class="flex items-center">
         <template v-if="!isLoggedIn">
-          <button class="text-gray-600 hover:text-gray-800 mr-4">Log In</button>
-          <button class="bg-blue-500 text-white rounded-md px-4 py-2 hover:bg-blue-600">Sign Up</button>
+          <button @click="openAuthModal('login')" class="text-gray-600 hover:text-gray-800 mr-4">Log In</button>
+          <button @click="openAuthModal('signup')" class="bg-blue-500 text-white rounded-md px-4 py-2 hover:bg-blue-600">Sign Up</button>
         </template>
         <template v-else>
           <button class="bg-green-500 text-white rounded-md px-4 py-2 hover:bg-green-600 mr-4">Post a Deal</button>
@@ -29,15 +29,19 @@
       </div>
     </div>
     <ProfilePage v-if="showProfile" @close="closeProfile" />
+    <AuthModal v-if="showAuthModal" :is-login="isLoginMode" @close="closeAuthModal" @login="handleLogin" @signup="handleSignup" />
   </header>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import ProfilePage from './ProfilePage.vue'
+import AuthModal from './AuthModal.vue'
 
 const isLoggedIn = ref(false)
 const showProfile = ref(false)
+const showAuthModal = ref(false)
+const isLoginMode = ref(true)
 
 const toggleLogin = () => {
   isLoggedIn.value = !isLoggedIn.value
@@ -49,6 +53,29 @@ const openProfile = () => {
 
 const closeProfile = () => {
   showProfile.value = false
+}
+
+const openAuthModal = (mode) => {
+  isLoginMode.value = mode === 'login'
+  showAuthModal.value = true
+}
+
+const closeAuthModal = () => {
+  showAuthModal.value = false
+}
+
+const handleLogin = (credentials) => {
+  console.log('Login:', credentials)
+  // Implement login logic here
+  isLoggedIn.value = true
+  closeAuthModal()
+}
+
+const handleSignup = (userData) => {
+  console.log('Signup:', userData)
+  // Implement signup logic here
+  isLoggedIn.value = true
+  closeAuthModal()
 }
 
 defineExpose({ isLoggedIn, showProfile, openProfile, closeProfile })
