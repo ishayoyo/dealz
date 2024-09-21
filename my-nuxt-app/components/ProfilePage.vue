@@ -1,6 +1,5 @@
 <template>
-  <div class="fixed inset-0 bg-gray-100 z-40 overflow-y-auto">
-    <Header />
+  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto pt-16"> <!-- Add padding-top -->
     <div class="container mx-auto px-4 py-8">
       <div class="bg-white shadow-lg rounded-lg overflow-hidden">
         <div class="p-6">
@@ -102,7 +101,6 @@
 
 <script setup>
 import { ref } from 'vue'
-import Header from './Header.vue'
 
 const emit = defineEmits(['close'])
 const fileInput = ref(null)
