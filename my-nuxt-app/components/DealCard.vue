@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300" @click="openModal">
+  <div class="bg-white rounded-md shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300" @click="openModal">
     <img :src="deal.image" :alt="deal.title" class="w-full h-48 object-cover">
     <div class="p-4">
       <h3 class="font-bold text-lg mb-2">{{ deal.title }}</h3>
