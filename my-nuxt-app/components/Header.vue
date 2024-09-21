@@ -12,7 +12,7 @@
         </template>
         <template v-else>
           <button class="bg-green-500 text-white rounded-md px-4 py-2 hover:bg-green-600 mr-4">Post a Deal</button>
-          <button class="text-gray-600 hover:text-gray-800 mr-4">
+          <button @click="openProfile" class="text-gray-600 hover:text-gray-800 mr-4">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
@@ -28,20 +28,28 @@
         </button>
       </div>
     </div>
+    <ProfilePage v-if="showProfile" @close="closeProfile" />
   </header>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      isLoggedIn: false
-    }
-  },
-  methods: {
-    toggleLogin() {
-      this.isLoggedIn = !this.isLoggedIn
-    }
-  }
+<script setup>
+import { ref } from 'vue'
+import ProfilePage from './ProfilePage.vue'
+
+const isLoggedIn = ref(false)
+const showProfile = ref(false)
+
+const toggleLogin = () => {
+  isLoggedIn.value = !isLoggedIn.value
 }
+
+const openProfile = () => {
+  showProfile.value = true
+}
+
+const closeProfile = () => {
+  showProfile.value = false
+}
+
+defineExpose({ isLoggedIn, showProfile, openProfile, closeProfile })
 </script>

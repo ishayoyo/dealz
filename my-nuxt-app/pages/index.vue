@@ -1,22 +1,27 @@
 <template>
   <NuxtLayout name="default">
     <div>
-      <Header />
-      <div class="container mx-auto px-4 py-8">
+      <Header ref="headerRef" />
+      <div v-if="!showProfile" class="container mx-auto px-4 py-8">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           <DealCard v-for="deal in deals" :key="deal.id" :deal="deal" @open-modal="openModal" />
         </div>
       </div>
       <DealModal :deal="selectedDeal" @close-modal="closeModal" v-if="selectedDeal" />
+      <ProfilePage v-if="showProfile" @close="closeProfile" />
     </div>
   </NuxtLayout>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import Header from '~/components/Header.vue'
 import DealCard from '~/components/DealCard.vue'
 import DealModal from '~/components/DealModal.vue'
+import ProfilePage from '~/components/ProfilePage.vue'
+
+const headerRef = ref(null)
+const showProfile = computed(() => headerRef.value?.showProfile)
 
 const deals = ref([
   {
@@ -89,5 +94,9 @@ const openModal = (deal) => {
 
 const closeModal = () => {
   selectedDeal.value = null
+}
+
+const closeProfile = () => {
+  headerRef.value?.closeProfile()
 }
 </script>
