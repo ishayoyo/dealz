@@ -58,11 +58,8 @@ const userSchema = new mongoose.Schema({
   postedDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
   collections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Collection' }],
   favoritePriceRanges: [String],
-  following: {
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    default: []
-  },
-  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  following: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
+  followers: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

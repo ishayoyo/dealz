@@ -94,10 +94,12 @@ const handleSubmit = async () => {
     }
     const { token, data } = response.data
     localStorage.setItem('token', token)
+    // Set the token in the api instance
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
     if (isLogin.value) {
-      emit('login', data)  // Changed from data.user to data
+      emit('login', data)
     } else {
-      emit('signup', data)  // Changed from data.user to data
+      emit('signup', data)
     }
   } catch (err) {
     console.error('Authentication error:', err)

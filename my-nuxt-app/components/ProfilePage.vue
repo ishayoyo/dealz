@@ -67,7 +67,7 @@
                 <UserAvatar :name="user.name" :size="40" class="mr-3" />
                 <span class="font-medium">{{ user.name }}</span>
               </div>
-              <button class="text-blue-600 hover:text-blue-800">Unfollow</button>
+              <button @click="unfollowUser(user.id)" class="text-blue-600 hover:text-blue-800">Unfollow</button>
             </div>
           </div>
 
@@ -77,7 +77,7 @@
                 <UserAvatar :name="user.name" :size="40" class="mr-3" />
                 <span class="font-medium">{{ user.name }}</span>
               </div>
-              <button class="text-blue-600 hover:text-blue-800">Follow Back</button>
+              <button @click="followUser(user.id)" class="text-blue-600 hover:text-blue-800">Follow Back</button>
             </div>
           </div>
 
@@ -100,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import api from '~/services/api'
 
 const emit = defineEmits(['close'])
@@ -116,15 +116,22 @@ const tabs = [
 ]
 
 const user = ref({})
+const followingUsers = ref([])
+const followers = ref([])
+const userDeals = ref([])
 
 onMounted(async () => {
+  await fetchUserData()
+})
+
+const fetchUserData = async () => {
   try {
     const response = await api.get('/users/me')
     user.value = response.data.data.user
   } catch (error) {
     console.error('Error fetching user data:', error)
   }
-})
+}
 
 const userFields = [
   { key: 'firstName', label: 'First Name', type: 'text' },
@@ -143,10 +150,6 @@ const passwordFields = [
   { key: 'newPassword', label: 'New Password' },
   { key: 'confirmPassword', label: 'Confirm New Password' }
 ]
-
-const followingUsers = ref([])
-const followers = ref([])
-const userDeals = ref([])
 
 const triggerFileInput = () => {
   fileInput.value.click()
@@ -173,7 +176,8 @@ const closeProfile = () => {
 
 const saveChanges = async () => {
   try {
-    await api.put('/users/me', user.value)
+    const response = await api.put('/users/me', user.value)
+    user.value = response.data.data.user
     // Show success message
   } catch (error) {
     console.error('Error updating user data:', error)
@@ -181,36 +185,85 @@ const saveChanges = async () => {
   }
 }
 
-const changePassword = () => {
-  // Implement change password logic
-  console.log('Changing password:', passwordChange.value)
-}
+const changePassword = async () => {
+  try {
+    console.log('Sending change password request');
+    console.log('Request data:', passwordChange.value);
+    const response = await api.post('/users/change-password', passwordChange.value);
+    console.log('Response:', response.data);
+    if (response.data.status === 'success') {
+      // Show success message to user
+      alert('Password changed successfully');
+      // Clear the form fields
+      passwordChange.value = { currentPassword: '', newPassword: '', confirmPassword: '' };
+    } else {
+      throw new Error(response.data.message || 'Failed to change password');
+    }
+  } catch (error) {
+    console.error('Error changing password:', error);
+    console.error('Error details:', error.response?.data);
+    // Show error message to user
+    alert(error.response?.data?.message || 'An error occurred while changing the password');
+  }
+};
 
-// Add methods to fetch following, followers, and user deals
 const fetchFollowing = async () => {
   try {
-    const response = await api.get('/users/me/following')
-    followingUsers.value = response.data
+    const response = await api.get('/users/me/following');
+    followingUsers.value = response.data.data.following;
   } catch (error) {
-    console.error('Error fetching following users:', error)
+    console.error('Error fetching following users:', error);
   }
-}
+};
 
 const fetchFollowers = async () => {
   try {
-    const response = await api.get('/users/me/followers')
-    followers.value = response.data
+    const response = await api.get('/users/me/followers');
+    followers.value = response.data.data.followers;
   } catch (error) {
-    console.error('Error fetching followers:', error)
+    console.error('Error fetching followers:', error);
   }
-}
+};
 
 const fetchUserDeals = async () => {
   try {
-    const response = await api.get('/users/me/deals')
-    userDeals.value = response.data
+    const response = await api.get('/users/me/deals');
+    userDeals.value = response.data.data.deals;
   } catch (error) {
-    console.error('Error fetching user deals:', error)
+    console.error('Error fetching user deals:', error);
+  }
+};
+
+const unfollowUser = async (userId) => {
+  try {
+    await api.delete(`/users/${userId}/follow`)
+    // Remove the unfollowed user from the followingUsers list
+    followingUsers.value = followingUsers.value.filter(user => user.id !== userId)
+  } catch (error) {
+    console.error('Error unfollowing user:', error)
+    // Show error message
   }
 }
+
+const followUser = async (userId) => {
+  try {
+    await api.post(`/users/${userId}/follow`)
+    // Refresh the followers list
+    await fetchFollowers()
+  } catch (error) {
+    console.error('Error following user:', error)
+    // Show error message
+  }
+}
+
+// Watch for tab changes to load data
+watch(currentTab, async (newTab) => {
+  if (newTab === 'following') {
+    await fetchFollowing()
+  } else if (newTab === 'followers') {
+    await fetchFollowers()
+  } else if (newTab === 'deals') {
+    await fetchUserDeals()
+  }
+})
 </script>

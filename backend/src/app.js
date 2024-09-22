@@ -22,4 +22,14 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
+// Global error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error details:', err);
+  res.status(err.statusCode || 500).json({
+    status: 'error',
+    message: err.message || 'Something went wrong on the server',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
 module.exports = app;

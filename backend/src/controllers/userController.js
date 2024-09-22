@@ -148,11 +148,6 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: 'success', message: 'Password reset email sent' });
 });
 
-exports.resetPassword = catchAsync(async (req, res, next) => {
-  // Implement password reset logic here
-  res.status(200).json({ status: 'success', message: 'Password reset successful' });
-});
-
 exports.verifyEmail = catchAsync(async (req, res, next) => {
   // Implement email verification logic here
   res.status(200).json({ status: 'success', message: 'Email verified successfully' });
@@ -295,5 +290,82 @@ exports.checkUserStatus = catchAsync(async (req, res, next) => {
     data: {
       isFollowing
     }
+  });
+});
+
+// Add these new functions to userController.js
+
+exports.getCurrentUserFollowing = catchAsync(async (req, res, next) => {
+  console.log('User ID:', req.user._id); // Changed from req.user.id to req.user._id
+  try {
+    const following = await Follow.find({ follower: req.user._id }) // Changed from req.user.id to req.user._id
+      .populate('followed', 'username profilePicture');
+    
+    res.status(200).json({
+      status: 'success',
+      data: { following: following.map(f => f.followed) }
+    });
+  } catch (error) {
+    console.error('Error in getCurrentUserFollowing:', error);
+    next(error);
+  }
+});
+
+exports.getCurrentUserFollowers = catchAsync(async (req, res, next) => {
+  console.log('User ID:', req.user._id); // Changed from req.user.id to req.user._id
+  try {
+    const followers = await Follow.find({ followed: req.user._id }) // Changed from req.user.id to req.user._id
+      .populate('follower', 'username profilePicture');
+    
+    res.status(200).json({
+      status: 'success',
+      data: { followers: followers.map(f => f.follower) }
+    });
+  } catch (error) {
+    console.error('Error in getCurrentUserFollowers:', error);
+    next(error);
+  }
+});
+
+exports.getCurrentUserDeals = catchAsync(async (req, res, next) => {
+  console.log('User ID:', req.user._id); // Changed from req.user.id to req.user._id
+  try {
+    const deals = await Deal.find({ user: req.user._id }).sort('-createdAt'); // Changed from req.user.id to req.user._id
+    res.status(200).json({
+      status: 'success',
+      data: { deals }
+    });
+  } catch (error) {
+    console.error('Error in getCurrentUserDeals:', error);
+    next(error);
+  }
+});
+
+exports.changePassword = catchAsync(async (req, res, next) => {
+  // Implementation here
+  console.log('Change password function called'); // Add this log
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  // Check if new password and confirm password match
+  if (newPassword !== confirmPassword) {
+    return next(new AppError('New password and confirm password do not match', 400));
+  }
+
+  // Get user from database
+  const user = await User.findById(req.user.id).select('+password');
+
+  // Check if current password is correct
+  if (!(await user.comparePassword(currentPassword))) {
+    return next(new AppError('Your current password is incorrect', 401));
+  }
+
+  // Update password
+  user.password = newPassword;
+  await user.save();
+
+  // Send response
+  res.status(200).json({
+    status: 'success',
+    message: 'Password updated successfully'
   });
 });

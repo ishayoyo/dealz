@@ -25,30 +25,32 @@ router.put('/me', auth, userController.updateCurrentUser);
 
 // Password reset routes
 router.post('/forgot-password', userController.forgotPassword);
-router.post('/reset-password', userController.resetPassword);
 router.post('/verify-email', userController.verifyEmail);
+router.post('/change-password', auth, userController.changePassword);
 
-// User ID routes (place these last)
+// Move these routes before the /:id routes
+router.get('/me/following', auth, userController.getCurrentUserFollowing);
+router.get('/me/followers', auth, userController.getCurrentUserFollowers);
+router.get('/me/deals', auth, userController.getCurrentUserDeals);
+router.get('/me/collections', auth, userController.getCurrentUserCollections);
+router.post('/me/collections', auth, userController.createCollection);
+router.put('/me/collections/:id', auth, userController.updateCollection);
+router.delete('/me/collections/:id', auth, userController.deleteCollection);
+router.get('/me/activity', auth, userController.getCurrentUserActivity);
+
+// Then keep the /:id routes
 router.get('/:id', userController.getUser);
 router.get('/:id/deals', userController.getUserDeals);
 router.get('/:id/followers', userController.getUserFollowers);
 router.get('/:id/following', userController.getUserFollowing);
 router.post('/:id/follow', auth, userController.followUser);
 router.delete('/:id/follow', auth, userController.unfollowUser);
-
-// Add these new routes
-router.get('/me/collections', auth, userController.getCurrentUserCollections);
-router.post('/me/collections', auth, userController.createCollection);
-router.put('/me/collections/:id', auth, userController.updateCollection);
-router.delete('/me/collections/:id', auth, userController.deleteCollection);
-
-router.get('/me/activity', auth, userController.getCurrentUserActivity);
 router.get('/:id/activity', userController.getUserActivity);
+router.get('/:id/status', auth, userController.checkUserStatus);
 
 // Add this new route
 router.post('/upload-profile-picture', auth, upload.single('image'), userController.uploadProfilePicture);
 
 // New route to check following status of a user
-router.get('/:id/status', auth, userController.checkUserStatus);
 
 module.exports = router;
