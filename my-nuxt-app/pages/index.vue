@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import api from '~/services/api'
 import DealCard from '~/components/DealCard.vue'
 import DealModal from '~/components/DealModal.vue'
@@ -25,9 +25,7 @@ const error = ref(null)
 onMounted(async () => {
   try {
     const response = await api.get('/deals')
-    console.log('API response:', response.data)
     deals.value = response.data.data.deals
-    console.log('Deals loaded:', deals.value)
   } catch (err) {
     console.error('Error fetching deals:', err)
     error.value = 'Failed to load deals. Please try again later.'
@@ -37,16 +35,10 @@ onMounted(async () => {
 })
 
 const openModal = (deal) => {
-  console.log('Opening modal for deal:', deal)
-  selectedDeal.value = deal
+  selectedDeal.value = { ...deal }
 }
 
 const closeModal = () => {
-  console.log('Closing modal')
   selectedDeal.value = null
 }
-
-watch(selectedDeal, (newValue) => {
-  console.log('selectedDeal changed:', newValue)
-})
 </script>

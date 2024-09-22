@@ -49,12 +49,21 @@
         
         <div class="border-t pt-6">
           <h3 class="font-bold text-xl mb-4">Comments</h3>
-          <div v-for="comment in comments" :key="comment._id" class="mb-4">
-            <div class="flex items-center mb-2">
-              <img :src="comment.user.profilePicture" :alt="comment.user.username" class="w-8 h-8 rounded-full mr-2">
-              <span class="font-semibold">{{ comment.user.username }}</span>
+          <div v-if="loading">Loading comments...</div>
+          <div v-else-if="error">{{ error }}</div>
+          <div v-else>
+            <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
+            <div v-else v-for="comment in comments" :key="comment._id" class="mb-4">
+              <div class="flex items-center mb-2">
+                <img 
+                  :src="comment.user?.profilePicture || 'path/to/default/avatar.png'" 
+                  :alt="comment.user?.username || 'Anonymous'" 
+                  class="w-8 h-8 rounded-full mr-2"
+                >
+                <span class="font-semibold">{{ comment.user?.username || 'Anonymous' }}</span>
+              </div>
+              <p class="text-gray-600">{{ comment.content }}</p>
             </div>
-            <p class="text-gray-600">{{ comment.content }}</p>
           </div>
           <div class="mt-4">
             <textarea v-model="newComment" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="3" placeholder="Add a comment..."></textarea>
@@ -69,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import api from '~/services/api'
 
 const props = defineProps(['deal'])
@@ -78,6 +87,8 @@ const comments = ref([])
 const isFollowing = ref(false)
 const isFollowingUser = ref(false)
 const newComment = ref('')
+const loading = ref(false)
+const error = ref(null)
 
 const imageUrl = computed(() => {
   return props.deal.imageUrl ? `http://localhost:5000${props.deal.imageUrl}` : ''
@@ -100,17 +111,25 @@ watch(() => props.deal, async (newDeal) => {
 })
 
 const fetchDealData = async () => {
+  loading.value = true
+  error.value = null
   try {
     const [commentsResponse, statusResponse] = await Promise.all([
-      api.get(`/deals/${props.deal._id}/comments`),
+      api.get(`/comments/deal/${props.deal._id}`),
       api.get(`/deals/${props.deal._id}/status`)
     ])
-    comments.value = commentsResponse.data.data.comments
+    comments.value = commentsResponse.data.data.comments.map(comment => ({
+      ...comment,
+      user: comment.user || { username: 'Anonymous', profilePicture: 'path/to/default/avatar.png' }
+    }))
     isFollowing.value = statusResponse.data.data.isFollowing
     console.log('DealModal: Fetched comments:', comments.value)
     console.log('DealModal: Fetched following status:', isFollowing.value)
-  } catch (error) {
-    console.error('Error fetching deal data:', error)
+  } catch (err) {
+    console.error('Error fetching deal data:', err)
+    error.value = 'Failed to load comments. Please try again.'
+  } finally {
+    loading.value = false
   }
 }
 
@@ -137,12 +156,19 @@ const voteDeal = async (value) => {
 }
 
 const addComment = async () => {
+  if (!newComment.value.trim()) return
+  
   try {
-    const response = await api.post(`/deals/${props.deal._id}/comments`, { content: newComment.value })
-    comments.value.push(response.data.data.comment)
+    const response = await api.post(`/comments/${props.deal._id}`, { content: newComment.value })
+    const newCommentData = response.data.data.comment
+    comments.value.unshift({
+      ...newCommentData,
+      user: newCommentData.user || { username: 'Anonymous', profilePicture: 'path/to/default/avatar.png' }
+    })
     newComment.value = ''
-  } catch (error) {
-    console.error('Error adding comment:', error)
+  } catch (err) {
+    console.error('Error adding comment:', err)
+    error.value = 'Failed to add comment. Please try again.'
   }
 }
 
