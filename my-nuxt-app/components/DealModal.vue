@@ -9,8 +9,8 @@
       </button>
 
       <!-- Left column: Image -->
-      <div class="w-full md:w-1/2 h-64 md:h-auto relative">
-        <img :src="imageUrl" :alt="deal.title" class="w-full h-full object-contain bg-gray-100">
+      <div class="w-full md:w-1/2 h-64 md:h-auto relative bg-gray-100 flex items-center justify-center">
+        <img :src="imageUrl" :alt="deal.title" class="max-w-full max-h-full object-contain">
       </div>
       
       <!-- Right column: Content -->
@@ -19,7 +19,7 @@
         <p class="text-gray-600 mb-4">{{ deal.description }}</p>
         
         <div class="flex items-center justify-between mb-4">
-          <span class="font-bold text-green-500 text-2xl">{{ deal.price }}</span>
+          <span class="font-bold text-green-500 text-2xl">${{ formattedPrice }}</span>
           <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="bg-green-500 text-white rounded-md px-4 py-2 hover:bg-green-600 transition duration-300">
             Go to Deal
           </a>
@@ -126,6 +126,10 @@ const userImageUrl = computed(() => {
   return props.deal.user.profilePicture.startsWith('http')
     ? props.deal.user.profilePicture
     : `http://localhost:5000${props.deal.user.profilePicture}`
+})
+
+const formattedPrice = computed(() => {
+  return parseFloat(props.deal.price).toFixed(2)
 })
 
 console.log('DealModal: Received deal prop:', props.deal)

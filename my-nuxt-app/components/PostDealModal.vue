@@ -30,9 +30,9 @@
       <!-- Step 2: Complete deal details -->
       <div v-else>
         <div class="mb-6">
-          <img v-if="dealImage" :src="dealImage" alt="Deal Image" class="w-full h-48 object-cover rounded-md mb-2">
-          <div v-else class="w-full h-48 bg-gray-200 flex items-center justify-center rounded-md mb-2">
-            <span class="text-gray-500">No image available</span>
+          <div class="w-full h-64 bg-gray-200 flex items-center justify-center rounded-md mb-2 overflow-hidden">
+            <img v-if="dealImage" :src="dealImage" alt="Deal Image" class="w-full h-full object-contain">
+            <span v-else class="text-gray-500">No image available</span>
           </div>
           <div class="flex justify-between">
             <button @click="triggerFileInput" class="text-blue-600 hover:text-blue-800">
@@ -57,8 +57,8 @@
           </div>
           
           <div class="mb-4">
-            <label for="price" class="block text-gray-700 text-sm font-bold mb-2">Price</label>
-            <input type="text" id="price" v-model="dealDetails.price" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <label for="price" class="block text-gray-700 text-sm font-bold mb-2">Price ($)</label>
+            <input type="number" id="price" v-model="dealDetails.price" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
           
           <div class="mb-6">
@@ -142,6 +142,7 @@ const submitDeal = async () => {
   try {
     const dealData = {
       ...dealDetails,
+      price: parseFloat(dealDetails.price).toFixed(2), // Ensure price is a number with 2 decimal places
       imageUrl: dealImage.value,
       link: dealLink.value
     }
