@@ -4,6 +4,7 @@ const Deal = require('../models/Deal.Model');
 const User = require('../models/User.Model');
 const Comment = require('../models/Comment.Model');
 const Vote = require('../models/Vote.Model');
+const Follow = require('../models/Follow.Model');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const ImageFetcherService = require('../services/imageFetcherService');

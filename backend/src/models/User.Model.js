@@ -58,7 +58,7 @@ const userSchema = new mongoose.Schema({
   postedDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
   collections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Collection' }],
   favoritePriceRanges: [String],
-  following: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   followers: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
 }, { 
   timestamps: true,

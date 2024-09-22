@@ -102,12 +102,22 @@ exports.followUser = catchAsync(async (req, res, next) => {
   }
 
   const currentUser = await User.findById(req.user.id);
-  if (currentUser.following.some(id => id.toString() === userToFollow._id.toString())) {
+
+  // Check if already following
+  if (currentUser.following.includes(userToFollow._id)) {
     return next(new AppError('You are already following this user', 400));
   }
 
+  // Create new follow relationship
+  await Follow.create({ follower: currentUser._id, followed: userToFollow._id });
+
+  // Update the current user's following array
   currentUser.following.push(userToFollow._id);
   await currentUser.save();
+
+  // Update the followed user's followers array
+  userToFollow.followers.push(currentUser._id);
+  await userToFollow.save();
 
   res.status(200).json({
     status: 'success',
@@ -117,25 +127,18 @@ exports.followUser = catchAsync(async (req, res, next) => {
 
 exports.unfollowUser = catchAsync(async (req, res, next) => {
   const userToUnfollow = await User.findById(req.params.id);
-  const currentUser = await User.findById(req.user.id);
-
-  if (!userToUnfollow || !currentUser) {
+  if (!userToUnfollow) {
     return next(new AppError('User not found', 404));
   }
 
-  if (!currentUser.following.includes(userToUnfollow._id)) {
+  const existingFollow = await Follow.findOneAndDelete({ 
+    follower: req.user._id, 
+    followed: userToUnfollow._id 
+  });
+
+  if (!existingFollow) {
     return next(new AppError('You are not following this user', 400));
   }
-
-  currentUser.following = currentUser.following.filter(
-    id => id.toString() !== userToUnfollow._id.toString()
-  );
-  userToUnfollow.followers = userToUnfollow.followers.filter(
-    id => id.toString() !== currentUser._id.toString()
-  );
-
-  await currentUser.save();
-  await userToUnfollow.save();
 
   res.status(200).json({
     status: 'success',
@@ -174,12 +177,23 @@ exports.validateToken = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getCurrentUserCollections = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.user.id).populate('collections');
-  res.status(200).json({
-    status: 'success',
-    data: { collections: user.collections }
-  });
+exports.getCurrentUserFollowing = catchAsync(async (req, res, next) => {
+  console.log('getCurrentUserFollowing called');
+  console.log('User ID:', req.user._id);
+  try {
+    const user = await User.findById(req.user._id).populate('following', 'username profilePicture');
+    
+    console.log('Following users found:', user.following.length);
+    console.log('Following data:', user.following);
+    
+    res.status(200).json({
+      status: 'success',
+      data: { following: user.following }
+    });
+  } catch (error) {
+    console.error('Error in getCurrentUserFollowing:', error);
+    next(error);
+  }
 });
 
 exports.createCollection = catchAsync(async (req, res, next) => {
@@ -296,14 +310,20 @@ exports.checkUserStatus = catchAsync(async (req, res, next) => {
 // Add these new functions to userController.js
 
 exports.getCurrentUserFollowing = catchAsync(async (req, res, next) => {
-  console.log('User ID:', req.user._id); // Changed from req.user.id to req.user._id
+  console.log('getCurrentUserFollowing called');
+  console.log('User ID:', req.user._id);
   try {
-    const following = await Follow.find({ follower: req.user._id }) // Changed from req.user.id to req.user._id
-      .populate('followed', 'username profilePicture');
+    const user = await User.findById(req.user._id);
+    console.log('User found:', user);
+    console.log('User following array:', user.following);
+
+    const populatedUser = await User.findById(req.user._id).populate('following', 'username profilePicture');
+    console.log('Populated user:', populatedUser);
+    console.log('Populated following:', populatedUser.following);
     
     res.status(200).json({
       status: 'success',
-      data: { following: following.map(f => f.followed) }
+      data: { following: populatedUser.following }
     });
   } catch (error) {
     console.error('Error in getCurrentUserFollowing:', error);
@@ -312,9 +332,9 @@ exports.getCurrentUserFollowing = catchAsync(async (req, res, next) => {
 });
 
 exports.getCurrentUserFollowers = catchAsync(async (req, res, next) => {
-  console.log('User ID:', req.user._id); // Changed from req.user.id to req.user._id
+  console.log('User ID:', req.user._id);
   try {
-    const followers = await Follow.find({ followed: req.user._id }) // Changed from req.user.id to req.user._id
+    const followers = await Follow.find({ followed: req.user._id })
       .populate('follower', 'username profilePicture');
     
     res.status(200).json({
@@ -328,9 +348,9 @@ exports.getCurrentUserFollowers = catchAsync(async (req, res, next) => {
 });
 
 exports.getCurrentUserDeals = catchAsync(async (req, res, next) => {
-  console.log('User ID:', req.user._id); // Changed from req.user.id to req.user._id
+  console.log('User ID:', req.user._id);
   try {
-    const deals = await Deal.find({ user: req.user._id }).sort('-createdAt'); // Changed from req.user.id to req.user._id
+    const deals = await Deal.find({ user: req.user._id }).sort('-createdAt');
     res.status(200).json({
       status: 'success',
       data: { deals }
@@ -367,5 +387,18 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: 'Password updated successfully'
+  });
+});
+
+// Add this new function at the end of the file
+
+exports.getCurrentUserCollections = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id).populate('collections');
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+  res.status(200).json({
+    status: 'success',
+    data: { collections: user.collections }
   });
 });
