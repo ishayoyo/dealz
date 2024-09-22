@@ -9,7 +9,7 @@
       </button>
 
       <!-- Left column: Image -->
-      <div class="w-full md:w-1/2 h-64 md:h-auto relative bg-gray-100 flex items-center justify-center">
+      <div class="w-full md:w-1/2 h-64 md:h-auto relative flex items-center justify-center">
         <img :src="imageUrl" :alt="deal.title" class="max-w-full max-h-full object-contain">
       </div>
       
@@ -41,7 +41,7 @@
         </div>
         
         <div class="mb-6 flex items-center" v-if="deal.user">
-          <img :src="userImageUrl" :alt="deal.user.username" class="w-10 h-10 rounded-full mr-3">
+          <UserAvatar :name="deal.user.username" :size="40" class="mr-3" />
           <div class="flex-grow">
             <span class="text-sm text-gray-500">Posted by:</span>
             <span class="font-semibold ml-1">{{ deal.user.username }}</span>
@@ -59,11 +59,11 @@
             <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
             <div v-else v-for="comment in comments" :key="comment._id" class="mb-4 p-3 bg-gray-100 rounded-lg">
               <div class="flex items-center mb-2">
-                <img 
-                  :src="comment.user?.profilePicture ? `http://localhost:5000${comment.user.profilePicture}` : '/default-avatar.png'" 
-                  :alt="comment.user?.username || 'Anonymous'" 
-                  class="w-8 h-8 rounded-full mr-2"
-                >
+                <UserAvatar 
+                  :name="comment.user?.username || 'Anonymous'" 
+                  :size="32"
+                  class="mr-2"
+                />
                 <span class="font-semibold">{{ comment.user?.username || 'Anonymous' }}</span>
               </div>
               <p class="text-gray-600">{{ comment.content }}</p>
@@ -99,6 +99,11 @@
   background-color: #CBD5E0;
   border-radius: 4px;
 }
+
+/* Add this style to remove the background */
+.relative.flex.items-center.justify-center {
+  background-color: transparent;
+}
 </style>
 
 <script setup>
@@ -119,13 +124,6 @@ const imageUrl = computed(() => {
   return props.deal.imageUrl.startsWith('http') 
     ? props.deal.imageUrl 
     : `http://localhost:5000${props.deal.imageUrl}`
-})
-
-const userImageUrl = computed(() => {
-  if (!props.deal.user || !props.deal.user.profilePicture) return ''
-  return props.deal.user.profilePicture.startsWith('http')
-    ? props.deal.user.profilePicture
-    : `http://localhost:5000${props.deal.user.profilePicture}`
 })
 
 const formattedPrice = computed(() => {
