@@ -32,6 +32,7 @@ router.post('/change-password', auth, userController.changePassword);
 router.get('/me/following', auth, userController.getCurrentUserFollowing);
 router.get('/me/followers', auth, userController.getCurrentUserFollowers);
 router.get('/me/deals', auth, userController.getCurrentUserDeals);
+router.get('/me/followed-deals', auth, userController.getCurrentUserFollowedDeals);
 router.get('/me/collections', auth, userController.getCurrentUserCollections);
 router.post('/me/collections', auth, userController.createCollection);
 router.put('/me/collections/:id', auth, userController.updateCollection);

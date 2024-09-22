@@ -402,3 +402,60 @@ exports.getCurrentUserCollections = catchAsync(async (req, res, next) => {
     data: { collections: user.collections }
   });
 });
+
+// Add this new function to userController.js
+
+exports.getCurrentUserFollowedDeals = catchAsync(async (req, res, next) => {
+  console.log('getCurrentUserFollowedDeals called');
+  console.log('User ID:', req.user._id);
+  try {
+    const user = await User.findById(req.user._id).populate({
+      path: 'followedDeals',
+      select: 'title description price imageUrl store category createdAt',
+      populate: {
+        path: 'user',
+        select: 'username profilePicture'
+      }
+    });
+    
+    if (!user) {
+      return next(new AppError('User not found', 404));
+    }
+
+    console.log('User found:', user);
+
+    const safeFollowedDeals = user.followedDeals.map(deal => {
+      try {
+        // Only include specific fields to avoid problematic virtuals
+        return {
+          _id: deal._id,
+          title: deal.title,
+          description: deal.description,
+          price: deal.price,
+          imageUrl: deal.imageUrl,
+          store: deal.store,
+          category: deal.category,
+          createdAt: deal.createdAt,
+          user: deal.user ? {
+            _id: deal.user._id,
+            username: deal.user.username,
+            profilePicture: deal.user.profilePicture
+          } : null
+        };
+      } catch (error) {
+        console.error('Error processing deal:', error);
+        return null;
+      }
+    }).filter(deal => deal !== null);
+
+    console.log('Safe followed deals:', safeFollowedDeals);
+
+    res.status(200).json({
+      status: 'success',
+      data: { followedDeals: safeFollowedDeals }
+    });
+  } catch (error) {
+    console.error('Error in getCurrentUserFollowedDeals:', error);
+    next(error);
+  }
+});

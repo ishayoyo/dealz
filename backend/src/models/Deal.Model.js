@@ -1,5 +1,3 @@
-// File: src/models/Deal.Model.js
-
 const mongoose = require('mongoose');
 
 const dealSchema = new mongoose.Schema({
@@ -55,9 +53,13 @@ const dealSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
+// Add this before any virtual definitions
+dealSchema.set('toObject', { getters: true });
+dealSchema.set('toJSON', { getters: true });
+
 // If you want voteCount to be calculated, define it as a virtual
 dealSchema.virtual('voteCount').get(function() {
-  return this.votes.length;
+  return this.votes && Array.isArray(this.votes) ? this.votes.length : 0;
 });
 
 dealSchema.index({ title: 'text', description: 'text', tags: 'text' });
@@ -66,4 +68,5 @@ dealSchema.index({ createdAt: -1, voteCount: -1, saveCount: -1 });
 
 dealSchema.index({ followCount: -1, boughtCount: -1 });
 
-module.exports = mongoose.model('Deal', dealSchema);
+const Deal = mongoose.model('Deal', dealSchema);
+module.exports = Deal;

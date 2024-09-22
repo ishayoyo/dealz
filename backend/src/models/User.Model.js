@@ -53,7 +53,10 @@ const userSchema = new mongoose.Schema({
     city: String
   },
   boughtDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
-  followedDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
+  followedDeals: [{
+    type: mongoose.Schema.ObjectId,
+    ref: 'Deal'
+  }],
   savedDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
   postedDeals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' }],
   collections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Collection' }],
