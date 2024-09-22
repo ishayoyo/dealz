@@ -30,8 +30,8 @@
       <!-- Step 2: Complete deal details -->
       <div v-else>
         <div class="mb-6">
-          <div class="w-full h-64 bg-gray-200 flex items-center justify-center rounded-md mb-2 overflow-hidden">
-            <img v-if="dealImage" :src="dealImage" alt="Deal Image" class="w-full h-full object-contain">
+          <div class="w-full h-64 flex items-center justify-center mb-2 overflow-hidden">
+            <img v-if="dealImage" :src="dealImage" alt="Deal Image" class="max-w-full max-h-full object-contain">
             <span v-else class="text-gray-500">No image available</span>
           </div>
           <div class="flex justify-between">
@@ -155,3 +155,12 @@ const submitDeal = async () => {
   }
 }
 </script>
+
+<style scoped>
+.max-w-full {
+  max-width: 100%;
+}
+.max-h-full {
+  max-height: 100%;
+}
+</style>

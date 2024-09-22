@@ -9,7 +9,7 @@
       </button>
 
       <!-- Left column: Image -->
-      <div class="w-full md:w-1/2 h-64 md:h-auto relative flex items-center justify-center">
+      <div class="w-full md:w-1/2 flex items-center justify-center p-4">
         <img :src="imageUrl" :alt="deal.title" class="max-w-full max-h-full object-contain">
       </div>
       
@@ -82,6 +82,12 @@
 </template>
 
 <style scoped>
+.max-w-full {
+  max-width: 100%;
+}
+.max-h-full {
+  max-height: 100%;
+}
 .comments-container {
   scrollbar-width: thin;
   scrollbar-color: #CBD5E0 #EDF2F7;
