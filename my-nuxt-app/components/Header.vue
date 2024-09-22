@@ -10,10 +10,10 @@
       <div class="flex items-center">
         <template v-if="!isLoggedIn">
           <button @click="openAuthModal('login')" class="text-gray-600 hover:text-gray-800 mr-4">Log In</button>
-          <button @click="openAuthModal('signup')" class="bg-blue-500 text-white rounded-md px-4 py-2 hover:bg-blue-600">Sign Up</button>
+          <button @click="openAuthModal('signup')" class="btn btn-primary">Sign Up</button>
         </template>
         <template v-else>
-          <button @click="openPostDealModal" class="bg-green-500 text-white rounded-md px-4 py-2 hover:bg-green-600 mr-4">Post a Deal</button>
+          <button @click="openPostDealModal" class="btn btn-green mr-4">Post a Deal</button>
           <button @click="handleOpenProfile" class="text-gray-600 hover:text-gray-800 mr-4">
             <img v-if="user.profilePicture" :src="profilePictureUrl" alt="Profile" class="w-8 h-8 rounded-full object-cover">
             <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -26,7 +26,7 @@
             </svg>
           </button>
         </template>
-        <button @click="toggleLogin" class="ml-4 bg-gray-200 text-gray-700 rounded-md px-4 py-2 hover:bg-gray-300">
+        <button @click="toggleLogin" class="btn btn-secondary ml-4">
           {{ isLoggedIn ? 'Logout' : 'Login' }}
         </button>
       </div>

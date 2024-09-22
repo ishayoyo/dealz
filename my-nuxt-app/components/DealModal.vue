@@ -1,6 +1,6 @@
 <template>
   <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row relative">
+    <div class="bg-white rounded-lg w-full max-w-5xl overflow-hidden flex flex-col md:flex-row relative" :style="modalStyle">
       <!-- Close button -->
       <button @click="closeModal" class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 z-20 bg-white rounded-full p-2 shadow-md">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -9,8 +9,8 @@
       </button>
 
       <!-- Left column: Image -->
-      <div class="w-full md:w-1/2 flex items-center justify-center p-4">
-        <img :src="imageUrl" :alt="deal.title" class="max-w-full max-h-full object-contain">
+      <div ref="imageContainer" class="w-full md:w-1/2 flex items-center justify-center p-4">
+        <img :src="imageUrl" :alt="deal.title" @load="onImageLoad" class="max-w-full max-h-full object-contain">
       </div>
       
       <!-- Right column: Content -->
@@ -20,13 +20,13 @@
         
         <div class="flex items-center justify-between mb-4">
           <span class="font-bold text-green-500 text-2xl">${{ formattedPrice }}</span>
-          <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="bg-green-500 text-white rounded-md px-4 py-2 hover:bg-green-600 transition duration-300">
+          <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-green">
             Go to Deal
           </a>
         </div>
         
         <div class="flex items-center space-x-4 mb-4">
-          <button @click="followDeal" class="bg-blue-500 text-white rounded-md px-4 py-2 hover:bg-blue-600 transition duration-300">
+          <button @click="followDeal" class="btn btn-primary">
             {{ isFollowing ? 'Unfollow' : 'Follow' }} Deal
           </button>
           <div class="flex items-center">
@@ -46,7 +46,7 @@
             <span class="text-sm text-gray-500">Posted by:</span>
             <span class="font-semibold ml-1">{{ deal.user.username }}</span>
           </div>
-          <button @click="followUser" class="bg-blue-500 text-white rounded-md px-3 py-1 text-sm hover:bg-blue-600 transition duration-300">
+          <button @click="followUser" class="btn btn-primary text-sm">
             {{ isFollowingUser ? 'Unfollow' : 'Follow' }}
           </button>
         </div>
@@ -71,7 +71,7 @@
           </div>
           <div class="mt-4">
             <textarea v-model="newComment" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="3" placeholder="Add a comment..."></textarea>
-            <button @click="addComment" class="mt-2 bg-blue-500 text-white rounded-md px-4 py-2 hover:bg-blue-600 transition duration-300">
+            <button @click="addComment" class="btn btn-primary mt-2">
               Add Comment
             </button>
           </div>
@@ -104,11 +104,6 @@
 .comments-container::-webkit-scrollbar-thumb {
   background-color: #CBD5E0;
   border-radius: 4px;
-}
-
-/* Add this style to remove the background */
-.relative.flex.items-center.justify-center {
-  background-color: transparent;
 }
 </style>
 
@@ -229,6 +224,31 @@ const followUser = async () => {
   } catch (error) {
     console.error('Error following/unfollowing user:', error)
     // Add error handling, e.g., show a notification to the user
+  }
+}
+
+const imageContainer = ref(null)
+const modalStyle = ref({})
+
+const onImageLoad = (event) => {
+  const img = event.target
+  const aspectRatio = img.naturalWidth / img.naturalHeight
+  let modalHeight
+
+  if (aspectRatio > 1) {
+    // Landscape image
+    modalHeight = Math.min(window.innerHeight * 0.9, img.naturalHeight)
+  } else {
+    // Portrait image
+    modalHeight = Math.min(window.innerHeight * 0.9, img.naturalHeight, 800)
+  }
+
+  modalStyle.value = {
+    maxHeight: `${modalHeight}px`
+  }
+
+  if (imageContainer.value) {
+    imageContainer.value.style.height = `${modalHeight}px`
   }
 }
 </script>
