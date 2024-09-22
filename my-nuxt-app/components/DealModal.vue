@@ -51,9 +51,9 @@
           <h3 class="font-bold text-xl mb-4">Comments</h3>
           <div v-if="loading">Loading comments...</div>
           <div v-else-if="error">{{ error }}</div>
-          <div v-else>
+          <div v-else class="comments-container h-64 overflow-y-auto">
             <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
-            <div v-else v-for="comment in comments" :key="comment._id" class="mb-4">
+            <div v-else v-for="comment in comments" :key="comment._id" class="mb-4 p-3 bg-gray-100 rounded-lg">
               <div class="flex items-center mb-2">
                 <img 
                   :src="comment.user?.profilePicture ? `http://localhost:5000${comment.user.profilePicture}` : '/default-avatar.png'" 
@@ -76,6 +76,26 @@
     </div>
   </div>
 </template>
+
+<style scoped>
+.comments-container {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E0 #EDF2F7;
+}
+
+.comments-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.comments-container::-webkit-scrollbar-track {
+  background: #EDF2F7;
+}
+
+.comments-container::-webkit-scrollbar-thumb {
+  background-color: #CBD5E0;
+  border-radius: 4px;
+}
+</style>
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
@@ -124,17 +144,20 @@ const fetchDealData = async () => {
   loading.value = true
   error.value = null
   try {
-    const [commentsResponse, statusResponse] = await Promise.all([
+    const [commentsResponse, statusResponse, userStatusResponse] = await Promise.all([
       api.get(`/comments/deal/${props.deal._id}`),
-      api.get(`/deals/${props.deal._id}/status`)
+      api.get(`/deals/${props.deal._id}/status`),
+      api.get(`/users/${props.deal.user._id}/status`)
     ])
     comments.value = commentsResponse.data.data.comments
     isFollowing.value = statusResponse.data.data.isFollowing
+    isFollowingUser.value = userStatusResponse.data.data.isFollowing
     console.log('DealModal: Fetched comments:', comments.value)
-    console.log('DealModal: Fetched following status:', isFollowing.value)
+    console.log('DealModal: Fetched deal following status:', isFollowing.value)
+    console.log('DealModal: Fetched user following status:', isFollowingUser.value)
   } catch (err) {
     console.error('Error fetching deal data:', err)
-    error.value = 'Failed to load comments. Please try again.'
+    error.value = 'Failed to load data. Please try again.'
   } finally {
     loading.value = false
   }
@@ -182,6 +205,16 @@ const closeModal = () => {
 
 // Implement followUser method if needed
 const followUser = async () => {
-  // Implement user following logic
+  try {
+    if (isFollowingUser.value) {
+      await api.delete(`/users/${props.deal.user._id}/follow`)
+    } else {
+      await api.post(`/users/${props.deal.user._id}/follow`)
+    }
+    isFollowingUser.value = !isFollowingUser.value
+  } catch (error) {
+    console.error('Error following/unfollowing user:', error)
+    // Add error handling, e.g., show a notification to the user
+  }
 }
 </script>

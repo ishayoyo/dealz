@@ -48,4 +48,7 @@ router.get('/:id/activity', userController.getUserActivity);
 // Add this new route
 router.post('/upload-profile-picture', auth, upload.single('image'), userController.uploadProfilePicture);
 
+// New route to check following status of a user
+router.get('/:id/status', auth, userController.checkUserStatus);
+
 module.exports = router;

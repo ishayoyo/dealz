@@ -277,3 +277,23 @@ exports.uploadProfilePicture = catchAsync(async (req, res, next) => {
     }
   });
 });
+
+exports.checkUserStatus = catchAsync(async (req, res, next) => {
+  const targetUserId = req.params.id;
+  const currentUserId = req.user.id;
+
+  const currentUser = await User.findById(currentUserId);
+  
+  if (!currentUser) {
+    return next(new AppError('Current user not found', 404));
+  }
+
+  const isFollowing = currentUser.following.includes(targetUserId);
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      isFollowing
+    }
+  });
+});
