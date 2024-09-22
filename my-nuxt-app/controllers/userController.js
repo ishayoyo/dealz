@@ -1,12 +1,50 @@
-exports.login = catchAsync(async (req, res, next) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return next(new AppError('Please provide email and password', 400));
+const User = require('../models/User.Model');
+const Deal = require('../models/Deal.Model');
+const Follow = require('../models/Follow.Model');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
+const multer = require('multer');
+const sharp = require('sharp');
+const path = require('path');
+
+// ... (keep all existing code) ...
+
+// Add this new function at the end of the file
+exports.uploadProfilePicture = catchAsync(async (req, res, next) => {
+  if (!req.file) {
+    return next(new AppError('No file uploaded', 400));
   }
-  const user = await User.findOne({ email }).select('+password');
-  if (!user || !(await user.comparePassword(password))) {
-    return next(new AppError('Incorrect email or password', 401));
+
+  const filename = `user-${req.user.id}-${Date.now()}.jpeg`;
+  const filepath = path.join(__dirname, '..', '..', 'public', 'images', 'users', filename);
+
+  await sharp(req.file.buffer)
+    .resize(200, 200)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(filepath);
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { profilePicture: `/images/users/${filename}` },
+    { new: true, runValidators: true }
+  );
+
+  if (!user) {
+    return next(new AppError('No user found with that ID', 404));
   }
-  const token = signToken(user._id);
-  res.status(200).json({ status: 'success', token, data: { user: { id: user._id, username: user.username, email: user.email } } });
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profilePicture
+      }
+    }
+  });
 });

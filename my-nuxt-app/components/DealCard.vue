@@ -1,6 +1,6 @@
 <template>
   <div class="bg-white rounded-md shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300" @click="openModal">
-    <img :src="imageUrl" :alt="deal.title" class="w-full h-48 object-cover">
+    <img :src="fullImageUrl" :alt="deal.title" class="w-full h-48 object-cover">
     <div class="p-4">
       <h3 class="font-bold text-lg mb-2">{{ deal.title }}</h3>
       <p class="text-gray-600 text-sm mb-2">{{ deal.description }}</p>
@@ -26,16 +26,18 @@
 
 <script setup>
 import { defineProps, defineEmits, computed } from 'vue'
-import api from '~/services/api'
+import { useRuntimeConfig } from '#app'
+
+const config = useRuntimeConfig()
 
 const props = defineProps(['deal'])
 const emit = defineEmits(['open-modal'])
 
-const imageUrl = computed(() => {
+const fullImageUrl = computed(() => {
   if (!props.deal.imageUrl) return ''
   return props.deal.imageUrl.startsWith('http') 
     ? props.deal.imageUrl 
-    : `http://localhost:5000${props.deal.imageUrl}`
+    : `${config.public.apiBase}${props.deal.imageUrl}`
 })
 
 const userImageUrl = computed(() => {

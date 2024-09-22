@@ -15,7 +15,8 @@
         <template v-else>
           <button @click="openPostDealModal" class="bg-green-500 text-white rounded-md px-4 py-2 hover:bg-green-600 mr-4">Post a Deal</button>
           <button @click="handleOpenProfile" class="text-gray-600 hover:text-gray-800 mr-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <img v-if="user.profilePicture" :src="profilePictureUrl" alt="Profile" class="w-8 h-8 rounded-full object-cover">
+            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </button>
@@ -99,13 +100,23 @@ const handleSignup = (userData) => {
   closeAuthModal()
 }
 
+const user = ref({})
+const profilePictureUrl = computed(() => {
+  if (user.value.profilePicture) {
+    return user.value.profilePicture.startsWith('http')
+      ? user.value.profilePicture
+      : `http://localhost:5000${user.value.profilePicture}`
+  }
+  return null
+})
+
 onMounted(async () => {
   const token = localStorage.getItem('token')
   if (token) {
     try {
-      const response = await api.get('/users/validate-token')
+      const response = await api.get('/users/me')
+      user.value = response.data.data.user
       isLoggedIn.value = true
-      // You might want to store user data in a global state here
     } catch (error) {
       console.error('Error verifying token:', error)
       localStorage.removeItem('token')

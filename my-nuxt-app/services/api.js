@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api/v1',
+  baseURL: 'http://localhost:5000/api/v1', // Make sure this matches your backend URL
   headers: {
     'Content-Type': 'application/json'
   }
@@ -13,6 +13,9 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
+    }
+    if (config.data instanceof FormData) {
+      config.headers['Content-Type'] = 'multipart/form-data'
     }
     return config
   },

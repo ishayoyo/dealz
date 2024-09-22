@@ -14,7 +14,7 @@
           
           <div class="flex items-center mb-6">
             <div class="relative">
-              <img :src="user.avatar" alt="Profile Picture" class="w-20 h-20 rounded-full object-cover mr-6">
+              <img :src="profilePictureUrl" alt="Profile Picture" class="w-20 h-20 rounded-full object-cover mr-6">
               <button @click="triggerFileInput" class="absolute bottom-0 right-6 bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -100,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import api from '~/services/api'
 
 const emit = defineEmits(['close'])
@@ -116,11 +116,19 @@ const tabs = [
 ]
 
 const user = ref({})
+const profilePictureUrl = computed(() => {
+  if (user.value.profilePicture) {
+    return user.value.profilePicture.startsWith('http')
+      ? user.value.profilePicture
+      : `http://localhost:5000${user.value.profilePicture}`
+  }
+  return '/default-avatar.png' // Make sure you have a default avatar image
+})
 
 onMounted(async () => {
   try {
     const response = await api.get('/users/me')
-    user.value = response.data
+    user.value = response.data.data.user
   } catch (error) {
     console.error('Error fetching user data:', error)
   }
@@ -152,14 +160,18 @@ const triggerFileInput = () => {
   fileInput.value.click()
 }
 
-const handleFileChange = (event) => {
+const handleFileChange = async (event) => {
   const file = event.target.files[0]
   if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      user.value.avatar = e.target.result
+    const formData = new FormData()
+    formData.append('image', file)
+    try {
+      const response = await api.post('/users/upload-profile-picture', formData)
+      user.value.profilePicture = response.data.data.user.profilePicture
+    } catch (error) {
+      console.error('Error uploading profile picture:', error)
+      // Show error message to user
     }
-    reader.readAsDataURL(file)
   }
 }
 
