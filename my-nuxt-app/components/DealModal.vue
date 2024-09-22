@@ -32,15 +32,6 @@
           <span class="text-sm text-gray-500">
             {{ formattedFollowCount }} {{ formattedFollowCount === 1 ? 'follower' : 'followers' }}
           </span>
-          <div class="flex items-center">
-            <button @click="voteDeal(1)" class="text-gray-500 hover:text-secondary transition duration-300">
-              <i class="fas fa-arrow-up text-2xl"></i>
-            </button>
-            <span class="font-bold text-xl mx-2 text-text">{{ deal.voteCount }}</span>
-            <button @click="voteDeal(-1)" class="text-gray-500 hover:text-accent transition duration-300">
-              <i class="fas fa-arrow-down text-2xl"></i>
-            </button>
-          </div>
         </div>
         
         <div class="mb-6 flex items-center" v-if="deal.user">
@@ -69,11 +60,11 @@
               <p class="text-gray-600">{{ comment.content }}</p>
               <div class="flex items-center mt-2 space-x-4">
                 <div class="flex items-center">
-                  <button @click="voteComment(comment.id, 1)" class="text-gray-500 hover:text-secondary transition duration-300">
+                  <button @click="voteComment(comment.id, 1)" :class="{'text-secondary': comment.userVote === 1}" class="hover:text-secondary transition duration-300">
                     <font-awesome-icon icon="arrow-up" />
                   </button>
                   <span class="font-bold mx-2 text-text">{{ comment.voteScore }}</span>
-                  <button @click="voteComment(comment.id, -1)" class="text-gray-500 hover:text-accent transition duration-300">
+                  <button @click="voteComment(comment.id, -1)" :class="{'text-accent': comment.userVote === -1}" class="hover:text-accent transition duration-300">
                     <font-awesome-icon icon="arrow-down" />
                   </button>
                 </div>
@@ -155,7 +146,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import api from '~/services/api'
 import { format } from 'date-fns'
-import { useToast } from "vue-toastification/dist/index.mjs";
+import { useToast } from "vue-toastification";
 
 const props = defineProps(['deal'])
 const emit = defineEmits(['close-modal'])
@@ -240,15 +231,6 @@ const followDeal = async () => {
   } catch (error) {
     console.error('Error following/unfollowing deal:', error)
     // Add error handling, e.g., show a notification to the user
-  }
-}
-
-const voteDeal = async (value) => {
-  try {
-    const response = await api.post(`/deals/${props.deal._id}/vote`, { value })
-    props.deal.voteCount = response.data.data.voteCount
-  } catch (error) {
-    console.error('Error voting deal:', error)
   }
 }
 
@@ -344,7 +326,8 @@ const addReply = async (commentId) => {
     }
     replyContent.value = ''
     replyingTo.value = null
-    toast.success("Reply added successfully");
+    // Remove or comment out this line:
+    // toast.success("Reply added successfully");
   } catch (err) {
     console.error('Error adding reply:', err.response ? err.response.data : err.message);
     toast.error("Failed to add reply. Please try again.");
@@ -363,8 +346,10 @@ const voteComment = async (commentId, value) => {
     if (updatedComment) {
       updatedComment.voteScore = response.data.data.voteScore
       updatedComment.voteCount = response.data.data.voteCount
+      updatedComment.userVote = value
     }
-    toast.success(value > 0 ? "Upvoted comment" : "Downvoted comment")
+    // Remove or comment out this line:
+    // toast.success(value > 0 ? "Upvoted comment" : "Downvoted comment")
   } catch (error) {
     console.error('Error voting comment:', error)
     toast.error('Failed to vote on comment. Please try again.')

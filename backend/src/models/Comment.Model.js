@@ -6,8 +6,11 @@ const commentSchema = new mongoose.Schema({
   deal: { type: mongoose.Schema.Types.ObjectId, ref: 'Deal', required: true, index: true },
   parentComment: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment' },
   status: { type: String, enum: ['active', 'deleted'], default: 'active' },
-  voteCount: { type: Number, default: 0 },
-  voteScore: { type: Number, default: 0 }
+  voteScore: { type: Number, default: 0 },
+  votes: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    value: { type: Number, enum: [-1, 1] }
+  }]
 }, { 
   timestamps: true,
   toJSON: { 
@@ -27,6 +30,10 @@ commentSchema.virtual('replies', {
   ref: 'Comment',
   localField: '_id',
   foreignField: 'parentComment'
+});
+
+commentSchema.virtual('voteCount').get(function() {
+  return this.votes.length;
 });
 
 module.exports = mongoose.model('Comment', commentSchema);

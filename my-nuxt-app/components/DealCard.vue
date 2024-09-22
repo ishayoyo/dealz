@@ -15,15 +15,7 @@
           <UserAvatar v-else :name="deal.user ? deal.user.username : 'Unknown'" :size="24" />
           <span class="text-sm text-gray-500">{{ deal.user ? deal.user.username : 'Unknown User' }}</span>
         </div>
-        <div class="flex items-center space-x-2">
-          <button @click.stop="voteDeal(1)" class="text-gray-500 hover:text-secondary transition-colors duration-200">
-            <i class="fas fa-arrow-up"></i>
-          </button>
-          <span class="text-sm font-semibold text-text">{{ deal.voteCount }}</span>
-          <button @click.stop="voteDeal(-1)" class="text-gray-500 hover:text-accent transition-colors duration-200">
-            <i class="fas fa-arrow-down"></i>
-          </button>
-        </div>
+        <!-- Removed voting buttons -->
       </div>
       <div class="flex justify-between items-center">
         <span class="text-sm text-gray-500">
@@ -41,7 +33,6 @@
 import { defineProps, defineEmits, computed } from 'vue'
 import { useRuntimeConfig } from '#app'
 import { format } from 'date-fns'
-import api from '~/services/api'
 
 const config = useRuntimeConfig()
 
@@ -69,15 +60,6 @@ const formattedPrice = computed(() => {
 const formattedDate = computed(() => {
   return format(new Date(props.deal.createdAt), 'MMM d, yyyy')
 })
-
-const voteDeal = async (value) => {
-  try {
-    const response = await api.post(`/deals/${props.deal._id}/vote`, { value })
-    props.deal.voteCount = response.data.data.voteCount
-  } catch (error) {
-    console.error('Error voting deal:', error)
-  }
-}
 
 const openModal = () => {
   console.log('DealCard: Emitting open-modal event for deal:', props.deal)

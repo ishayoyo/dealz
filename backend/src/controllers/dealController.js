@@ -126,8 +126,8 @@ exports.deleteDeal = catchAsync(async (req, res, next) => {
 exports.voteDeal = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const { value } = req.body;
+  const userId = req.user.id;
 
-  // Validate vote value
   if (value !== 1 && value !== -1) {
     return next(new AppError('Invalid vote value. Must be 1 or -1', 400));
   }
@@ -138,28 +138,25 @@ exports.voteDeal = catchAsync(async (req, res, next) => {
     return next(new AppError('No deal found with that ID', 404));
   }
 
-  let vote = await Vote.findOne({ user: req.user.id, deal: id });
+  const existingVote = deal.votes.find(vote => vote.user.toString() === userId);
 
-  if (vote) {
-    vote.value = value;
-    await vote.save();
+  if (existingVote) {
+    // User has already voted, update their vote
+    deal.voteScore += value - existingVote.value;
+    existingVote.value = value;
   } else {
-    vote = await Vote.create({ user: req.user.id, deal: id, value });
+    // New vote
+    deal.voteScore += value;
+    deal.votes.push({ user: userId, value });
   }
 
-  const voteCount = await Vote.aggregate([
-    { $match: { deal: deal._id } },
-    { $group: { _id: null, total: { $sum: '$value' } } }
-  ]);
-
-  deal.voteCount = voteCount.length > 0 ? voteCount[0].total : 0;
   await deal.save();
 
   res.status(200).json({
     status: 'success',
     data: { 
-      voteCount: deal.voteCount,
-      userVote: value
+      voteScore: deal.voteScore,
+      voteCount: deal.votes.length
     }
   });
 });

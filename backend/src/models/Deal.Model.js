@@ -37,32 +37,27 @@ const dealSchema = new mongoose.Schema({
     city: String
   },
   comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
-  votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Vote' }],
+  votes: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    value: { type: Number, enum: [-1, 1] }
+  }],
   saveCount: { type: Number, default: 0 },
   collections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Collection' }],
   priceRange: { type: String, index: true },
   followCount: { type: Number, default: 0 },
   boughtCount: { type: Number, default: 0 },
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  buyers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  buyers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  voteScore: { type: Number, default: 0 }
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-dealSchema.virtual('voteCount', {
-  ref: 'Vote',
-  localField: '_id',
-  foreignField: 'deal',
-  count: true
-});
-
-dealSchema.virtual('commentCount', {
-  ref: 'Comment',
-  localField: '_id',
-  foreignField: 'deal',
-  count: true
+// If you want voteCount to be calculated, define it as a virtual
+dealSchema.virtual('voteCount').get(function() {
+  return this.votes.length;
 });
 
 dealSchema.index({ title: 'text', description: 'text', tags: 'text' });
