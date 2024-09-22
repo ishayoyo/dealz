@@ -10,7 +10,7 @@
 
       <!-- Left column: Image -->
       <div class="w-1/2">
-        <img :src="deal.image" :alt="deal.title" class="w-full h-full object-cover">
+        <img :src="deal.imageUrl" :alt="deal.title" class="w-full h-full object-cover">
       </div>
       
       <!-- Right column: Content -->
@@ -28,7 +28,7 @@
               <button @click="voteDeal(1)" class="text-gray-500 hover:text-green-500">
                 <i class="fas fa-arrow-up text-2xl"></i>
               </button>
-              <span class="font-bold text-xl mx-2">{{ deal.votes }}</span>
+              <span class="font-bold text-xl mx-2">{{ deal.voteCount }}</span>
               <button @click="voteDeal(-1)" class="text-gray-500 hover:text-red-500">
                 <i class="fas fa-arrow-down text-2xl"></i>
               </button>
@@ -36,11 +36,11 @@
           </div>
         </div>
         
-        <div class="mb-6 flex items-center">
-          <img :src="deal.userAvatar" :alt="deal.postedBy" class="w-10 h-10 rounded-full mr-3">
+        <div class="mb-6 flex items-center" v-if="deal.user">
+          <img :src="deal.user.profilePicture" :alt="deal.user.username" class="w-10 h-10 rounded-full mr-3">
           <div class="flex-grow">
             <span class="text-sm text-gray-500">Posted by:</span>
-            <span class="font-semibold ml-1">{{ deal.postedBy }}</span>
+            <span class="font-semibold ml-1">{{ deal.user.username }}</span>
           </div>
           <button @click="followUser" class="bg-blue-500 text-white rounded-md px-3 py-1 text-sm hover:bg-blue-600">
             {{ isFollowingUser ? 'Unfollow' : 'Follow' }}
@@ -51,8 +51,8 @@
           <h3 class="font-bold text-xl mb-4">Comments</h3>
           <div v-for="comment in comments" :key="comment._id" class="mb-4">
             <div class="flex items-center mb-2">
-              <img :src="comment.user.avatar" :alt="comment.user.name" class="w-8 h-8 rounded-full mr-2">
-              <span class="font-semibold">{{ comment.user.name }}</span>
+              <img :src="comment.user.profilePicture" :alt="comment.user.username" class="w-8 h-8 rounded-full mr-2">
+              <span class="font-semibold">{{ comment.user.username }}</span>
             </div>
             <p class="text-gray-600">{{ comment.content }}</p>
           </div>
@@ -69,29 +69,50 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import api from '~/services/api'
 
 const props = defineProps(['deal'])
 const emit = defineEmits(['close-modal'])
 const comments = ref([])
 const isFollowing = ref(false)
+const isFollowingUser = ref(false)
 const newComment = ref('')
 
+const imageUrl = computed(() => {
+  return props.deal.imageUrl ? `http://localhost:5000${props.deal.imageUrl}` : ''
+})
+
+console.log('DealModal: Received deal prop:', props.deal)
+
 onMounted(async () => {
+  console.log('DealModal: Mounted')
   if (props.deal && props.deal._id) {
-    try {
-      const [commentsResponse, statusResponse] = await Promise.all([
-        api.get(`/deals/${props.deal._id}/comments`),
-        api.get(`/deals/${props.deal._id}/status`)
-      ])
-      comments.value = commentsResponse.data
-      isFollowing.value = statusResponse.data.isFollowing
-    } catch (error) {
-      console.error('Error fetching deal data:', error)
-    }
+    await fetchDealData()
   }
 })
+
+watch(() => props.deal, async (newDeal) => {
+  console.log('DealModal: Deal prop changed:', newDeal)
+  if (newDeal && newDeal._id) {
+    await fetchDealData()
+  }
+})
+
+const fetchDealData = async () => {
+  try {
+    const [commentsResponse, statusResponse] = await Promise.all([
+      api.get(`/deals/${props.deal._id}/comments`),
+      api.get(`/deals/${props.deal._id}/status`)
+    ])
+    comments.value = commentsResponse.data.data.comments
+    isFollowing.value = statusResponse.data.data.isFollowing
+    console.log('DealModal: Fetched comments:', comments.value)
+    console.log('DealModal: Fetched following status:', isFollowing.value)
+  } catch (error) {
+    console.error('Error fetching deal data:', error)
+  }
+}
 
 const followDeal = async () => {
   try {
@@ -108,9 +129,8 @@ const followDeal = async () => {
 
 const voteDeal = async (value) => {
   try {
-    await api.post(`/deals/${props.deal._id}/vote`, { value })
-    // Update local vote count
-    props.deal.votes += value
+    const response = await api.post(`/deals/${props.deal._id}/vote`, { value })
+    props.deal.voteCount = response.data.data.voteCount
   } catch (error) {
     console.error('Error voting deal:', error)
   }
@@ -119,7 +139,7 @@ const voteDeal = async (value) => {
 const addComment = async () => {
   try {
     const response = await api.post(`/deals/${props.deal._id}/comments`, { content: newComment.value })
-    comments.value.push(response.data)
+    comments.value.push(response.data.data.comment)
     newComment.value = ''
   } catch (error) {
     console.error('Error adding comment:', error)
@@ -128,5 +148,10 @@ const addComment = async () => {
 
 const closeModal = () => {
   emit('close-modal')
+}
+
+// Implement followUser method if needed
+const followUser = async () => {
+  // Implement user following logic
 }
 </script>
