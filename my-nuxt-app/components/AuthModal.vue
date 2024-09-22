@@ -17,8 +17,8 @@
 
       <form @submit.prevent="handleSubmit">
         <div class="mb-4" v-if="!isLogin">
-          <label for="name" class="block text-gray-700 text-sm font-bold mb-2">Name</label>
-          <input type="text" id="name" v-model="form.name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          <label for="username" class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+          <input type="text" id="username" v-model="form.username" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
         </div>
         
         <div class="mb-4">
@@ -28,7 +28,7 @@
         
         <div class="mb-6">
           <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-          <input type="password" id="password" v-model="form.password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          <input type="password" id="password" v-model="form.password" autocomplete="current-password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
         </div>
         
         <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">
@@ -42,12 +42,17 @@
           {{ isLogin ? 'Sign Up' : 'Log In' }}
         </a>
       </p>
+      
+      <div v-if="error" class="mt-4 text-red-500 text-center">
+        {{ error }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
+import api from '~/services/api'
 
 const props = defineProps({
   isLogin: {
@@ -59,22 +64,44 @@ const props = defineProps({
 const emit = defineEmits(['close', 'login', 'signup'])
 
 const form = reactive({
+  username: '',
   name: '',
   email: '',
   password: ''
 })
 
 const isLogin = ref(props.isLogin)
+const error = ref(null)
 
 const toggleAuthMode = () => {
   isLogin.value = !isLogin.value
+  error.value = null
 }
 
-const handleSubmit = () => {
-  if (isLogin.value) {
-    emit('login', { email: form.email, password: form.password })
-  } else {
-    emit('signup', form)
+const handleSubmit = async () => {
+  try {
+    error.value = null
+    let response
+    if (isLogin.value) {
+      response = await api.post('/users/login', { email: form.email, password: form.password })
+    } else {
+      response = await api.post('/users/register', { 
+        username: form.username,
+        name: form.name,
+        email: form.email, 
+        password: form.password 
+      })
+    }
+    const { token, data } = response.data
+    localStorage.setItem('token', token)
+    if (isLogin.value) {
+      emit('login', data)  // Changed from data.user to data
+    } else {
+      emit('signup', data)  // Changed from data.user to data
+    }
+  } catch (err) {
+    console.error('Authentication error:', err)
+    error.value = err.response?.data?.message || 'An error occurred. Please try again.'
   }
 }
 </script>

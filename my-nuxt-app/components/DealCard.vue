@@ -7,25 +7,40 @@
       <div class="flex items-center justify-between mb-2">
         <span class="font-bold text-green-500">{{ deal.price }}</span>
         <div class="flex items-center">
-          <i class="fas fa-arrow-up text-green-500 mr-1"></i>
-          <span class="text-sm text-gray-500">{{ deal.upvotes }}</span>
+          <button @click.stop="voteDeal(1)" class="text-gray-500 hover:text-green-500 mr-1">
+            <i class="fas fa-arrow-up"></i>
+          </button>
+          <span class="text-sm text-gray-500">{{ deal.votes }}</span>
+          <button @click.stop="voteDeal(-1)" class="text-gray-500 hover:text-red-500 ml-1">
+            <i class="fas fa-arrow-down"></i>
+          </button>
         </div>
       </div>
       <div class="flex items-center">
-        <img :src="deal.userAvatar" :alt="deal.postedBy" class="w-6 h-6 rounded-full mr-2">
-        <span class="text-sm text-gray-500">{{ deal.postedBy }}</span>
+        <img v-if="deal.user && deal.user.avatar" :src="deal.user.avatar" :alt="deal.user.name" class="w-6 h-6 rounded-full mr-2">
+        <span class="text-sm text-gray-500">{{ deal.user ? deal.user.name : 'Unknown User' }}</span>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  props: ['deal'],
-  methods: {
-    openModal() {
-      this.$emit('open-modal', this.deal)
-    }
+<script setup>
+import { defineProps, defineEmits } from 'vue'
+import api from '~/services/api'
+
+const props = defineProps(['deal'])
+const emit = defineEmits(['open-modal'])
+
+const voteDeal = async (value) => {
+  try {
+    await api.post(`/deals/${props.deal._id}/vote`, { value })
+    // You might want to update the deal's vote count here
+  } catch (error) {
+    console.error('Error voting deal:', error)
   }
+}
+
+const openModal = () => {
+  emit('open-modal', props.deal)
 }
 </script>

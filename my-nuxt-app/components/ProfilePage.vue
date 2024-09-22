@@ -100,7 +100,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import api from '~/services/api'
 
 const emit = defineEmits(['close'])
 const fileInput = ref(null)
@@ -114,11 +115,15 @@ const tabs = [
   { id: 'deals', name: 'My Deals' }
 ]
 
-const user = ref({
-  firstName: 'John',
-  lastName: 'Doe',
-  email: 'john.doe@example.com',
-  avatar: 'https://i.pravatar.cc/150?img=1'
+const user = ref({})
+
+onMounted(async () => {
+  try {
+    const response = await api.get('/users/me')
+    user.value = response.data
+  } catch (error) {
+    console.error('Error fetching user data:', error)
+  }
 })
 
 const userFields = [
@@ -139,20 +144,9 @@ const passwordFields = [
   { key: 'confirmPassword', label: 'Confirm New Password' }
 ]
 
-const followingUsers = ref([
-  { id: 1, name: 'Jane Smith', avatar: 'https://i.pravatar.cc/150?img=2' },
-  { id: 2, name: 'Bob Johnson', avatar: 'https://i.pravatar.cc/150?img=3' }
-])
-
-const followers = ref([
-  { id: 3, name: 'Alice Brown', avatar: 'https://i.pravatar.cc/150?img=4' },
-  { id: 4, name: 'Charlie Davis', avatar: 'https://i.pravatar.cc/150?img=5' }
-])
-
-const userDeals = ref([
-  { id: 1, title: 'Wireless Earbuds', price: '$59.99', image: 'https://m.media-amazon.com/images/I/61f1YfTkTDL._AC_SL1500_.jpg', upvotes: 87 },
-  { id: 2, title: 'Smart Watch', price: '$129.99', image: 'https://m.media-amazon.com/images/I/61YYXv4IQJL._AC_SL1500_.jpg', upvotes: 132 }
-])
+const followingUsers = ref([])
+const followers = ref([])
+const userDeals = ref([])
 
 const triggerFileInput = () => {
   fileInput.value.click()
@@ -173,13 +167,46 @@ const closeProfile = () => {
   emit('close')
 }
 
-const saveChanges = () => {
-  // Implement save changes logic
-  console.log('Saving changes:', user.value)
+const saveChanges = async () => {
+  try {
+    await api.put('/users/me', user.value)
+    // Show success message
+  } catch (error) {
+    console.error('Error updating user data:', error)
+    // Show error message
+  }
 }
 
 const changePassword = () => {
   // Implement change password logic
   console.log('Changing password:', passwordChange.value)
+}
+
+// Add methods to fetch following, followers, and user deals
+const fetchFollowing = async () => {
+  try {
+    const response = await api.get('/users/me/following')
+    followingUsers.value = response.data
+  } catch (error) {
+    console.error('Error fetching following users:', error)
+  }
+}
+
+const fetchFollowers = async () => {
+  try {
+    const response = await api.get('/users/me/followers')
+    followers.value = response.data
+  } catch (error) {
+    console.error('Error fetching followers:', error)
+  }
+}
+
+const fetchUserDeals = async () => {
+  try {
+    const response = await api.get('/users/me/deals')
+    userDeals.value = response.data
+  } catch (error) {
+    console.error('Error fetching user deals:', error)
+  }
 }
 </script>

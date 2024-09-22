@@ -22,15 +22,15 @@
           <span class="font-bold text-green-500 text-2xl">{{ deal.price }}</span>
           <div class="flex items-center space-x-4">
             <button @click="followDeal" class="bg-blue-500 text-white rounded-md px-4 py-2 hover:bg-blue-600">
-              {{ isFollowingDeal ? 'Unfollow' : 'Follow' }} Deal
+              {{ isFollowing ? 'Unfollow' : 'Follow' }} Deal
             </button>
-            <div class="flex flex-col items-center">
-              <button @click="upvote" class="text-gray-500 hover:text-green-500">
-                <i class="fas fa-chevron-up text-2xl"></i>
+            <div class="flex items-center">
+              <button @click="voteDeal(1)" class="text-gray-500 hover:text-green-500">
+                <i class="fas fa-arrow-up text-2xl"></i>
               </button>
-              <span class="font-bold text-xl my-1">{{ votes }}</span>
-              <button @click="downvote" class="text-gray-500 hover:text-red-500">
-                <i class="fas fa-chevron-down text-2xl"></i>
+              <span class="font-bold text-xl mx-2">{{ deal.votes }}</span>
+              <button @click="voteDeal(-1)" class="text-gray-500 hover:text-red-500">
+                <i class="fas fa-arrow-down text-2xl"></i>
               </button>
             </div>
           </div>
@@ -49,12 +49,18 @@
         
         <div class="border-t pt-6">
           <h3 class="font-bold text-xl mb-4">Comments</h3>
-          <div v-for="comment in comments" :key="comment.id" class="mb-4">
+          <div v-for="comment in comments" :key="comment._id" class="mb-4">
             <div class="flex items-center mb-2">
-              <img :src="comment.userAvatar" :alt="comment.username" class="w-8 h-8 rounded-full mr-2">
-              <span class="font-semibold">{{ comment.username }}</span>
+              <img :src="comment.user.avatar" :alt="comment.user.name" class="w-8 h-8 rounded-full mr-2">
+              <span class="font-semibold">{{ comment.user.name }}</span>
             </div>
-            <p class="text-gray-600">{{ comment.text }}</p>
+            <p class="text-gray-600">{{ comment.content }}</p>
+          </div>
+          <div class="mt-4">
+            <textarea v-model="newComment" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="3" placeholder="Add a comment..."></textarea>
+            <button @click="addComment" class="mt-2 bg-blue-500 text-white rounded-md px-4 py-2 hover:bg-blue-600">
+              Add Comment
+            </button>
           </div>
         </div>
       </div>
@@ -62,41 +68,65 @@
   </div>
 </template>
 
-<script>
-export default {
-  props: ['deal'],
-  data() {
-    return {
-      isFollowingDeal: false,
-      isFollowingUser: false,
-      votes: this.deal ? this.deal.upvotes : 0,
-      comments: [
-        { id: 1, username: 'User1', userAvatar: 'https://i.pravatar.cc/150?img=1', text: 'Great deal! Thanks for sharing.' },
-        { id: 2, username: 'User2', userAvatar: 'https://i.pravatar.cc/150?img=2', text: 'I bought this last week. Highly recommended!' },
-        { id: 3, username: 'User3', userAvatar: 'https://i.pravatar.cc/150?img=3', text: 'Does anyone know if this works with Android?' },
-      ]
-    }
-  },
-  methods: {
-    closeModal() {
-      this.$emit('close-modal')
-    },
-    followDeal() {
-      this.isFollowingDeal = !this.isFollowingDeal
-      // Here you would typically make an API call to follow/unfollow the deal
-    },
-    followUser() {
-      this.isFollowingUser = !this.isFollowingUser
-      // Here you would typically make an API call to follow/unfollow the user
-    },
-    upvote() {
-      this.votes++
-      // Here you would typically make an API call to upvote the deal
-    },
-    downvote() {
-      this.votes--
-      // Here you would typically make an API call to downvote the deal
+<script setup>
+import { ref, onMounted } from 'vue'
+import api from '~/services/api'
+
+const props = defineProps(['deal'])
+const emit = defineEmits(['close-modal'])
+const comments = ref([])
+const isFollowing = ref(false)
+const newComment = ref('')
+
+onMounted(async () => {
+  if (props.deal && props.deal._id) {
+    try {
+      const [commentsResponse, statusResponse] = await Promise.all([
+        api.get(`/deals/${props.deal._id}/comments`),
+        api.get(`/deals/${props.deal._id}/status`)
+      ])
+      comments.value = commentsResponse.data
+      isFollowing.value = statusResponse.data.isFollowing
+    } catch (error) {
+      console.error('Error fetching deal data:', error)
     }
   }
+})
+
+const followDeal = async () => {
+  try {
+    if (isFollowing.value) {
+      await api.delete(`/deals/${props.deal._id}/follow`)
+    } else {
+      await api.post(`/deals/${props.deal._id}/follow`)
+    }
+    isFollowing.value = !isFollowing.value
+  } catch (error) {
+    console.error('Error following/unfollowing deal:', error)
+  }
+}
+
+const voteDeal = async (value) => {
+  try {
+    await api.post(`/deals/${props.deal._id}/vote`, { value })
+    // Update local vote count
+    props.deal.votes += value
+  } catch (error) {
+    console.error('Error voting deal:', error)
+  }
+}
+
+const addComment = async () => {
+  try {
+    const response = await api.post(`/deals/${props.deal._id}/comments`, { content: newComment.value })
+    comments.value.push(response.data)
+    newComment.value = ''
+  } catch (error) {
+    console.error('Error adding comment:', error)
+  }
+}
+
+const closeModal = () => {
+  emit('close-modal')
 }
 </script>

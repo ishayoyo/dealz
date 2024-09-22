@@ -36,10 +36,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import api from '~/services/api'
 import AuthModal from './AuthModal.vue'
 import PostDealModal from './PostDealModal.vue'
 import { useProfileActions } from '~/composables/useProfile'
+import { useRouter } from 'vue-router'
 
 const isLoggedIn = ref(false)
 const showAuthModal = ref(false)
@@ -47,13 +49,25 @@ const showPostDealModal = ref(false)
 const isLoginMode = ref(true)
 
 const { openProfile } = useProfileActions()
+const router = useRouter()
 
 const handleOpenProfile = () => {
   openProfile()
 }
 
-const toggleLogin = () => {
-  isLoggedIn.value = !isLoggedIn.value
+const toggleLogin = async () => {
+  if (isLoggedIn.value) {
+    try {
+      await api.post('/users/logout')
+      localStorage.removeItem('token')
+      isLoggedIn.value = false
+      router.push('/')
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  } else {
+    openAuthModal('login')
+  }
 }
 
 const openAuthModal = (mode) => {
@@ -73,19 +87,35 @@ const closePostDealModal = () => {
   showPostDealModal.value = false
 }
 
-const handleLogin = (credentials) => {
-  console.log('Login:', credentials)
+const handleLogin = (userData) => {
   isLoggedIn.value = true
+  // You might want to store user data in a global state here
   closeAuthModal()
 }
 
 const handleSignup = (userData) => {
-  console.log('Signup:', userData)
   isLoggedIn.value = true
+  // You might want to store user data in a global state here
   closeAuthModal()
 }
 
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    try {
+      const response = await api.get('/users/validate-token')
+      isLoggedIn.value = true
+      // You might want to store user data in a global state here
+    } catch (error) {
+      console.error('Error verifying token:', error)
+      localStorage.removeItem('token')
+      isLoggedIn.value = false
+    }
+  }
+})
+
 const handlePostDeal = (deal) => {
   console.log('Posted deal:', deal)
+  closePostDealModal()
 }
 </script>
