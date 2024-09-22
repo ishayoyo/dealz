@@ -117,5 +117,6 @@ onMounted(async () => {
 const handlePostDeal = (deal) => {
   console.log('Posted deal:', deal)
   closePostDealModal()
+  // Optionally, you can refresh the deals list or add the new deal to the existing list
 }
 </script>

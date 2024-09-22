@@ -17,7 +17,7 @@
         </div>
       </div>
       <div class="flex items-center">
-        <img v-if="deal.user && deal.user.profilePicture" :src="deal.user.profilePicture" :alt="deal.user.username" class="w-6 h-6 rounded-full mr-2">
+        <img v-if="deal.user && deal.user.profilePicture" :src="userImageUrl" :alt="deal.user.username" class="w-6 h-6 rounded-full mr-2">
         <span class="text-sm text-gray-500">{{ deal.user ? deal.user.username : 'Unknown User' }}</span>
       </div>
     </div>
@@ -32,7 +32,17 @@ const props = defineProps(['deal'])
 const emit = defineEmits(['open-modal'])
 
 const imageUrl = computed(() => {
-  return props.deal.imageUrl ? `http://localhost:5000${props.deal.imageUrl}` : ''
+  if (!props.deal.imageUrl) return ''
+  return props.deal.imageUrl.startsWith('http') 
+    ? props.deal.imageUrl 
+    : `http://localhost:5000${props.deal.imageUrl}`
+})
+
+const userImageUrl = computed(() => {
+  if (!props.deal.user || !props.deal.user.profilePicture) return ''
+  return props.deal.user.profilePicture.startsWith('http')
+    ? props.deal.user.profilePicture
+    : `http://localhost:5000${props.deal.user.profilePicture}`
 })
 
 const voteDeal = async (value) => {

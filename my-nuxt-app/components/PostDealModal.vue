@@ -84,6 +84,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import api from '~/services/api'
 
 const emit = defineEmits(['close', 'post-deal'])
 
@@ -100,28 +101,36 @@ const dealDetails = reactive({
 })
 
 const fetchDealInfo = async () => {
-  // Here you would typically make an API call to fetch deal info based on the link
-  // For this example, we'll just move to step 2 and set a placeholder image
-  step.value = 2
-  dealImage.value = 'https://via.placeholder.com/400x300'
-  
-  // In a real implementation, you might set other deal details here
-  dealDetails.title = 'Amazing Deal'
-  dealDetails.price = '$99.99'
+  try {
+    const response = await api.post('/deals/fetch-image', { url: dealLink.value })
+    dealImage.value = `http://localhost:5000${response.data.data.imageUrl}`
+    step.value = 2
+  } catch (error) {
+    console.error('Error fetching deal image:', error)
+    // Handle error (e.g., show error message to user)
+  }
 }
 
 const triggerFileInput = () => {
   fileInput.value.click()
 }
 
-const handleFileChange = (event) => {
+const handleFileChange = async (event) => {
   const file = event.target.files[0]
   if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      dealImage.value = e.target.result
+    const formData = new FormData()
+    formData.append('image', file)
+    try {
+      const response = await api.post('/deals/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      dealImage.value = `http://localhost:5000${response.data.data.imageUrl}`
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      // Handle error (e.g., show error message to user)
     }
-    reader.readAsDataURL(file)
   }
 }
 
@@ -129,14 +138,19 @@ const removeImage = () => {
   dealImage.value = ''
 }
 
-const submitDeal = () => {
-  // Here you would typically make an API call to submit the deal
-  const deal = {
-    ...dealDetails,
-    image: dealImage.value,
-    link: dealLink.value
+const submitDeal = async () => {
+  try {
+    const dealData = {
+      ...dealDetails,
+      imageUrl: dealImage.value,
+      link: dealLink.value
+    }
+    const response = await api.post('/deals', dealData)
+    emit('post-deal', response.data.data.deal)
+    emit('close')
+  } catch (error) {
+    console.error('Error posting deal:', error)
+    // Handle error (e.g., show error message to user)
   }
-  emit('post-deal', deal)
-  emit('close')
 }
 </script>
