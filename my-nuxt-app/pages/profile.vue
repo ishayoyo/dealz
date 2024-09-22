@@ -1,10 +1,15 @@
 <template>
-  <div class="container mx-auto px-4 py-8 pt-24"> <!-- Added pt-24 for header space -->
+  <div class="container mx-auto px-4 py-8 pt-24">
     <div class="bg-white shadow-lg rounded-lg overflow-hidden">
       <div class="p-6">
         <div class="flex items-center mb-6">
           <div class="relative">
-            <UserAvatar :name="`${user.firstName} ${user.lastName}`" :size="80" class="mr-6" />
+            <UserAvatar 
+              :name="user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username || ''" 
+              :size="80" 
+              :src="fullProfilePictureUrl" 
+              class="mr-6" 
+            />
             <button @click="triggerFileInput" class="absolute bottom-0 right-6 bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -54,30 +59,31 @@
         <div v-else-if="currentTab === 'following'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div v-for="followedUser in followingUsers" :key="followedUser._id" class="flex items-center justify-between border-b border-gray-200 py-3">
             <div class="flex items-center">
-              <UserAvatar :name="followedUser.username" :size="40" class="mr-3" />
+              <UserAvatar 
+                :name="followedUser.firstName && followedUser.lastName ? `${followedUser.firstName} ${followedUser.lastName}` : followedUser.username || ''" 
+                :size="40" 
+                :src="getFullProfilePictureUrl(followedUser.profilePicture)" 
+                class="mr-3" 
+              />
               <span class="font-medium">{{ followedUser.username }}</span>
             </div>
             <button @click="unfollowUser(followedUser._id)" class="text-blue-600 hover:text-blue-800">Unfollow</button>
           </div>
         </div>
 
-        <div v-else-if="currentTab === 'followedDeals'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div v-for="deal in followedDeals" :key="deal._id" class="flex items-center justify-between border-b border-gray-200 py-3">
-            <div class="flex items-center">
-              <img :src="deal.imageUrl" :alt="deal.title" class="w-16 h-16 object-cover mr-3 rounded-md">
-              <div>
-                <h4 class="font-medium">{{ deal.title }}</h4>
-                <p class="text-sm text-gray-600">${{ deal.price }}</p>
-              </div>
-            </div>
-            <button @click="unfollowDeal(deal._id)" class="text-blue-600 hover:text-blue-800">Unfollow</button>
-          </div>
+        <div v-else-if="currentTab === 'followedDeals'">
+          <FollowedDeals :followedDeals="followedDeals" @unfollow="unfollowDeal" />
         </div>
 
         <div v-else-if="currentTab === 'followers'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div v-for="follower in followers" :key="follower._id" class="flex items-center justify-between border-b border-gray-200 py-3">
             <div class="flex items-center">
-              <UserAvatar :name="follower.username" :size="40" class="mr-3" />
+              <UserAvatar 
+                :name="follower.firstName && follower.lastName ? `${follower.firstName} ${follower.lastName}` : follower.username || ''" 
+                :size="40" 
+                :src="getFullProfilePictureUrl(follower.profilePicture)" 
+                class="mr-3" 
+              />
               <span class="font-medium">{{ follower.username }}</span>
             </div>
             <button v-if="!isFollowing(follower._id)" @click="followUser(follower._id)" class="text-blue-600 hover:text-blue-800">Follow Back</button>
@@ -85,17 +91,8 @@
           </div>
         </div>
 
-        <div v-else-if="currentTab === 'deals'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div v-for="deal in userDeals" :key="deal.id" class="flex items-center justify-between border-b border-gray-200 py-3">
-            <div class="flex items-center">
-              <img :src="deal.image" :alt="deal.title" class="w-16 h-16 object-cover mr-3 rounded-md">
-              <div>
-                <h4 class="font-medium">{{ deal.title }}</h4>
-                <p class="text-sm text-gray-600">{{ deal.price }}</p>
-              </div>
-            </div>
-            <span class="text-gray-600">{{ deal.upvotes }} upvotes</span>
-          </div>
+        <div v-else-if="currentTab === 'deals'">
+          <UserDeals :userDeals="userDeals" />
         </div>
       </div>
     </div>
@@ -103,9 +100,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
+import { useRuntimeConfig } from '#app'
 import api from '~/services/api'
+import FollowedDeals from '~/components/FollowedDeals.vue'
+import UserDeals from '~/components/UserDeals.vue'
 
+const config = useRuntimeConfig()
 const fileInput = ref(null)
 
 const currentTab = ref('info')
@@ -196,6 +197,20 @@ const passwordFields = [
   { key: 'newPassword', label: 'New Password' },
   { key: 'confirmPassword', label: 'Confirm New Password' }
 ]
+
+const fullProfilePictureUrl = computed(() => {
+  if (!user.value.profilePicture) return ''
+  return user.value.profilePicture.startsWith('http') 
+    ? user.value.profilePicture 
+    : `${config.public.apiBase}${user.value.profilePicture}`
+})
+
+const getFullProfilePictureUrl = (profilePicture) => {
+  if (!profilePicture) return ''
+  return profilePicture.startsWith('http') 
+    ? profilePicture 
+    : `${config.public.apiBase}${profilePicture}`
+}
 
 const triggerFileInput = () => {
   fileInput.value.click()
