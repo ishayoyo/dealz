@@ -60,13 +60,52 @@
           <div v-else-if="error" class="text-red-500">{{ error }}</div>
           <div v-else class="comments-container space-y-4 mb-6">
             <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
-            <div v-else v-for="comment in comments" :key="comment._id" class="bg-gray-50 rounded-lg p-4">
+            <div v-else v-for="comment in comments" :key="comment.id" class="bg-gray-50 rounded-lg p-4">
               <div class="flex items-center mb-2">
                 <UserAvatar :name="comment.user?.username || 'Anonymous'" :size="32" class="mr-3" />
                 <span class="font-semibold text-text">{{ comment.user?.username || 'Anonymous' }}</span>
                 <span class="text-sm text-gray-500 ml-2">{{ formatCommentDate(comment.createdAt) }}</span>
               </div>
               <p class="text-gray-600">{{ comment.content }}</p>
+              <div class="flex items-center mt-2 space-x-4">
+                <div class="flex items-center">
+                  <button @click="voteComment(comment.id, 1)" class="text-gray-500 hover:text-secondary transition duration-300">
+                    <i class="fas fa-arrow-up"></i>
+                  </button>
+                  <span class="font-bold mx-2 text-text">{{ comment.voteScore }}</span>
+                  <button @click="voteComment(comment.id, -1)" class="text-gray-500 hover:text-accent transition duration-300">
+                    <i class="fas fa-arrow-down"></i>
+                  </button>
+                </div>
+                <button @click="toggleReplyForm(comment.id)" class="text-sm text-primary hover:underline">
+                  Reply
+                </button>
+              </div>
+              <div v-if="replyingTo === comment.id" class="mt-2">
+                <textarea v-model="replyContent" 
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                          rows="2" 
+                          placeholder="Write a reply..."></textarea>
+                <div class="mt-2">
+                  <button @click="addReply(comment.id)" class="btn btn-primary btn-sm mr-2">
+                    Post Reply
+                  </button>
+                  <button @click="cancelReply" class="btn btn-secondary btn-sm">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              <!-- Display replies -->
+              <div v-if="comment.replies && comment.replies.length > 0" class="mt-4 ml-4 space-y-2">
+                <div v-for="reply in comment.replies" :key="reply.id" class="bg-gray-100 rounded-lg p-3">
+                  <div class="flex items-center mb-1">
+                    <UserAvatar :name="reply.user?.username || 'Anonymous'" :size="24" class="mr-2" />
+                    <span class="font-semibold text-sm text-text">{{ reply.user?.username || 'Anonymous' }}</span>
+                    <span class="text-xs text-gray-500 ml-2">{{ formatCommentDate(reply.createdAt) }}</span>
+                  </div>
+                  <p class="text-sm text-gray-600">{{ reply.content }}</p>
+                </div>
+              </div>
             </div>
           </div>
           <div class="mt-4">
@@ -116,6 +155,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import api from '~/services/api'
 import { format } from 'date-fns'
+import { useToast } from "vue-toastification/dist/index.mjs";
 
 const props = defineProps(['deal'])
 const emit = defineEmits(['close-modal'])
@@ -125,6 +165,7 @@ const isFollowingUser = ref(false)
 const newComment = ref('')
 const loading = ref(false)
 const error = ref(null)
+const toast = useToast();
 
 const imageUrl = computed(() => {
   if (!props.deal.imageUrl) return ''
@@ -170,7 +211,9 @@ const fetchDealData = async () => {
       api.get(`/deals/${props.deal._id}/status`),
       api.get(`/users/${props.deal.user._id}/status`)
     ])
+    console.log('Raw comments response:', commentsResponse.data);
     comments.value = commentsResponse.data.data.comments
+    console.log('Fetched comments:', comments.value);
     isFollowing.value = statusResponse.data.data.isFollowing
     isFollowingUser.value = userStatusResponse.data.data.isFollowing
     console.log('DealModal: Fetched comments:', comments.value)
@@ -263,6 +306,67 @@ const onImageLoad = (event) => {
 
   if (imageContainer.value) {
     imageContainer.value.style.height = `${modalHeight}px`
+  }
+}
+
+const replyingTo = ref(null)
+const replyContent = ref('')
+
+const toggleReplyForm = (commentId) => {
+  console.log('Toggling reply form for comment:', commentId);
+  replyingTo.value = replyingTo.value === commentId ? null : commentId
+  replyContent.value = ''
+}
+
+const addReply = async (commentId) => {
+  console.log('Attempting to add reply to comment:', commentId);
+  console.log('Full comment object:', comments.value.find(c => c.id === commentId));
+  if (!commentId) {
+    console.error('Invalid comment ID');
+    toast.error("Cannot add reply: Invalid comment ID");
+    return;
+  }
+  if (!replyContent.value.trim()) {
+    toast.error("Reply content cannot be empty");
+    return;
+  }
+  
+  try {
+    const response = await api.post(`/comments/${commentId}/reply`, { content: replyContent.value })
+    console.log('Reply added successfully:', response.data);
+    const newReply = response.data.data.reply
+    const parentComment = comments.value.find(c => c.id === commentId)
+    if (parentComment) {
+      if (!parentComment.replies) {
+        parentComment.replies = []
+      }
+      parentComment.replies.push(newReply)
+    }
+    replyContent.value = ''
+    replyingTo.value = null
+    toast.success("Reply added successfully");
+  } catch (err) {
+    console.error('Error adding reply:', err.response ? err.response.data : err.message);
+    toast.error("Failed to add reply. Please try again.");
+  }
+}
+
+const cancelReply = () => {
+  replyingTo.value = null
+  replyContent.value = ''
+}
+
+const voteComment = async (commentId, value) => {
+  try {
+    const response = await api.post(`/comments/${commentId}/vote`, { value })
+    const updatedComment = comments.value.find(c => c.id === commentId)
+    if (updatedComment) {
+      updatedComment.voteScore = response.data.data.voteScore
+      updatedComment.voteCount = response.data.data.voteCount
+    }
+  } catch (error) {
+    console.error('Error voting comment:', error)
+    // Add error handling, e.g., show a notification to the user
   }
 }
 </script>

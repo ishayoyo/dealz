@@ -109,6 +109,8 @@ exports.getComments = catchAsync(async (req, res, next) => {
     })
     .sort('-createdAt');
 
+  console.log('Fetched comments:', JSON.stringify(comments, null, 2)); // More detailed logging
+
   res.status(200).json({
     status: 'success',
     results: comments.length,
@@ -117,15 +119,25 @@ exports.getComments = catchAsync(async (req, res, next) => {
 });
 
 exports.createReply = catchAsync(async (req, res, next) => {
+  console.log('Received request to create reply:', { body: req.body, params: req.params, user: req.user });
+  
   const { content } = req.body;
   const { commentId } = req.params;
   const userId = req.user.id;
+
+  if (!commentId || commentId === 'undefined') {
+    return next(new AppError('Valid Comment ID is required', 400));
+  }
+
+  console.log('Attempting to find parent comment with ID:', commentId);
 
   const parentComment = await Comment.findById(commentId);
 
   if (!parentComment) {
     return next(new AppError('No parent comment found with that ID', 404));
   }
+
+  console.log('Parent comment found:', parentComment);
 
   const reply = await Comment.create({
     content,
@@ -134,8 +146,12 @@ exports.createReply = catchAsync(async (req, res, next) => {
     parentComment: commentId
   });
 
+  console.log('Reply created:', reply);
+
+  const populatedReply = await Comment.findById(reply._id).populate('user', 'username profilePicture');
+
   res.status(201).json({
     status: 'success',
-    data: { reply }
+    data: { reply: populatedReply }
   });
 });
