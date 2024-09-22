@@ -56,7 +56,7 @@
             <div v-else v-for="comment in comments" :key="comment._id" class="mb-4">
               <div class="flex items-center mb-2">
                 <img 
-                  :src="comment.user?.profilePicture || 'path/to/default/avatar.png'" 
+                  :src="comment.user?.profilePicture || '/default-avatar.png'" 
                   :alt="comment.user?.username || 'Anonymous'" 
                   class="w-8 h-8 rounded-full mr-2"
                 >
@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import api from '~/services/api'
 
 const props = defineProps(['deal'])
@@ -118,10 +118,7 @@ const fetchDealData = async () => {
       api.get(`/comments/deal/${props.deal._id}`),
       api.get(`/deals/${props.deal._id}/status`)
     ])
-    comments.value = commentsResponse.data.data.comments.map(comment => ({
-      ...comment,
-      user: comment.user || { username: 'Anonymous', profilePicture: 'path/to/default/avatar.png' }
-    }))
+    comments.value = commentsResponse.data.data.comments
     isFollowing.value = statusResponse.data.data.isFollowing
     console.log('DealModal: Fetched comments:', comments.value)
     console.log('DealModal: Fetched following status:', isFollowing.value)
@@ -161,10 +158,7 @@ const addComment = async () => {
   try {
     const response = await api.post(`/comments/${props.deal._id}`, { content: newComment.value })
     const newCommentData = response.data.data.comment
-    comments.value.unshift({
-      ...newCommentData,
-      user: newCommentData.user || { username: 'Anonymous', profilePicture: 'path/to/default/avatar.png' }
-    })
+    comments.value.unshift(newCommentData)
     newComment.value = ''
   } catch (err) {
     console.error('Error adding comment:', err)
