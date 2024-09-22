@@ -2,12 +2,12 @@
   <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" @click="openModal">
     <div class="relative">
       <img :src="fullImageUrl" :alt="deal.title" class="w-full h-48 object-cover">
-      <div class="absolute top-0 right-0 bg-green-500 text-white px-3 py-1 m-2 rounded-full text-sm font-semibold">
+      <div class="absolute top-0 right-0 bg-accent text-white px-3 py-1 m-2 rounded-full text-sm font-semibold">
         ${{ formattedPrice }}
       </div>
     </div>
     <div class="p-4">
-      <h3 class="font-bold text-lg mb-2 text-gray-800 line-clamp-2">{{ deal.title }}</h3>
+      <h3 class="font-bold text-lg mb-2 text-text line-clamp-2">{{ deal.title }}</h3>
       <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ deal.description }}</p>
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center space-x-2">
@@ -16,11 +16,11 @@
           <span class="text-sm text-gray-500">{{ deal.user ? deal.user.username : 'Unknown User' }}</span>
         </div>
         <div class="flex items-center space-x-2">
-          <button @click.stop="voteDeal(1)" class="text-gray-500 hover:text-green-500 transition-colors duration-200">
+          <button @click.stop="voteDeal(1)" class="text-gray-500 hover:text-secondary transition-colors duration-200">
             <i class="fas fa-arrow-up"></i>
           </button>
-          <span class="text-sm font-semibold text-gray-700">{{ deal.voteCount }}</span>
-          <button @click.stop="voteDeal(-1)" class="text-gray-500 hover:text-red-500 transition-colors duration-200">
+          <span class="text-sm font-semibold text-text">{{ deal.voteCount }}</span>
+          <button @click.stop="voteDeal(-1)" class="text-gray-500 hover:text-accent transition-colors duration-200">
             <i class="fas fa-arrow-down"></i>
           </button>
         </div>

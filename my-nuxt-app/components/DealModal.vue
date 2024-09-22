@@ -2,7 +2,7 @@
   <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-lg w-full max-w-5xl overflow-hidden flex flex-col md:flex-row relative" :style="modalStyle">
       <!-- Close button -->
-      <button @click="closeModal" class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 z-20 bg-white rounded-full p-2 shadow-md">
+      <button @click="closeModal" class="absolute top-4 right-4 text-gray-700 hover:text-text z-20 bg-white rounded-full p-2 shadow-md">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -15,12 +15,12 @@
       
       <!-- Right column: Content -->
       <div class="w-full md:w-1/2 p-6 overflow-y-auto">
-        <h2 class="text-2xl font-bold mb-2">{{ deal.title }}</h2>
+        <h2 class="text-2xl font-bold mb-2 text-text">{{ deal.title }}</h2>
         <p class="text-gray-600 mb-4">{{ deal.description }}</p>
         
         <div class="flex items-center justify-between mb-4">
-          <span class="font-bold text-green-500 text-2xl">${{ formattedPrice }}</span>
-          <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-green">
+          <span class="font-bold text-accent text-2xl">${{ formattedPrice }}</span>
+          <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
             Go to Deal
           </a>
         </div>
@@ -29,12 +29,15 @@
           <button @click="followDeal" class="btn btn-primary">
             {{ isFollowing ? 'Unfollow' : 'Follow' }} Deal
           </button>
+          <span class="text-sm text-gray-500">
+            {{ formattedFollowCount }} {{ formattedFollowCount === 1 ? 'follower' : 'followers' }}
+          </span>
           <div class="flex items-center">
-            <button @click="voteDeal(1)" class="text-gray-500 hover:text-green-500 transition duration-300">
+            <button @click="voteDeal(1)" class="text-gray-500 hover:text-secondary transition duration-300">
               <i class="fas fa-arrow-up text-2xl"></i>
             </button>
-            <span class="font-bold text-xl mx-2">{{ deal.voteCount }}</span>
-            <button @click="voteDeal(-1)" class="text-gray-500 hover:text-red-500 transition duration-300">
+            <span class="font-bold text-xl mx-2 text-text">{{ deal.voteCount }}</span>
+            <button @click="voteDeal(-1)" class="text-gray-500 hover:text-accent transition duration-300">
               <i class="fas fa-arrow-down text-2xl"></i>
             </button>
           </div>
@@ -44,33 +47,33 @@
           <UserAvatar :name="deal.user.username" :size="40" class="mr-3" />
           <div class="flex-grow">
             <span class="text-sm text-gray-500">Posted by:</span>
-            <span class="font-semibold ml-1">{{ deal.user.username }}</span>
+            <span class="font-semibold ml-1 text-text">{{ deal.user.username }}</span>
           </div>
           <button @click="followUser" class="btn btn-primary text-sm">
             {{ isFollowingUser ? 'Unfollow' : 'Follow' }}
           </button>
         </div>
         
-        <div class="border-t pt-4">
-          <h3 class="font-bold text-xl mb-4">Comments</h3>
-          <div v-if="loading">Loading comments...</div>
-          <div v-else-if="error">{{ error }}</div>
-          <div v-else class="comments-container h-64 overflow-y-auto">
+        <div class="border-t border-gray-200 pt-4">
+          <h3 class="font-bold text-xl mb-4 text-text">Comments</h3>
+          <div v-if="loading" class="text-gray-500">Loading comments...</div>
+          <div v-else-if="error" class="text-red-500">{{ error }}</div>
+          <div v-else class="comments-container space-y-4 mb-6">
             <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
-            <div v-else v-for="comment in comments" :key="comment._id" class="mb-4 p-3 bg-gray-100 rounded-lg">
+            <div v-else v-for="comment in comments" :key="comment._id" class="bg-gray-50 rounded-lg p-4">
               <div class="flex items-center mb-2">
-                <UserAvatar 
-                  :name="comment.user?.username || 'Anonymous'" 
-                  :size="32"
-                  class="mr-2"
-                />
-                <span class="font-semibold">{{ comment.user?.username || 'Anonymous' }}</span>
+                <UserAvatar :name="comment.user?.username || 'Anonymous'" :size="32" class="mr-3" />
+                <span class="font-semibold text-text">{{ comment.user?.username || 'Anonymous' }}</span>
+                <span class="text-sm text-gray-500 ml-2">{{ formatCommentDate(comment.createdAt) }}</span>
               </div>
               <p class="text-gray-600">{{ comment.content }}</p>
             </div>
           </div>
           <div class="mt-4">
-            <textarea v-model="newComment" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="3" placeholder="Add a comment..."></textarea>
+            <textarea v-model="newComment" 
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                      rows="3" 
+                      placeholder="Add a comment..."></textarea>
             <button @click="addComment" class="btn btn-primary mt-2">
               Add Comment
             </button>
@@ -89,12 +92,14 @@
   max-height: 100%;
 }
 .comments-container {
+  max-height: 400px;
+  overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #CBD5E0 #EDF2F7;
 }
 
 .comments-container::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .comments-container::-webkit-scrollbar-track {
@@ -103,13 +108,14 @@
 
 .comments-container::-webkit-scrollbar-thumb {
   background-color: #CBD5E0;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 </style>
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import api from '~/services/api'
+import { format } from 'date-fns'
 
 const props = defineProps(['deal'])
 const emit = defineEmits(['close-modal'])
@@ -130,6 +136,14 @@ const imageUrl = computed(() => {
 const formattedPrice = computed(() => {
   return parseFloat(props.deal.price).toFixed(2)
 })
+
+const formattedFollowCount = computed(() => {
+  return props.deal.followCount || 0
+})
+
+const formatCommentDate = (date) => {
+  return format(new Date(date), 'MMM d, yyyy HH:mm')
+}
 
 console.log('DealModal: Received deal prop:', props.deal)
 
@@ -174,12 +188,12 @@ const followDeal = async () => {
   try {
     if (isFollowing.value) {
       await api.delete(`/deals/${props.deal._id}/follow`)
+      props.deal.followCount--
     } else {
       await api.post(`/deals/${props.deal._id}/follow`)
+      props.deal.followCount++
     }
     isFollowing.value = !isFollowing.value
-    // Optionally update the follow count if you're displaying it
-    props.deal.followCount = isFollowing.value ? (props.deal.followCount || 0) + 1 : (props.deal.followCount || 1) - 1
   } catch (error) {
     console.error('Error following/unfollowing deal:', error)
     // Add error handling, e.g., show a notification to the user

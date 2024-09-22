@@ -5,13 +5,8 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --primary-color: #3B82F6;
-    --primary-hover-color: #2563EB;
-  }
-
   body {
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-text font-sans;
   }
 }
 
@@ -21,14 +16,14 @@
   }
 
   .btn-primary {
-    @apply bg-blue-500 text-white hover:bg-blue-600;
+    @apply bg-primary text-white hover:bg-blue-600;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+    @apply bg-secondary text-white hover:bg-emerald-600;
   }
 
-  .btn-green {
-    @apply bg-green-500 text-white hover:bg-green-600;
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-amber-600;
   }
 }
