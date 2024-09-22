@@ -70,11 +70,11 @@
               <div class="flex items-center mt-2 space-x-4">
                 <div class="flex items-center">
                   <button @click="voteComment(comment.id, 1)" class="text-gray-500 hover:text-secondary transition duration-300">
-                    <i class="fas fa-arrow-up"></i>
+                    <font-awesome-icon icon="arrow-up" />
                   </button>
                   <span class="font-bold mx-2 text-text">{{ comment.voteScore }}</span>
                   <button @click="voteComment(comment.id, -1)" class="text-gray-500 hover:text-accent transition duration-300">
-                    <i class="fas fa-arrow-down"></i>
+                    <font-awesome-icon icon="arrow-down" />
                   </button>
                 </div>
                 <button @click="toggleReplyForm(comment.id)" class="text-sm text-primary hover:underline">
@@ -364,9 +364,10 @@ const voteComment = async (commentId, value) => {
       updatedComment.voteScore = response.data.data.voteScore
       updatedComment.voteCount = response.data.data.voteCount
     }
+    toast.success(value > 0 ? "Upvoted comment" : "Downvoted comment")
   } catch (error) {
     console.error('Error voting comment:', error)
-    // Add error handling, e.g., show a notification to the user
+    toast.error('Failed to vote on comment. Please try again.')
   }
 }
 </script>

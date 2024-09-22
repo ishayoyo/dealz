@@ -4,7 +4,8 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
   css: [
     '@/assets/css/tailwind.css',
-    'vue-toastification/dist/index.css'
+    'vue-toastification/dist/index.css',
+    '@fortawesome/fontawesome-svg-core/styles.css'
   ],
 
   runtimeConfig: {
@@ -16,6 +17,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-09-22',
   plugins: [
     '~/plugins/userAvatar.js',
-    '~/plugins/toast.js'
+    '~/plugins/toast.js',
+    '~/plugins/fontawesome.js'
   ]
 })
