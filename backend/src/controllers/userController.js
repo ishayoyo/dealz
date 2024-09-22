@@ -140,6 +140,16 @@ exports.unfollowUser = catchAsync(async (req, res, next) => {
     return next(new AppError('You are not following this user', 400));
   }
 
+  // Update the current user's following array
+  await User.findByIdAndUpdate(req.user._id, {
+    $pull: { following: userToUnfollow._id }
+  });
+
+  // Update the unfollowed user's followers array
+  await User.findByIdAndUpdate(userToUnfollow._id, {
+    $pull: { followers: req.user._id }
+  });
+
   res.status(200).json({
     status: 'success',
     message: 'User unfollowed successfully'
