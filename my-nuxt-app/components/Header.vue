@@ -50,11 +50,13 @@ import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
 import { storeToRefs } from 'pinia'
 import NotificationList from '~/components/NotificationList.vue'
+import { useToast } from 'vue-toastification'
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 const { isAuthenticated, user } = storeToRefs(authStore)
 const { unreadCount } = storeToRefs(notificationStore)
+const toast = useToast()
 
 const showAuthModal = ref(false)
 const showPostDealModal = ref(false)
@@ -99,39 +101,35 @@ const closePostDealModal = () => {
   showPostDealModal.value = false
 }
 
-const handleLogin = async () => {
+const handleLogin = async (credentials) => {
   try {
-    const success = await authStore.login(email.value, password.value);
+    const success = await authStore.login(credentials.email, credentials.password)
     if (success) {
-      await notificationStore.fetchNotifications();
-      closeAuthModal();
-      toast.success('Successfully logged in!');
+      await notificationStore.fetchNotifications()
+      closeAuthModal()
+      toast.success('Successfully logged in!')
     } else {
-      toast.error('Login failed. Please check your credentials and try again.');
+      toast.error('Login failed. Please check your credentials and try again.')
     }
   } catch (error) {
-    console.error('Login error:', error);
-    toast.error(error.response?.data?.message || 'An error occurred during login');
+    console.error('Login error:', error)
+    toast.error(error.response?.data?.message || 'An error occurred during login')
   }
 }
 
-const handleSignup = async () => {
+const handleSignup = async (userData) => {
   try {
-    const success = await authStore.signup({
-      username: username.value,
-      email: email.value,
-      password: password.value
-    });
+    const success = await authStore.signup(userData)
     if (success) {
-      await notificationStore.fetchNotifications();
-      closeAuthModal();
-      toast.success('Successfully signed up!');
+      await notificationStore.fetchNotifications()
+      closeAuthModal()
+      toast.success('Successfully signed up!')
     } else {
-      toast.error('Signup failed. Please check your information and try again.');
+      toast.error('Signup failed. Please check your information and try again.')
     }
   } catch (error) {
-    console.error('Signup error:', error);
-    toast.error(error.response?.data?.message || 'An error occurred during signup');
+    console.error('Signup error:', error)
+    toast.error(error.response?.data?.message || 'An error occurred during signup')
   }
 }
 

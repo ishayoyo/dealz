@@ -23,7 +23,14 @@
         
         <div class="mb-4">
           <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
-          <input type="email" id="email" v-model="form.email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          <input 
+            type="email" 
+            id="email" 
+            v-model="form.email" 
+            autocomplete="username"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            required
+          >
         </div>
         
         <div class="mb-6">
@@ -87,17 +94,15 @@ const handleSubmit = async () => {
   try {
     error.value = null
     if (isLogin.value) {
-      await authStore.login(form.email, form.password)
-      toast.success('Successfully logged in!')
-      emit('login')
+      // Change this line
+      emit('login', { email: form.email, password: form.password })
     } else {
-      await authStore.signup({
+      // Change this line
+      emit('signup', {
         username: form.username,
         email: form.email,
         password: form.password
       })
-      toast.success('Successfully signed up!')
-      emit('signup')
     }
     emit('close')
   } catch (err) {
