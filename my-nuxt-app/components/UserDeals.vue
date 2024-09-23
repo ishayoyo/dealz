@@ -15,7 +15,6 @@
   </template>
   
   <script setup>
-  import { defineProps } from 'vue'
   import { useRuntimeConfig } from '#app'
   
   const props = defineProps(['userDeals'])

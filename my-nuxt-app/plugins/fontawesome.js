@@ -1,14 +1,19 @@
 import { library, config } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faArrowUp, faArrowDown, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons'
 
 // This is important, we are going to let Nuxt worry about the CSS
 config.autoAddCss = false
 
-// You can add your icons directly in this plugin. See other examples for how you
-// can add other styles or just individual icons.
-library.add(faArrowUp, faArrowDown, faChevronUp, faChevronDown)
+// Dynamic imports for Font Awesome icons
+export default defineNuxtPlugin(async (nuxtApp) => {
+  const icons = await Promise.all([
+    import('@fortawesome/free-solid-svg-icons/faArrowUp'),
+    import('@fortawesome/free-solid-svg-icons/faArrowDown'),
+    import('@fortawesome/free-solid-svg-icons/faChevronUp'),
+    import('@fortawesome/free-solid-svg-icons/faChevronDown')
+  ])
 
-export default defineNuxtPlugin((nuxtApp) => {
+  icons.forEach(icon => library.add(icon.definition))
+
   nuxtApp.vueApp.component('font-awesome-icon', FontAwesomeIcon)
 })

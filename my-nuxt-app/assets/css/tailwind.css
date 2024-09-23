@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,6 +7,9 @@
 @layer base {
   body {
     @apply bg-background text-text font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold;
   }
 }
 
@@ -20,10 +23,14 @@
   }
 
   .btn-secondary {
-    @apply bg-secondary text-white hover:bg-emerald-600;
+    @apply bg-white text-primary border border-primary hover:bg-primary hover:text-white;
   }
 
   .btn-accent {
-    @apply bg-accent text-white hover:bg-amber-600;
+    @apply bg-accent text-white hover:bg-red-600;
+  }
+
+  .deal-card {
+    @apply bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300;
   }
 }

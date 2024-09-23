@@ -85,6 +85,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import api from '~/services/api'
+import { useToast } from "vue-toastification"
 
 const emit = defineEmits(['close', 'post-deal'])
 
@@ -100,6 +101,8 @@ const dealDetails = reactive({
   category: ''
 })
 
+const toast = useToast() // Initialize toast
+
 const fetchDealInfo = async () => {
   try {
     const response = await api.post('/deals/fetch-image', { url: dealLink.value })
@@ -107,7 +110,7 @@ const fetchDealInfo = async () => {
     step.value = 2
   } catch (error) {
     console.error('Error fetching deal image:', error)
-    // Handle error (e.g., show error message to user)
+    toast.error('Failed to fetch deal image. Please try again.') // Show error toast
   }
 }
 
@@ -127,15 +130,17 @@ const handleFileChange = async (event) => {
         }
       })
       dealImage.value = `http://localhost:5000${response.data.data.imageUrl}`
+      toast.success('Image uploaded successfully') // Show success toast
     } catch (error) {
       console.error('Error uploading image:', error)
-      // Handle error (e.g., show error message to user)
+      toast.error('Failed to upload image. Please try again.') // Show error toast
     }
   }
 }
 
 const removeImage = () => {
   dealImage.value = ''
+  toast.info('Image removed') // Show info toast
 }
 
 const submitDeal = async () => {
@@ -149,9 +154,10 @@ const submitDeal = async () => {
     const response = await api.post('/deals', dealData)
     emit('post-deal', response.data.data.deal)
     emit('close')
+    toast.success('Deal posted successfully!') // Show success toast
   } catch (error) {
     console.error('Error posting deal:', error)
-    // Handle error (e.g., show error message to user)
+    toast.error('Failed to post deal. Please try again.') // Show error toast
   }
 }
 </script>

@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" @click="openModal">
-    <div class="relative">
-      <img :src="fullImageUrl" :alt="deal.title" class="w-full h-48 object-cover">
+    <div class="relative pb-[56.25%]"> <!-- 16:9 aspect ratio -->
+      <img :src="fullImageUrl" :alt="deal.title" class="absolute inset-0 w-full h-full object-cover">
       <div class="absolute top-0 right-0 bg-accent text-white px-3 py-1 m-2 rounded-full text-sm font-semibold">
         ${{ formattedPrice }}
       </div>
@@ -15,7 +15,15 @@
           <UserAvatar v-else :name="deal.user ? deal.user.username : 'Unknown'" :size="24" />
           <span class="text-sm text-gray-500">{{ deal.user ? deal.user.username : 'Unknown User' }}</span>
         </div>
-        <!-- Removed voting buttons -->
+        <div class="flex items-center space-x-2">
+          <button @click.stop="voteDeal(1)" class="text-gray-500 hover:text-secondary transition-colors duration-200">
+            <i class="fas fa-arrow-up"></i>
+          </button>
+          <span class="text-sm font-semibold text-text">{{ deal.voteCount }}</span>
+          <button @click.stop="voteDeal(-1)" class="text-gray-500 hover:text-accent transition-colors duration-200">
+            <i class="fas fa-arrow-down"></i>
+          </button>
+        </div>
       </div>
       <div class="flex justify-between items-center">
         <span class="text-sm text-gray-500">
@@ -30,9 +38,10 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue'
+import { computed } from 'vue'
 import { useRuntimeConfig } from '#app'
 import { format } from 'date-fns'
+import api from '~/services/api'
 
 const config = useRuntimeConfig()
 
@@ -40,7 +49,7 @@ const props = defineProps(['deal'])
 const emit = defineEmits(['open-modal'])
 
 const fullImageUrl = computed(() => {
-  if (!props.deal.imageUrl) return ''
+  if (!props.deal.imageUrl) return '/default-deal-image.jpg' // Add a default image
   return props.deal.imageUrl.startsWith('http') 
     ? props.deal.imageUrl 
     : `${config.public.apiBase}${props.deal.imageUrl}`
@@ -60,6 +69,15 @@ const formattedPrice = computed(() => {
 const formattedDate = computed(() => {
   return format(new Date(props.deal.createdAt), 'MMM d, yyyy')
 })
+
+const voteDeal = async (value) => {
+  try {
+    const response = await api.post(`/deals/${props.deal._id}/vote`, { value })
+    props.deal.voteCount = response.data.data.voteCount
+  } catch (error) {
+    console.error('Error voting deal:', error)
+  }
+}
 
 const openModal = () => {
   console.log('DealCard: Emitting open-modal event for deal:', props.deal)
