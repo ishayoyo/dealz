@@ -169,8 +169,8 @@ const getFullProfilePictureUrl = (profilePicture) => {
 
 const fetchFollowedDeals = async () => {
   try {
-    const response = await api.get('/deals/saved')
-    followedDeals.value = response.data.data.deals
+    const response = await api.get('/deals/followed') // Updated endpoint
+    followedDeals.value = response.data.data.followedDeals // Updated data structure
   } catch (error) {
     console.error('Error fetching followed deals:', error)
     // Log more details about the error
@@ -227,7 +227,7 @@ const followUser = async (userId) => {
 
 const unfollowDeal = async (dealId) => {
   try {
-    await api.delete(`/deals/${dealId}/save`)
+    await api.delete(`/deals/${dealId}/follow`) // Updated endpoint
     followedDeals.value = followedDeals.value.filter(deal => deal._id !== dealId)
   } catch (error) {
     console.error('Error unfollowing deal:', error)

@@ -429,51 +429,58 @@ exports.uploadImage = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getSavedDeals = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.user.id).populate('savedDeals');
+exports.getFollowedDeals = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id).populate('followedDeals');
   res.status(200).json({
     status: 'success',
-    data: { savedDeals: user.savedDeals }
+    data: { followedDeals: user.followedDeals }
   });
 });
 
-exports.saveDeal = catchAsync(async (req, res, next) => {
+exports.followDeal = catchAsync(async (req, res, next) => {
   const deal = await Deal.findById(req.params.id);
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
   }
 
   const user = await User.findById(req.user.id);
-  if (!user.savedDeals.includes(deal._id)) {
-    user.savedDeals.push(deal._id);
+  if (!user.followedDeals.includes(deal._id)) {
+    user.followedDeals.push(deal._id);
     await user.save();
-    deal.saveCount += 1;
+    deal.followCount += 1;
     await deal.save();
   }
 
   res.status(200).json({
     status: 'success',
-    message: 'Deal saved successfully'
+    message: 'Deal followed successfully',
+    data: {
+      isFollowing: true,
+      followCount: deal.followCount
+    }
   });
 });
 
-
-exports.unsaveDeal = catchAsync(async (req, res, next) => {
+exports.unfollowDeal = catchAsync(async (req, res, next) => {
   const deal = await Deal.findById(req.params.id);
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
   }
 
   const user = await User.findById(req.user.id);
-  if (user.savedDeals.includes(deal._id)) {
-    user.savedDeals = user.savedDeals.filter(id => id.toString() !== deal._id.toString());
+  if (user.followedDeals.includes(deal._id)) {
+    user.followedDeals = user.followedDeals.filter(id => id.toString() !== deal._id.toString());
     await user.save();
-    deal.saveCount = Math.max(0, deal.saveCount - 1);
+    deal.followCount = Math.max(0, deal.followCount - 1);
     await deal.save();
   }
 
   res.status(200).json({
     status: 'success',
-    message: 'Deal unsaved successfully'
+    message: 'Deal unfollowed successfully',
+    data: {
+      isFollowing: false,
+      followCount: deal.followCount
+    }
   });
 });
