@@ -9,8 +9,17 @@ class NotificationService {
 
   async createNotification(data) {
     try {
-      const notification = new Notification(data);
+      // Ensure 'content' is provided, use 'message' as content if available
+      const notificationData = {
+        ...data,
+        content: data.content || data.message,
+        // Use a valid type from your enum, e.g., 'SYSTEM' instead of 'TEST'
+        type: 'SYSTEM'
+      };
+
+      const notification = new Notification(notificationData);
       await notification.save();
+      console.log('New notification created:', notification);
       this.sendNotification(notification);
       return notification;
     } catch (error) {
@@ -20,6 +29,7 @@ class NotificationService {
   }
 
   sendNotification(notification) {
+    console.log('Sending notification to user:', notification.recipient.toString());
     this.io.to(notification.recipient.toString()).emit('newNotification', notification);
   }
 

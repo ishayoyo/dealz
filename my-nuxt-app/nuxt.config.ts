@@ -13,7 +13,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: 'http://localhost:5000/api/v1' // Your backend API URL
+      apiBase: 'http://localhost:5000/api/v1', // Your backend API URL
+      socketUrl: process.env.SOCKET_URL || 'http://localhost:5000'
     }
   },
 

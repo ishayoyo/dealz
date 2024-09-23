@@ -53,8 +53,15 @@ export const useNotificationStore = defineStore('notification', {
       this.notifications = this.notifications.filter(n => n._id !== notificationId)
     },
     handleNewNotification(notification) {
+      console.log('Received new notification:', notification)
       this.addNotification(notification)
-    }
+    },
+
+    setupSocketListeners(socket) {
+      socket.on('newNotification', (notification) => {
+        this.handleNewNotification(notification)
+      })
+    },
   },
 
   getters: {

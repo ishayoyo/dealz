@@ -1,4 +1,3 @@
-// stores/auth.js
 import { defineStore } from 'pinia'
 import api from '~/services/api'
 
@@ -77,9 +76,9 @@ export const useAuthStore = defineStore('auth', {
       if (process.client) {
         localStorage.setItem('token', this.token)
         localStorage.setItem('tokenExpirationTime', this.tokenExpirationTime.toString())
+        api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+        this.setupTokenExpirationCheck()
       }
-      api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
-      this.setupTokenExpirationCheck()
     },
 
     setupTokenExpirationCheck() {
@@ -115,10 +114,8 @@ export const useAuthStore = defineStore('auth', {
       if (process.client) {
         localStorage.removeItem('token')
         localStorage.removeItem('tokenExpirationTime')
-      }
-      delete api.defaults.headers.common['Authorization']
-      // Redirect to main page
-      if (process.client) {
+        delete api.defaults.headers.common['Authorization']
+        // Redirect to main page
         window.location.href = '/'
       }
     },
