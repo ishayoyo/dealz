@@ -52,7 +52,9 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import api from '~/services/api'
+import { useAuthStore } from '~/stores/auth'
+
+const authStore = useAuthStore()
 
 const props = defineProps({
   isLogin: {
@@ -65,7 +67,6 @@ const emit = defineEmits(['close', 'login', 'signup'])
 
 const form = reactive({
   username: '',
-  name: '',
   email: '',
   password: ''
 })
@@ -81,29 +82,21 @@ const toggleAuthMode = () => {
 const handleSubmit = async () => {
   try {
     error.value = null
-    let response
     if (isLogin.value) {
-      response = await api.post('/users/login', { email: form.email, password: form.password })
+      await authStore.login(form.email, form.password)
+      emit('login')
     } else {
-      response = await api.post('/users/register', { 
+      await authStore.signup({
         username: form.username,
-        name: form.name,
-        email: form.email, 
-        password: form.password 
+        email: form.email,
+        password: form.password
       })
+      emit('signup')
     }
-    const { token, data } = response.data
-    localStorage.setItem('token', token)
-    // Set the token in the api instance
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    if (isLogin.value) {
-      emit('login', data)
-    } else {
-      emit('signup', data)
-    }
+    emit('close')
   } catch (err) {
-    console.error('Authentication error:', err)
-    error.value = err.response?.data?.message || 'An error occurred. Please try again.'
+    console.error('Auth error:', err)
+    error.value = err.message || 'An error occurred. Please try again.'
   }
 }
 </script>

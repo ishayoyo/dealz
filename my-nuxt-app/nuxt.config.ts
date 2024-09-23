@@ -1,7 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  modules: ['@nuxtjs/tailwindcss'],
+  modules: [
+    '@nuxtjs/tailwindcss',
+    '@pinia/nuxt'
+  ],
   css: [
     '@/assets/css/tailwind.css',
     'vue-toastification/dist/index.css',
@@ -18,6 +21,8 @@ export default defineNuxtConfig({
   plugins: [
     '~/plugins/userAvatar.js',
     '~/plugins/toast.js',
-    '~/plugins/fontawesome.js'
-  ]
+    '~/plugins/fontawesome.js',
+    '~/plugins/auth.js'
+  ],
+  ssr: true
 })

@@ -105,6 +105,9 @@ import { useRuntimeConfig } from '#app'
 import api from '~/services/api'
 import FollowedDeals from '~/components/FollowedDeals.vue'
 import UserDeals from '~/components/UserDeals.vue'
+import { useAuthStore } from '~/stores/auth'
+import { useDealsStore } from '~/stores/deals'
+import { storeToRefs } from 'pinia'
 
 const config = useRuntimeConfig()
 const fileInput = ref(null)
@@ -119,66 +122,19 @@ const tabs = [
   { id: 'followedDeals', name: 'Followed Deals' }
 ]
 
-const user = ref({})
-const followingUsers = ref([])
-const followedDeals = ref([])
-const followers = ref([])
-const userDeals = ref([])
+const authStore = useAuthStore()
+const dealsStore = useDealsStore()
+
+const { user } = storeToRefs(authStore)
+const { userDeals, followedDeals } = storeToRefs(dealsStore)
 
 onMounted(async () => {
-  await fetchUserData()
+  await Promise.all([
+    dealsStore.fetchUserDeals(),
+    dealsStore.fetchFollowedDeals(),
+    // ... other fetch calls
+  ])
 })
-
-const fetchUserData = async () => {
-  try {
-    const response = await api.get('/users/me')
-    user.value = response.data.data.user
-    await Promise.all([
-      fetchFollowing(),
-      fetchFollowedDeals(),
-      fetchFollowers(),
-      fetchUserDeals()
-    ])
-  } catch (error) {
-    console.error('Error fetching user data:', error)
-  }
-}
-
-const fetchFollowing = async () => {
-  try {
-    const response = await api.get('/users/me/following')
-    followingUsers.value = response.data.data.following
-  } catch (error) {
-    console.error('Error fetching following users:', error)
-  }
-}
-
-const fetchFollowedDeals = async () => {
-  try {
-    const response = await api.get('/users/me/followed-deals')
-    followedDeals.value = response.data.data.followedDeals
-  } catch (error) {
-    console.error('Error fetching followed deals:', error)
-  }
-}
-
-const fetchFollowers = async () => {
-  try {
-    const response = await api.get('/users/me/followers')
-    followers.value = response.data.data.followers
-  } catch (error) {
-    console.error('Error fetching followers:', error)
-  }
-}
-
-const fetchUserDeals = async () => {
-  try {
-    const response = await api.get('/users/me/deals')
-    userDeals.value = response.data.data.deals
-  } catch (error) {
-    console.error('Error fetching user deals:', error)
-  }
-}
 
 const userFields = [
   { key: 'firstName', label: 'First Name', type: 'text' },

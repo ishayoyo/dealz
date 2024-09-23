@@ -12,27 +12,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import api from '~/services/api'
-import DealCard from '~/components/DealCard.vue'
-import DealModal from '~/components/DealModal.vue'
+import { useDealsStore } from '~/stores/deals'
+import { storeToRefs } from 'pinia'
+import { onMounted, ref } from 'vue'
 
-const selectedDeal = ref(null)
-const deals = ref([])
-const loading = ref(true)
-const error = ref(null)
+const dealsStore = useDealsStore()
+const { deals, loading, error } = storeToRefs(dealsStore)
 
 onMounted(async () => {
-  try {
-    const response = await api.get('/deals')
-    deals.value = response.data.data.deals
-  } catch (err) {
-    console.error('Error fetching deals:', err)
-    error.value = 'Failed to load deals. Please try again later.'
-  } finally {
-    loading.value = false
+  if (deals.value.length === 0) {
+    await dealsStore.fetchDeals()
   }
 })
+
+const selectedDeal = ref(null)
 
 const openModal = (deal) => {
   selectedDeal.value = { ...deal }

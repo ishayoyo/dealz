@@ -26,7 +26,7 @@
         </div>
         
         <div class="flex items-center space-x-4 mb-4">
-          <button @click="followDeal" class="btn btn-primary">
+          <button @click="handleFollowDeal" class="btn btn-primary">
             {{ isFollowing ? 'Unfollow' : 'Follow' }} Deal
           </button>
           <span class="text-sm text-gray-500">
@@ -40,73 +40,79 @@
             <span class="text-sm text-gray-500">Posted by:</span>
             <span class="font-semibold ml-1 text-text">{{ deal.user.username }}</span>
           </div>
-          <button @click="followUser" class="btn btn-primary text-sm">
+          <button @click="handleFollowUser" class="btn btn-primary text-sm">
             {{ isFollowingUser ? 'Unfollow' : 'Follow' }}
           </button>
         </div>
         
         <div class="border-t border-gray-200 pt-4">
           <h3 class="font-bold text-xl mb-4 text-text">Comments</h3>
-          <div v-if="loading" class="text-gray-500">Loading comments...</div>
-          <div v-else-if="error" class="text-red-500">{{ error }}</div>
-          <div v-else class="comments-container space-y-4 mb-6">
-            <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
-            <div v-else v-for="comment in comments" :key="comment.id" class="bg-gray-50 rounded-lg p-4">
-              <div class="flex items-center mb-2">
-                <UserAvatar :name="comment.user?.username || 'Anonymous'" :size="32" class="mr-3" />
-                <span class="font-semibold text-text">{{ comment.user?.username || 'Anonymous' }}</span>
-                <span class="text-sm text-gray-500 ml-2">{{ formatCommentDate(comment.createdAt) }}</span>
-              </div>
-              <p class="text-gray-600">{{ comment.content }}</p>
-              <div class="flex items-center mt-2 space-x-4">
-                <div class="flex items-center">
-                  <button @click="voteComment(comment.id, 1)" :class="{'text-secondary': comment.userVote === 1}" class="hover:text-secondary transition duration-300">
-                    <font-awesome-icon icon="arrow-up" />
-                  </button>
-                  <span class="font-bold mx-2 text-text">{{ comment.voteScore }}</span>
-                  <button @click="voteComment(comment.id, -1)" :class="{'text-accent': comment.userVote === -1}" class="hover:text-accent transition duration-300">
-                    <font-awesome-icon icon="arrow-down" />
-                  </button>
+          <div v-if="isAuthenticated">
+            <div v-if="loading" class="text-gray-500">Loading comments...</div>
+            <div v-else-if="error" class="text-red-500">{{ error }}</div>
+            <div v-else class="comments-container space-y-4 mb-6">
+              <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
+              <div v-else v-for="comment in comments" :key="comment.id" class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center mb-2">
+                  <UserAvatar :name="comment.user?.username || 'Anonymous'" :size="32" class="mr-3" />
+                  <span class="font-semibold text-text">{{ comment.user?.username || 'Anonymous' }}</span>
+                  <span class="text-sm text-gray-500 ml-2">{{ formatCommentDate(comment.createdAt) }}</span>
                 </div>
-                <button @click="toggleReplyForm(comment.id)" class="text-sm text-primary hover:underline">
-                  Reply
-                </button>
-              </div>
-              <div v-if="replyingTo === comment.id" class="mt-2">
-                <textarea v-model="replyContent" 
-                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
-                          rows="2" 
-                          placeholder="Write a reply..."></textarea>
-                <div class="mt-2">
-                  <button @click="addReply(comment.id)" class="btn btn-primary btn-sm mr-2">
-                    Post Reply
-                  </button>
-                  <button @click="cancelReply" class="btn btn-secondary btn-sm">
-                    Cancel
-                  </button>
-                </div>
-              </div>
-              <!-- Display replies -->
-              <div v-if="comment.replies && comment.replies.length > 0" class="mt-4 ml-4 space-y-2">
-                <div v-for="reply in comment.replies" :key="reply.id" class="bg-gray-100 rounded-lg p-3">
-                  <div class="flex items-center mb-1">
-                    <UserAvatar :name="reply.user?.username || 'Anonymous'" :size="24" class="mr-2" />
-                    <span class="font-semibold text-sm text-text">{{ reply.user?.username || 'Anonymous' }}</span>
-                    <span class="text-xs text-gray-500 ml-2">{{ formatCommentDate(reply.createdAt) }}</span>
+                <p class="text-gray-600">{{ comment.content }}</p>
+                <div class="flex items-center mt-2 space-x-4">
+                  <div class="flex items-center">
+                    <button @click="handleVoteComment(comment.id, 1)" :class="{'text-secondary': comment.userVote === 1}" class="hover:text-secondary transition duration-300">
+                      <font-awesome-icon icon="arrow-up" />
+                    </button>
+                    <span class="font-bold mx-2 text-text">{{ comment.voteScore }}</span>
+                    <button @click="handleVoteComment(comment.id, -1)" :class="{'text-accent': comment.userVote === -1}" class="hover:text-accent transition duration-300">
+                      <font-awesome-icon icon="arrow-down" />
+                    </button>
                   </div>
-                  <p class="text-sm text-gray-600">{{ reply.content }}</p>
+                  <button @click="handleToggleReplyForm(comment.id)" class="text-sm text-primary hover:underline">
+                    Reply
+                  </button>
+                </div>
+                <div v-if="replyingTo === comment.id" class="mt-2">
+                  <textarea v-model="replyContent" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                            rows="2" 
+                            placeholder="Write a reply..."></textarea>
+                  <div class="mt-2">
+                    <button @click="addReply(comment.id)" class="btn btn-primary btn-sm mr-2">
+                      Post Reply
+                    </button>
+                    <button @click="cancelReply" class="btn btn-secondary btn-sm">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                <!-- Display replies -->
+                <div v-if="comment.replies && comment.replies.length > 0" class="mt-4 ml-4 space-y-2">
+                  <div v-for="reply in comment.replies" :key="reply.id" class="bg-gray-100 rounded-lg p-3">
+                    <div class="flex items-center mb-1">
+                      <UserAvatar :name="reply.user?.username || 'Anonymous'" :size="24" class="mr-2" />
+                      <span class="font-semibold text-sm text-text">{{ reply.user?.username || 'Anonymous' }}</span>
+                      <span class="text-xs text-gray-500 ml-2">{{ formatCommentDate(reply.createdAt) }}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">{{ reply.content }}</p>
+                  </div>
                 </div>
               </div>
             </div>
+            <div class="mt-4">
+              <textarea v-model="newComment" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                        rows="3" 
+                        placeholder="Add a comment..."></textarea>
+              <button @click="handleAddComment" class="btn btn-primary mt-2">
+                Add Comment
+              </button>
+            </div>
           </div>
-          <div class="mt-4">
-            <textarea v-model="newComment" 
-                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
-                      rows="3" 
-                      placeholder="Add a comment..."></textarea>
-            <button @click="addComment" class="btn btn-primary mt-2">
-              Add Comment
-            </button>
+          <div v-else class="text-center py-4">
+            <p>Login to view comments</p>
+            <button @click="openAuthModal" class="mt-2 btn btn-primary">Login</button>
           </div>
         </div>
       </div>
@@ -147,6 +153,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import api from '~/services/api'
 import { format } from 'date-fns'
 import { useToast } from "vue-toastification";
+import { useAuthStore } from '~/stores/auth'
 
 const props = defineProps(['deal'])
 const emit = defineEmits(['close-modal'])
@@ -157,6 +164,9 @@ const newComment = ref('')
 const loading = ref(false)
 const error = ref(null)
 const toast = useToast();
+
+const authStore = useAuthStore()
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const imageUrl = computed(() => {
   if (!props.deal.imageUrl) return ''
@@ -194,8 +204,6 @@ watch(() => props.deal, async (newDeal) => {
 })
 
 const fetchDealData = async () => {
-  loading.value = true
-  error.value = null
   try {
     const [commentsResponse, statusResponse, userStatusResponse] = await Promise.all([
       api.get(`/comments/deal/${props.deal._id}`),
@@ -218,6 +226,14 @@ const fetchDealData = async () => {
   }
 }
 
+const handleFollowDeal = () => {
+  if (!authStore.isAuthenticated) {
+    toast.info("Please log in to follow this deal")
+    return
+  }
+  followDeal()
+}
+
 const followDeal = async () => {
   try {
     if (isFollowing.value) {
@@ -232,6 +248,14 @@ const followDeal = async () => {
     console.error('Error following/unfollowing deal:', error)
     // Add error handling, e.g., show a notification to the user
   }
+}
+
+const handleAddComment = () => {
+  if (!authStore.isAuthenticated) {
+    toast.info("Please log in to add a comment")
+    return
+  }
+  addComment()
 }
 
 const addComment = async () => {
@@ -250,6 +274,14 @@ const addComment = async () => {
 
 const closeModal = () => {
   emit('close-modal')
+}
+
+const handleFollowUser = () => {
+  if (!authStore.isAuthenticated) {
+    toast.info("Please log in to follow this user")
+    return
+  }
+  followUser()
 }
 
 const followUser = async () => {
@@ -293,6 +325,14 @@ const onImageLoad = (event) => {
 
 const replyingTo = ref(null)
 const replyContent = ref('')
+
+const handleToggleReplyForm = (commentId) => {
+  if (!authStore.isAuthenticated) {
+    toast.info("Please log in to reply to comments")
+    return
+  }
+  toggleReplyForm(commentId)
+}
 
 const toggleReplyForm = (commentId) => {
   console.log('Toggling reply form for comment:', commentId);
@@ -339,6 +379,14 @@ const cancelReply = () => {
   replyContent.value = ''
 }
 
+const handleVoteComment = (commentId, value) => {
+  if (!authStore.isAuthenticated) {
+    toast.info("Please log in to vote on comments")
+    return
+  }
+  voteComment(commentId, value)
+}
+
 const voteComment = async (commentId, value) => {
   try {
     const response = await api.post(`/comments/${commentId}/vote`, { value })
@@ -354,5 +402,10 @@ const voteComment = async (commentId, value) => {
     console.error('Error voting comment:', error)
     toast.error('Failed to vote on comment. Please try again.')
   }
+}
+
+const openAuthModal = () => {
+  // Implement the logic to open the auth modal
+  // This might involve emitting an event or calling a method in the parent component
 }
 </script>
