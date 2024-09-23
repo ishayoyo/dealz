@@ -20,37 +20,84 @@ const signToken = id => {
 exports.register = catchAsync(async (req, res, next) => {
   const { username, email, password } = req.body;
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-  if (existingUser) {
-    return next(new AppError('User with this email or username already exists', 400));
+  console.log('Registration attempt:', { username, email, password: password ? '[REDACTED]' : undefined });
+
+  if (!username || !email || !password) {
+    console.log('Missing required fields');
+    return next(new AppError('Please provide username, email and password', 400));
   }
 
-  const newUser = await User.create({ username, email, password });
+  try {
+    // Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) {
+      console.log('User already exists:', { email, username });
+      return next(new AppError('User with this email or username already exists', 400));
+    }
 
-  // Remove password from output
-  newUser.password = undefined;
+    console.log('Creating new user');
+    const newUser = await User.create({ username, email, password });
 
-  const token = signToken(newUser._id);
+    console.log('New user created:', newUser._id);
 
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: { user: newUser }
-  });
+    // Remove password from output
+    newUser.password = undefined;
+
+    const token = signToken(newUser._id);
+
+    res.status(201).json({
+      status: 'success',
+      token,
+      data: { user: newUser }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return next(new AppError(`Validation error: ${messages.join(', ')}`, 400));
+    }
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return next(new AppError(`Duplicate ${field}. Please choose another ${field}.`, 400));
+    }
+    return next(new AppError('Error creating user', 500));
+  }
 });
 
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
+
+  console.log('Login attempt:', { email, password: password ? '[REDACTED]' : undefined });
+
   if (!email || !password) {
+    console.log('Missing email or password');
     return next(new AppError('Please provide email and password', 400));
   }
-  const user = await User.findOne({ email }).select('+password');
-  if (!user || !(await user.comparePassword(password))) {
-    return next(new AppError('Incorrect email or password', 401));
+
+  try {
+    const user = await User.findOne({ email }).select('+password');
+    
+    if (!user || !(await user.comparePassword(password))) {
+      console.log('Incorrect email or password');
+      return next(new AppError('Incorrect email or password', 401));
+    }
+
+    console.log('Login successful:', user._id);
+
+    const token = signToken(user._id);
+    
+    // Remove password from output
+    user.password = undefined;
+
+    res.status(200).json({ 
+      status: 'success', 
+      token,
+      data: { user }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    return next(new AppError('Error during login', 500));
   }
-  const token = signToken(user._id);
-  res.status(200).json({ status: 'success', token });
 });
 
 exports.logout = catchAsync(async (req, res) => {

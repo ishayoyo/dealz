@@ -1,11 +1,11 @@
-// File: stores/notification.js
-
+// stores/notification.js
 import { defineStore } from 'pinia'
+import api from '../services/api'
 
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
     notifications: [],
-    userId: null // You might want to set this when the user logs in
+    // userId removed from state
   }),
 
   actions: {
@@ -19,30 +19,46 @@ export const useNotificationStore = defineStore('notification', {
       }
     },
     setNotifications(notifications) {
-      this.notifications = notifications
+      this.notifications = notifications || []
     },
     async fetchNotifications() {
       try {
-        const { data } = await $fetch('/api/notifications')
+        const { data } = await api.get('/notifications')
         this.setNotifications(data.notifications)
       } catch (error) {
         console.error('Error fetching notifications:', error)
+        this.setNotifications([])
       }
     },
     async markNotificationAsRead(notificationId) {
       try {
-        await $fetch(`/api/notifications/${notificationId}/read`, { method: 'PUT' })
+        await api.put(`/notifications/${notificationId}/read`)
         this.markAsRead(notificationId)
       } catch (error) {
         console.error('Error marking notification as read:', error)
       }
     },
-    setUserId(userId) {
-      this.userId = userId
+    async markAllNotificationsAsRead() {
+      try {
+        await api.put('/notifications/mark-all-read')
+        this.notifications = this.notifications.map(n => ({ ...n, read: true }))
+      } catch (error) {
+        console.error('Error marking all notifications as read:', error)
+      }
+    },
+    clearNotifications() {
+      this.notifications = []
+    },
+    removeNotification(notificationId) {
+      this.notifications = this.notifications.filter(n => n._id !== notificationId)
+    },
+    handleNewNotification(notification) {
+      this.addNotification(notification)
     }
   },
 
   getters: {
-    unreadCount: (state) => state.notifications.filter(n => !n.read).length
+    unreadCount: (state) => (state.notifications || []).filter(n => !n.read).length,
+    sortedNotifications: (state) => [...(state.notifications || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   }
 })

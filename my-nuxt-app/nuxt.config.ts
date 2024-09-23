@@ -23,7 +23,7 @@ export default defineNuxtConfig({
     '~/plugins/toast.js',
     '~/plugins/fontawesome.js',
     '~/plugins/auth.js',
-    '~/plugins/socket.js'  // Add this line
+    '~/plugins/socket.js',
   ],
   ssr: true
 })

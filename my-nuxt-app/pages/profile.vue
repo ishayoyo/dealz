@@ -1,6 +1,8 @@
 <template>
   <div class="container mx-auto px-4 py-8 pt-24">
-    <div v-if="!user" class="text-center py-8">Loading user data...</div>
+    <div v-if="loading" class="text-center py-8">Loading user data...</div>
+    <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
+    <div v-else-if="!user" class="text-center py-8 text-red-500">User data not available. Please try logging in again.</div>
     <div v-else class="bg-white shadow-lg rounded-lg overflow-hidden">
       <div class="p-6">
         <div class="flex items-center mb-6">
@@ -113,6 +115,8 @@ import { storeToRefs } from 'pinia'
 
 const config = useRuntimeConfig()
 const fileInput = ref(null)
+const loading = ref(true)
+const error = ref(null)
 
 const currentTab = ref('info')
 const tabs = [
@@ -135,15 +139,22 @@ const followingUsers = ref([])
 const followers = ref([])
 
 onMounted(async () => {
-  if (!user.value) {
-    await authStore.fetchUser()
+  try {
+    if (!user.value) {
+      await authStore.fetchUser()
+    }
+    await Promise.all([
+      fetchUserDeals(),
+      fetchFollowedDeals(),
+      fetchFollowing(),
+      fetchFollowers()
+    ])
+  } catch (err) {
+    console.error('Error loading user data:', err)
+    error.value = 'Error loading user data. Please try again.'
+  } finally {
+    loading.value = false
   }
-  await Promise.all([
-    fetchUserDeals(),
-    fetchFollowedDeals(),
-    fetchFollowing(),
-    fetchFollowers()
-  ])
 })
 
 const getUserName = computed(() => {
@@ -169,14 +180,11 @@ const getFullProfilePictureUrl = (profilePicture) => {
 
 const fetchFollowedDeals = async () => {
   try {
-    const response = await api.get('/deals/followed') // Updated endpoint
-    followedDeals.value = response.data.data.followedDeals // Updated data structure
+    const response = await api.get('/deals/followed')
+    followedDeals.value = response.data.data.followedDeals
   } catch (error) {
     console.error('Error fetching followed deals:', error)
-    // Log more details about the error
-    if (error.response) {
-      console.error('Error response:', error.response.data)
-    }
+    throw error
   }
 }
 
@@ -186,6 +194,7 @@ const fetchUserDeals = async () => {
     userDeals.value = response.data.data.deals
   } catch (error) {
     console.error('Error fetching user deals:', error)
+    throw error
   }
 }
 
@@ -195,6 +204,7 @@ const fetchFollowing = async () => {
     followingUsers.value = response.data.data.following
   } catch (error) {
     console.error('Error fetching following users:', error)
+    throw error
   }
 }
 
@@ -204,6 +214,7 @@ const fetchFollowers = async () => {
     followers.value = response.data.data.followers
   } catch (error) {
     console.error('Error fetching followers:', error)
+    throw error
   }
 }
 
@@ -227,7 +238,7 @@ const followUser = async (userId) => {
 
 const unfollowDeal = async (dealId) => {
   try {
-    await api.delete(`/deals/${dealId}/follow`) // Updated endpoint
+    await api.delete(`/deals/${dealId}/follow`)
     followedDeals.value = followedDeals.value.filter(deal => deal._id !== dealId)
   } catch (error) {
     console.error('Error unfollowing deal:', error)

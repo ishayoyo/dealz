@@ -21,11 +21,17 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </NuxtLink>
-            <button class="text-text hover:text-primary mr-4 transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
+            <div class="relative">
+              <button @click="toggleNotifications" class="text-text hover:text-primary mr-4 transition duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                  {{ unreadCount }}
+                </span>
+              </button>
+              <NotificationList v-if="showNotifications" @close="closeNotifications" />
+            </div>
             <button @click="handleLogout" class="btn btn-accent">Logout</button>
           </template>
         </ClientOnly>
@@ -41,15 +47,20 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
+import { useNotificationStore } from '~/stores/notification'
 import { storeToRefs } from 'pinia'
+import NotificationList from '~/components/NotificationList.vue'
 
 const authStore = useAuthStore()
+const notificationStore = useNotificationStore()
 const { isAuthenticated, user } = storeToRefs(authStore)
+const { unreadCount } = storeToRefs(notificationStore)
 
 const showAuthModal = ref(false)
 const showPostDealModal = ref(false)
 const isLoginMode = ref(true)
 const scrolled = ref(false)
+const showNotifications = ref(false)
 
 const handleScroll = () => {
   scrolled.value = window.scrollY > 0
@@ -57,6 +68,9 @@ const handleScroll = () => {
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
+  if (isAuthenticated.value) {
+    notificationStore.fetchNotifications()
+  }
 })
 
 onUnmounted(() => {
@@ -65,7 +79,7 @@ onUnmounted(() => {
 
 const handleLogout = () => {
   authStore.logout()
-  // Additional logout logic...
+  notificationStore.clearNotifications()
 }
 
 const openAuthModal = (mode) => {
@@ -87,26 +101,49 @@ const closePostDealModal = () => {
 
 const handleLogin = async () => {
   try {
-    closeAuthModal()
+    const success = await authStore.login(email.value, password.value);
+    if (success) {
+      await notificationStore.fetchNotifications();
+      closeAuthModal();
+      toast.success('Successfully logged in!');
+    } else {
+      toast.error('Login failed. Please check your credentials and try again.');
+    }
   } catch (error) {
-    console.error('Login error:', error)
-    // Handle login error (e.g., show error message)
+    console.error('Login error:', error);
+    toast.error(error.response?.data?.message || 'An error occurred during login');
   }
 }
 
 const handleSignup = async () => {
   try {
-    closeAuthModal()
+    const success = await authStore.signup({
+      username: username.value,
+      email: email.value,
+      password: password.value
+    });
+    if (success) {
+      await notificationStore.fetchNotifications();
+      closeAuthModal();
+      toast.success('Successfully signed up!');
+    } else {
+      toast.error('Signup failed. Please check your information and try again.');
+    }
   } catch (error) {
-    console.error('Signup error:', error)
-    // Handle signup error (e.g., show error message)
+    console.error('Signup error:', error);
+    toast.error(error.response?.data?.message || 'An error occurred during signup');
   }
 }
 
-const handlePostDeal = (deal) => {
-  console.log('Posted deal:', deal)
-  closePostDealModal()
-  // Optionally, you can refresh the deals list or add the new deal to the existing list
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value
+  if (showNotifications.value) {
+    notificationStore.fetchNotifications()
+  }
+}
+
+const closeNotifications = () => {
+  showNotifications.value = false
 }
 
 const profilePictureUrl = computed(() => {

@@ -1,3 +1,4 @@
+// stores/auth.js
 import { defineStore } from 'pinia'
 import api from '~/services/api'
 
@@ -7,9 +8,11 @@ export const useAuthStore = defineStore('auth', {
     token: null,
     tokenExpirationTime: null,
   }),
+
   getters: {
     isAuthenticated: (state) => !!state.token && state.tokenExpirationTime > Date.now(),
   },
+
   actions: {
     async initializeAuth() {
       if (process.client) {
@@ -27,28 +30,45 @@ export const useAuthStore = defineStore('auth', {
         }
       }
     },
+
     async login(email, password) {
-      try {
-        const response = await api.post('/users/login', { email, password })
-        if (response.data && response.data.token) {
-          this.setAuthData(response.data)
-        } else {
-          throw new Error('Invalid response from server')
+        try {
+          const response = await api.post('/users/login', { email, password });
+          if (response.data && response.data.token) {
+            this.setAuthData(response.data);
+            return true;
+          } else {
+            console.error('Invalid response from server:', response.data);
+            return false;
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          if (error.response) {
+            console.error('Error response:', error.response.data);
+          }
+          throw error;
         }
-      } catch (error) {
-        console.error('Login error:', error)
-        throw error
-      }
-    },
-    async signup(userData) {
-      try {
-        const response = await api.post('/users/register', userData)
-        this.setAuthData(response.data)
-      } catch (error) {
-        console.error('Signup error:', error)
-        throw error
-      }
-    },
+      },
+
+      async signup(userData) {
+        try {
+          const response = await api.post('/users/register', userData);
+          if (response.data && response.data.token) {
+            this.setAuthData(response.data);
+            return true;
+          } else {
+            console.error('Invalid response from server:', response.data);
+            return false;
+          }
+        } catch (error) {
+          console.error('Signup error:', error);
+          if (error.response) {
+            console.error('Error response:', error.response.data);
+          }
+          throw error;
+        }
+      },
+
     setAuthData(data) {
       this.token = data.token
       this.user = data.user || data.data?.user || null
@@ -61,6 +81,7 @@ export const useAuthStore = defineStore('auth', {
       api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
       this.setupTokenExpirationCheck()
     },
+
     setupTokenExpirationCheck() {
       if (process.client) {
         const timeUntilExpiration = this.tokenExpirationTime - Date.now()
@@ -71,15 +92,22 @@ export const useAuthStore = defineStore('auth', {
         }, timeUntilExpiration)
       }
     },
+
     async fetchUser() {
       try {
         const response = await api.get('/users/me')
         this.user = response.data.data.user
+        return this.user
       } catch (error) {
         console.error('Error fetching user:', error)
-        this.logout()
+        if (error.response && error.response.status === 401) {
+          // Token is invalid or expired
+          this.logout()
+        }
+        throw error
       }
     },
+
     logout() {
       this.user = null
       this.token = null
