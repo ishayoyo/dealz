@@ -19,7 +19,9 @@
           <button @click.stop="voteDeal(1)" class="text-gray-500 hover:text-secondary transition-colors duration-200">
             <i class="fas fa-arrow-up"></i>
           </button>
-          <span class="text-sm font-semibold text-text">{{ deal.voteCount }}</span>
+          <!-- {{ edit_1 }} -->
+          <!-- <span class="text-sm font-semibold text-text">{{ deal.voteCount }}</span> -->
+          <!-- {{ edit_2 }} -->
           <button @click.stop="voteDeal(-1)" class="text-gray-500 hover:text-accent transition-colors duration-200">
             <i class="fas fa-arrow-down"></i>
           </button>
