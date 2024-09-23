@@ -207,14 +207,18 @@ const fetchDealData = async () => {
   try {
     const [commentsResponse, statusResponse, userStatusResponse] = await Promise.all([
       api.get(`/comments/deal/${props.deal._id}`),
-      api.get(`/deals/${props.deal._id}/status`),
-      api.get(`/users/${props.deal.user._id}/status`)
+      isAuthenticated.value ? api.get(`/deals/${props.deal._id}/status`) : Promise.resolve({ data: { data: { isFollowing: false } } }),
+      isAuthenticated.value ? api.get(`/users/${props.deal.user._id}/status`) : Promise.resolve({ data: { data: { isFollowing: false } } })
     ])
-    console.log('Raw comments response:', commentsResponse.data);
+    
     comments.value = commentsResponse.data.data.comments
-    console.log('Fetched comments:', comments.value);
-    isFollowing.value = statusResponse.data.data.isFollowing
-    isFollowingUser.value = userStatusResponse.data.data.isFollowing
+    if (isAuthenticated.value) {
+      isFollowing.value = statusResponse.data.data.isFollowing
+      isFollowingUser.value = userStatusResponse.data.data.isFollowing
+    } else {
+      isFollowing.value = false
+      isFollowingUser.value = false
+    }
     console.log('DealModal: Fetched comments:', comments.value)
     console.log('DealModal: Fetched deal following status:', isFollowing.value)
     console.log('DealModal: Fetched user following status:', isFollowingUser.value)
@@ -228,7 +232,7 @@ const fetchDealData = async () => {
 
 const handleFollowDeal = () => {
   if (!authStore.isAuthenticated) {
-    toast.info("Please log in to follow this deal")
+    openAuthModal()
     return
   }
   followDeal()
@@ -252,7 +256,7 @@ const followDeal = async () => {
 
 const handleAddComment = () => {
   if (!authStore.isAuthenticated) {
-    toast.info("Please log in to add a comment")
+    openAuthModal()
     return
   }
   addComment()
@@ -278,7 +282,7 @@ const closeModal = () => {
 
 const handleFollowUser = () => {
   if (!authStore.isAuthenticated) {
-    toast.info("Please log in to follow this user")
+    openAuthModal()
     return
   }
   followUser()
@@ -328,7 +332,7 @@ const replyContent = ref('')
 
 const handleToggleReplyForm = (commentId) => {
   if (!authStore.isAuthenticated) {
-    toast.info("Please log in to reply to comments")
+    openAuthModal()
     return
   }
   toggleReplyForm(commentId)
@@ -381,7 +385,7 @@ const cancelReply = () => {
 
 const handleVoteComment = (commentId, value) => {
   if (!authStore.isAuthenticated) {
-    toast.info("Please log in to vote on comments")
+    openAuthModal()
     return
   }
   voteComment(commentId, value)
@@ -405,7 +409,6 @@ const voteComment = async (commentId, value) => {
 }
 
 const openAuthModal = () => {
-  // Implement the logic to open the auth modal
-  // This might involve emitting an event or calling a method in the parent component
+  emit('open-auth-modal')
 }
 </script>

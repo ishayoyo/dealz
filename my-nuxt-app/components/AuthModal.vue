@@ -53,8 +53,10 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useAuthStore } from '~/stores/auth'
+import { useToast } from 'vue-toastification'
 
 const authStore = useAuthStore()
+const toast = useToast()
 
 const props = defineProps({
   isLogin: {
@@ -84,6 +86,7 @@ const handleSubmit = async () => {
     error.value = null
     if (isLogin.value) {
       await authStore.login(form.email, form.password)
+      toast.success('Successfully logged in!')
       emit('login')
     } else {
       await authStore.signup({
@@ -91,12 +94,14 @@ const handleSubmit = async () => {
         email: form.email,
         password: form.password
       })
+      toast.success('Successfully signed up!')
       emit('signup')
     }
     emit('close')
   } catch (err) {
     console.error('Auth error:', err)
     error.value = err.message || 'An error occurred. Please try again.'
+    toast.error(error.value)
   }
 }
 </script>

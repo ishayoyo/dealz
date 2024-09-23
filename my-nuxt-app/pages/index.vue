@@ -7,7 +7,13 @@
         <DealCard v-for="deal in deals" :key="deal._id" :deal="deal" @open-modal="openModal" />
       </div>
     </div>
-    <DealModal v-if="selectedDeal" :deal="selectedDeal" @close-modal="closeModal" />
+    <DealModal 
+      v-if="selectedDeal" 
+      :deal="selectedDeal" 
+      @close-modal="closeModal" 
+      @open-auth-modal="openAuthModal" 
+    />
+    <AuthModal v-if="showAuthModal" @close="closeAuthModal" />
   </div>
 </template>
 
@@ -15,6 +21,8 @@
 import { useDealsStore } from '~/stores/deals'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
+import DealModal from '~/components/DealModal.vue'
+import AuthModal from '~/components/AuthModal.vue'
 
 const dealsStore = useDealsStore()
 const { deals, loading, error } = storeToRefs(dealsStore)
@@ -26,6 +34,7 @@ onMounted(async () => {
 })
 
 const selectedDeal = ref(null)
+const showAuthModal = ref(false)
 
 const openModal = (deal) => {
   selectedDeal.value = { ...deal }
@@ -33,5 +42,13 @@ const openModal = (deal) => {
 
 const closeModal = () => {
   selectedDeal.value = null
+}
+
+const openAuthModal = () => {
+  showAuthModal.value = true
+}
+
+const closeAuthModal = () => {
+  showAuthModal.value = false
 }
 </script>

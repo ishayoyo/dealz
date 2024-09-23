@@ -1,11 +1,12 @@
 <template>
   <div class="container mx-auto px-4 py-8 pt-24">
-    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <div v-if="!user" class="text-center py-8">Loading user data...</div>
+    <div v-else class="bg-white shadow-lg rounded-lg overflow-hidden">
       <div class="p-6">
         <div class="flex items-center mb-6">
           <div class="relative">
             <UserAvatar 
-              :name="user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username || ''" 
+              :name="getUserName" 
               :size="80" 
               :src="fullProfilePictureUrl" 
               class="mr-6" 
@@ -19,7 +20,7 @@
             <input type="file" ref="fileInput" @change="handleFileChange" class="hidden" accept="image/*">
           </div>
           <div>
-            <h3 class="text-xl font-semibold">{{ user.firstName }} {{ user.lastName }}</h3>
+            <h3 class="text-xl font-semibold">{{ getUserName }}</h3>
             <p class="text-gray-600">{{ user.email }}</p>
           </div>
         </div>
@@ -71,10 +72,6 @@
           </div>
         </div>
 
-        <div v-else-if="currentTab === 'followedDeals'">
-          <FollowedDeals :followedDeals="followedDeals" @unfollow="unfollowDeal" />
-        </div>
-
         <div v-else-if="currentTab === 'followers'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div v-for="follower in followers" :key="follower._id" class="flex items-center justify-between border-b border-gray-200 py-3">
             <div class="flex items-center">
@@ -94,6 +91,10 @@
         <div v-else-if="currentTab === 'deals'">
           <UserDeals :userDeals="userDeals" />
         </div>
+
+        <div v-else-if="currentTab === 'followedDeals'">
+          <FollowedDeals :followedDeals="followedDeals" @unfollow="unfollowDeal" />
+        </div>
       </div>
     </div>
   </div>
@@ -105,6 +106,7 @@ import { useRuntimeConfig } from '#app'
 import api from '~/services/api'
 import FollowedDeals from '~/components/FollowedDeals.vue'
 import UserDeals from '~/components/UserDeals.vue'
+import UserAvatar from '~/components/UserAvatar.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
 import { storeToRefs } from 'pinia'
@@ -126,14 +128,144 @@ const authStore = useAuthStore()
 const dealsStore = useDealsStore()
 
 const { user } = storeToRefs(authStore)
-const { userDeals, followedDeals } = storeToRefs(dealsStore)
+const userDeals = ref([])
+const followedDeals = ref([])
+
+const followingUsers = ref([])
+const followers = ref([])
 
 onMounted(async () => {
+  if (!user.value) {
+    await authStore.fetchUser()
+  }
   await Promise.all([
-    dealsStore.fetchUserDeals(),
-    dealsStore.fetchFollowedDeals(),
-    // ... other fetch calls
+    fetchUserDeals(),
+    fetchFollowedDeals(),
+    fetchFollowing(),
+    fetchFollowers()
   ])
+})
+
+const getUserName = computed(() => {
+  if (!user.value) return ''
+  return user.value.firstName && user.value.lastName
+    ? `${user.value.firstName} ${user.value.lastName}`
+    : user.value.username || ''
+})
+
+const fullProfilePictureUrl = computed(() => {
+  if (!user.value || !user.value.profilePicture) return ''
+  return user.value.profilePicture.startsWith('http') 
+    ? user.value.profilePicture 
+    : `${config.public.apiBase}${user.value.profilePicture}`
+})
+
+const getFullProfilePictureUrl = (profilePicture) => {
+  if (!profilePicture) return ''
+  return profilePicture.startsWith('http') 
+    ? profilePicture 
+    : `${config.public.apiBase}${profilePicture}`
+}
+
+const fetchFollowedDeals = async () => {
+  try {
+    const response = await api.get('/deals/saved')
+    followedDeals.value = response.data.data.deals
+  } catch (error) {
+    console.error('Error fetching followed deals:', error)
+    // Log more details about the error
+    if (error.response) {
+      console.error('Error response:', error.response.data)
+    }
+  }
+}
+
+const fetchUserDeals = async () => {
+  try {
+    const response = await api.get('/users/me/deals')
+    userDeals.value = response.data.data.deals
+  } catch (error) {
+    console.error('Error fetching user deals:', error)
+  }
+}
+
+const fetchFollowing = async () => {
+  try {
+    const response = await api.get('/users/me/following')
+    followingUsers.value = response.data.data.following
+  } catch (error) {
+    console.error('Error fetching following users:', error)
+  }
+}
+
+const fetchFollowers = async () => {
+  try {
+    const response = await api.get('/users/me/followers')
+    followers.value = response.data.data.followers
+  } catch (error) {
+    console.error('Error fetching followers:', error)
+  }
+}
+
+const unfollowUser = async (userId) => {
+  try {
+    await api.delete(`/users/${userId}/follow`)
+    followingUsers.value = followingUsers.value.filter(user => user._id !== userId)
+  } catch (error) {
+    console.error('Error unfollowing user:', error)
+  }
+}
+
+const followUser = async (userId) => {
+  try {
+    await api.post(`/users/${userId}/follow`)
+    await fetchFollowers()
+  } catch (error) {
+    console.error('Error following user:', error)
+  }
+}
+
+const unfollowDeal = async (dealId) => {
+  try {
+    await api.delete(`/deals/${dealId}/save`)
+    followedDeals.value = followedDeals.value.filter(deal => deal._id !== dealId)
+  } catch (error) {
+    console.error('Error unfollowing deal:', error)
+  }
+}
+
+const isFollowing = (userId) => {
+  return followingUsers.value.some(user => user._id === userId)
+}
+
+const handleFileChange = async (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const formData = new FormData()
+    formData.append('image', file)
+    try {
+      const response = await api.post('/users/upload-profile-picture', formData)
+      user.value.profilePicture = response.data.data.user.profilePicture
+    } catch (error) {
+      console.error('Error uploading profile picture:', error)
+    }
+  }
+}
+
+const triggerFileInput = () => {
+  fileInput.value.click()
+}
+
+watch(currentTab, async (newTab) => {
+  if (newTab === 'following') {
+    await fetchFollowing()
+  } else if (newTab === 'followedDeals') {
+    await fetchFollowedDeals()
+  } else if (newTab === 'followers') {
+    await fetchFollowers()
+  } else if (newTab === 'deals') {
+    await fetchUserDeals()
+  }
 })
 
 const userFields = [
@@ -154,44 +286,12 @@ const passwordFields = [
   { key: 'confirmPassword', label: 'Confirm New Password' }
 ]
 
-const fullProfilePictureUrl = computed(() => {
-  if (!user.value.profilePicture) return ''
-  return user.value.profilePicture.startsWith('http') 
-    ? user.value.profilePicture 
-    : `${config.public.apiBase}${user.value.profilePicture}`
-})
-
-const getFullProfilePictureUrl = (profilePicture) => {
-  if (!profilePicture) return ''
-  return profilePicture.startsWith('http') 
-    ? profilePicture 
-    : `${config.public.apiBase}${profilePicture}`
-}
-
-const triggerFileInput = () => {
-  fileInput.value.click()
-}
-
-const handleFileChange = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const formData = new FormData()
-    formData.append('image', file)
-    try {
-      const response = await api.post('/users/upload-profile-picture', formData)
-      user.value.profilePicture = response.data.data.user.profilePicture
-    } catch (error) {
-      console.error('Error uploading profile picture:', error)
-      // Show error message to user
-    }
-  }
-}
-
 const saveChanges = async () => {
   try {
     const response = await api.put('/users/me', user.value)
     user.value = response.data.data.user
     // Show success message
+    console.log('User data updated successfully')
   } catch (error) {
     console.error('Error updating user data:', error)
     // Show error message
@@ -200,70 +300,14 @@ const saveChanges = async () => {
 
 const changePassword = async () => {
   try {
-    const response = await api.post('/users/change-password', passwordChange.value)
-    if (response.data.status === 'success') {
-      // Show success message to user
-      alert('Password changed successfully')
-      // Clear the form fields
-      passwordChange.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
-    } else {
-      throw new Error(response.data.message || 'Failed to change password')
-    }
+    await api.post('/users/change-password', passwordChange.value)
+    // Show success message
+    console.log('Password changed successfully')
+    // Clear the form fields
+    passwordChange.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
   } catch (error) {
     console.error('Error changing password:', error)
-    console.error('Error details:', error.response?.data)
-    // Show error message to user
-    alert(error.response?.data?.message || 'An error occurred while changing the password')
-  }
-}
-
-const unfollowUser = async (userId) => {
-  try {
-    await api.delete(`/users/${userId}/follow`)
-    followingUsers.value = followingUsers.value.filter(user => user._id !== userId)
-    user.value.following = user.value.following.filter(id => id !== userId)
-  } catch (error) {
-    console.error('Error unfollowing user:', error)
     // Show error message
   }
 }
-
-const unfollowDeal = async (dealId) => {
-  try {
-    await api.delete(`/deals/${dealId}/follow`)
-    followedDeals.value = followedDeals.value.filter(deal => deal._id !== dealId)
-    user.value.followedDeals = user.value.followedDeals.filter(id => id !== dealId)
-  } catch (error) {
-    console.error('Error unfollowing deal:', error)
-    // Show error message
-  }
-}
-
-const followUser = async (userId) => {
-  try {
-    await api.post(`/users/${userId}/follow`)
-    // Refresh the followers list
-    await fetchFollowers()
-  } catch (error) {
-    console.error('Error following user:', error)
-    // Show error message
-  }
-}
-
-const isFollowing = (userId) => {
-  return followingUsers.value.some(user => user._id === userId)
-}
-
-// Watch for tab changes to load data
-watch(currentTab, async (newTab) => {
-  if (newTab === 'following') {
-    await fetchFollowing()
-  } else if (newTab === 'followedDeals') {
-    await fetchFollowedDeals()
-  } else if (newTab === 'followers') {
-    await fetchFollowers()
-  } else if (newTab === 'deals') {
-    await fetchUserDeals()
-  }
-})
 </script>
