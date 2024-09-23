@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
 import { storeToRefs } from 'pinia'
@@ -151,5 +151,11 @@ const profilePictureUrl = computed(() => {
       : `http://localhost:5000${user.value.profilePicture}`
   }
   return null
+})
+
+watch(() => isAuthenticated.value, (newValue) => {
+  if (newValue) {
+    notificationStore.fetchNotifications()
+  }
 })
 </script>

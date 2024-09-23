@@ -35,10 +35,17 @@ export default defineNuxtPlugin((nuxtApp) => {
 
     // Listen for authentication changes
     watch(() => authStore.isAuthenticated, (isAuthenticated) => {
-      if (isAuthenticated && socket.connected) {
+      if (isAuthenticated) {
+        if (!socket.connected) {
+          socket.connect()
+        }
         console.log('User authenticated, joining room:', authStore.user.id)
         socket.emit('join', { userId: authStore.user.id })
+      } else {
+        if (socket.connected) {
+          socket.disconnect()
+        }
       }
-    })
+    }, { immediate: true })
   }
 })

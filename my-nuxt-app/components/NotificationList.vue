@@ -44,8 +44,8 @@
   const notificationStore = useNotificationStore()
   const { notifications } = storeToRefs(notificationStore)
   
-  const sortedNotifications = computed(() => notificationStore.sortedNotifications.slice(0, 5))
-  
+  const sortedNotifications = computed(() => notifications.value.slice(0, 5))
+    
   const markAsRead = (notificationId) => {
     notificationStore.markNotificationAsRead(notificationId)
   }
