@@ -8,6 +8,8 @@ const AppError = require('../utils/appError');
 const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
+const NotificationService = require('../services/NotificationService');
+
 
 const signToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -118,6 +120,15 @@ exports.followUser = catchAsync(async (req, res, next) => {
   // Update the followed user's followers array
   userToFollow.followers.push(currentUser._id);
   await userToFollow.save();
+
+  // Create notification for new follower
+  const notificationService = new NotificationService(req.app.get('io'));
+  await notificationService.createNotification({
+    recipient: userToFollow._id,
+    type: 'new_follower',
+    content: `${currentUser.username} started following you`,
+    relatedUser: currentUser._id
+  });
 
   res.status(200).json({
     status: 'success',

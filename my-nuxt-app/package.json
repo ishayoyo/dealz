@@ -18,6 +18,7 @@
     "date-fns": "^4.1.0",
     "nuxt": "^3.13.2",
     "pinia": "^2.1.7",
+    "socket.io-client": "^4.8.0",
     "vue": "^3.3.4",
     "vue-router": "latest",
     "vue-toastification": "^2.0.0-rc.5"

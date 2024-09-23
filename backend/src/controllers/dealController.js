@@ -11,6 +11,8 @@ const ImageFetcherService = require('../services/imageFetcherService');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs').promises;
+const NotificationService = require('../services/NotificationService');
+
 
 exports.getDeals = catchAsync(async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
@@ -60,6 +62,22 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     tags,
     user: req.user.id
   });
+
+  // Get the user's followers
+  const user = await User.findById(req.user.id);
+  const followers = await User.find({ _id: { $in: user.followers } });
+
+  // Create notifications for followers
+  const notificationService = new NotificationService(req.app.get('io'));
+  for (let follower of followers) {
+    await notificationService.createNotification({
+      recipient: follower._id,
+      type: 'new_deal',
+      content: `${user.username} posted a new deal: ${deal.title}`,
+      relatedUser: user._id,
+      relatedDeal: deal._id
+    });
+  }
 
   res.status(201).json({
     status: 'success',

@@ -2,11 +2,18 @@ const Comment = require('../models/Comment.Model');
 const Deal = require('../models/Deal.Model');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const NotificationService = require('../services/NotificationService');
+const User = require('../models/User.Model');
 
 exports.createComment = catchAsync(async (req, res, next) => {
   const { content } = req.body;
   const { dealId } = req.params;
   const userId = req.user.id;
+
+  const deal = await Deal.findById(dealId);
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
 
   const comment = await Comment.create({
     content,
@@ -15,6 +22,37 @@ exports.createComment = catchAsync(async (req, res, next) => {
   });
 
   const populatedComment = await Comment.findById(comment._id).populate('user', 'username profilePicture');
+
+  // Create notification for deal owner
+  const notificationService = new NotificationService(req.app.get('io'));
+  if (deal.user.toString() !== userId) {
+    await notificationService.createNotification({
+      recipient: deal.user,
+      type: 'comment',
+      content: `${req.user.username} commented on your deal: ${deal.title}`,
+      relatedUser: userId,
+      relatedDeal: dealId,
+      relatedComment: comment._id
+    });
+  }
+
+  // Handle @mentions
+  const mentionRegex = /@(\w+)/g;
+  let match;
+  while ((match = mentionRegex.exec(content)) !== null) {
+    const username = match[1];
+    const mentionedUser = await User.findOne({ username });
+    if (mentionedUser && mentionedUser._id.toString() !== userId) {
+      await notificationService.createNotification({
+        recipient: mentionedUser._id,
+        type: 'mention',
+        content: `${req.user.username} mentioned you in a comment on a deal`,
+        relatedUser: userId,
+        relatedDeal: dealId,
+        relatedComment: comment._id
+      });
+    }
+  }
 
   res.status(201).json({
     status: 'success',
@@ -130,25 +168,14 @@ exports.getComments = catchAsync(async (req, res, next) => {
 });
 
 exports.createReply = catchAsync(async (req, res, next) => {
-  console.log('Received request to create reply:', { body: req.body, params: req.params, user: req.user });
-  
   const { content } = req.body;
   const { commentId } = req.params;
   const userId = req.user.id;
 
-  if (!commentId || commentId === 'undefined') {
-    return next(new AppError('Valid Comment ID is required', 400));
-  }
-
-  console.log('Attempting to find parent comment with ID:', commentId);
-
   const parentComment = await Comment.findById(commentId);
-
   if (!parentComment) {
     return next(new AppError('No parent comment found with that ID', 404));
   }
-
-  console.log('Parent comment found:', parentComment);
 
   const reply = await Comment.create({
     content,
@@ -157,9 +184,38 @@ exports.createReply = catchAsync(async (req, res, next) => {
     parentComment: commentId
   });
 
-  console.log('Reply created:', reply);
-
   const populatedReply = await Comment.findById(reply._id).populate('user', 'username profilePicture');
+
+  // Create notification for parent comment owner
+  const notificationService = new NotificationService(req.app.get('io'));
+  if (parentComment.user.toString() !== userId) {
+    await notificationService.createNotification({
+      recipient: parentComment.user,
+      type: 'reply',
+      content: `${req.user.username} replied to your comment`,
+      relatedUser: userId,
+      relatedDeal: parentComment.deal,
+      relatedComment: reply._id
+    });
+  }
+
+  // Handle @mentions
+  const mentionRegex = /@(\w+)/g;
+  let match;
+  while ((match = mentionRegex.exec(content)) !== null) {
+    const username = match[1];
+    const mentionedUser = await User.findOne({ username });
+    if (mentionedUser && mentionedUser._id.toString() !== userId) {
+      await notificationService.createNotification({
+        recipient: mentionedUser._id,
+        type: 'mention',
+        content: `${req.user.username} mentioned you in a reply to a comment`,
+        relatedUser: userId,
+        relatedDeal: parentComment.deal,
+        relatedComment: reply._id
+      });
+    }
+  }
 
   res.status(201).json({
     status: 'success',

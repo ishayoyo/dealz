@@ -22,7 +22,8 @@ export default defineNuxtConfig({
     '~/plugins/userAvatar.js',
     '~/plugins/toast.js',
     '~/plugins/fontawesome.js',
-    '~/plugins/auth.js'
+    '~/plugins/auth.js',
+    '~/plugins/socket.js'  // Add this line
   ],
   ssr: true
 })
