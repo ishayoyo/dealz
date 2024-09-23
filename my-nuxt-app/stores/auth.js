@@ -5,18 +5,25 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     token: null,
+    tokenExpirationTime: null,
   }),
   getters: {
-    isAuthenticated: (state) => !!state.token,
+    isAuthenticated: (state) => !!state.token && state.tokenExpirationTime > Date.now(),
   },
   actions: {
     async initializeAuth() {
       if (process.client) {
         const token = localStorage.getItem('token')
-        if (token) {
+        const tokenExpirationTime = localStorage.getItem('tokenExpirationTime')
+        if (token && tokenExpirationTime) {
           this.token = token
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-          await this.fetchUser()
+          this.tokenExpirationTime = parseInt(tokenExpirationTime)
+          if (this.isAuthenticated) {
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+            await this.fetchUser()
+          } else {
+            this.logout()
+          }
         }
       }
     },
@@ -24,12 +31,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await api.post('/users/login', { email, password })
         if (response.data && response.data.token) {
-          this.token = response.data.token
-          this.user = response.data.user || response.data.data?.user || null
-          if (process.client) {
-            localStorage.setItem('token', this.token)
-          }
-          api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+          this.setAuthData(response.data)
         } else {
           throw new Error('Invalid response from server')
         }
@@ -41,15 +43,32 @@ export const useAuthStore = defineStore('auth', {
     async signup(userData) {
       try {
         const response = await api.post('/users/register', userData)
-        this.token = response.data.token
-        this.user = response.data.data.user
-        if (process.client) {
-          localStorage.setItem('token', this.token)
-        }
-        api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+        this.setAuthData(response.data)
       } catch (error) {
         console.error('Signup error:', error)
         throw error
+      }
+    },
+    setAuthData(data) {
+      this.token = data.token
+      this.user = data.user || data.data?.user || null
+      // Assume token expires in 1 hour (3600000 ms)
+      this.tokenExpirationTime = Date.now() + 3600000
+      if (process.client) {
+        localStorage.setItem('token', this.token)
+        localStorage.setItem('tokenExpirationTime', this.tokenExpirationTime.toString())
+      }
+      api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+      this.setupTokenExpirationCheck()
+    },
+    setupTokenExpirationCheck() {
+      if (process.client) {
+        const timeUntilExpiration = this.tokenExpirationTime - Date.now()
+        setTimeout(() => {
+          if (!this.isAuthenticated) {
+            this.logout()
+          }
+        }, timeUntilExpiration)
       }
     },
     async fetchUser() {
@@ -64,10 +83,16 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       this.user = null
       this.token = null
+      this.tokenExpirationTime = null
       if (process.client) {
         localStorage.removeItem('token')
+        localStorage.removeItem('tokenExpirationTime')
       }
       delete api.defaults.headers.common['Authorization']
+      // Redirect to main page
+      if (process.client) {
+        window.location.href = '/'
+      }
     },
   },
 })

@@ -51,12 +51,14 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useToast } from 'vue-toastification'
+import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const toast = useToast()
+const router = useRouter()
 
 const props = defineProps({
   isLogin: {
@@ -104,4 +106,24 @@ const handleSubmit = async () => {
     toast.error(error.value)
   }
 }
+
+// Watch for authentication state changes
+watch(() => authStore.isAuthenticated, (newValue) => {
+  if (!newValue) {
+    // If user becomes unauthenticated (e.g., token expired), close the modal
+    emit('close')
+    // No need to redirect, as the auth store will handle it
+  }
+})
+
+// Check authentication status on component mount
+onMounted(() => {
+  if (!authStore.isAuthenticated) {
+    // If user is not authenticated, ensure they can't access protected routes
+    const currentRoute = router.currentRoute.value
+    if (currentRoute.meta.requiresAuth) {
+      router.push('/')
+    }
+  }
+})
 </script>
