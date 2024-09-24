@@ -492,13 +492,20 @@ exports.getCurrentUserFollowedDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.getUnreadNotifications = catchAsync(async (req, res, next) => {
-  const notificationService = new NotificationService(req.app.get('io'));
-  const notifications = await notificationService.getUnreadNotifications(req.user.id);
+  try {
+    const notificationService = new NotificationService(req.app.get('io'));
+    console.log('Fetching unread notifications for user:', req.user.id);
+    const notifications = await notificationService.getUnreadNotifications(req.user.id);
+    console.log('Fetched notifications:', notifications);
 
-  res.status(200).json({
-    status: 'success',
-    data: { notifications }
-  });
+    res.status(200).json({
+      status: 'success',
+      data: { notifications }
+    });
+  } catch (error) {
+    console.error('Error in getUnreadNotifications:', error);
+    next(new AppError('Error fetching notifications', 500));
+  }
 });
 
 exports.markNotificationAsRead = catchAsync(async (req, res, next) => {

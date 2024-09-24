@@ -156,6 +156,8 @@ const profilePictureUrl = computed(() => {
 watch(() => isAuthenticated.value, (newValue) => {
   if (newValue) {
     notificationStore.fetchNotifications()
+  } else {
+    notificationStore.clearNotifications()
   }
 })
 </script>

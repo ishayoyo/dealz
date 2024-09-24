@@ -9,7 +9,14 @@ class NotificationService {
 
   async createNotification(data) {
     try {
-      const notification = new Notification(data);
+      const notification = new Notification({
+        recipient: data.recipient,
+        type: data.type,
+        content: data.content,
+        relatedUser: data.relatedUser,
+        relatedDeal: data.relatedDeal,
+        relatedComment: data.relatedComment // Make sure this is set for comment notifications
+      });
       await notification.save();
       console.log('New notification created:', notification);
       this.sendNotification(notification);
@@ -56,13 +63,30 @@ class NotificationService {
 
   async getUnreadNotifications(userId) {
     try {
-      return await Notification.find({ recipient: userId, read: false })
-        .sort('-createdAt')
+      console.log('Fetching unread notifications for user:', userId);
+      
+      // Log the query
+      console.log('Query:', { recipient: userId, read: false });
+      
+      // Execute the find operation separately
+      const query = Notification.find({ recipient: userId, read: false })
+        .sort({ createdAt: -1 });
+      console.log('Query object:', query);
+      
+      // Execute population separately
+      const populatedQuery = query
         .populate('relatedUser', 'username profilePicture')
         .populate('relatedDeal', 'title')
         .populate('relatedComment', 'content');
+      console.log('Populated query object:', populatedQuery);
+      
+      // Execute the query
+      const notifications = await populatedQuery.lean();
+      
+      console.log('Fetched notifications:', JSON.stringify(notifications, null, 2));
+      return notifications;
     } catch (error) {
-      console.error('Error getting unread notifications:', error);
+      console.error('Error fetching unread notifications:', error);
       throw error;
     }
   }

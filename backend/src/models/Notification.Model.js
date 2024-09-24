@@ -6,18 +6,30 @@ const notificationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  content: {
-    type: String,
-    required: true
-  },
   type: {
     type: String,
-    enum: ['SYSTEM', 'DEAL', 'COMMENT', 'FOLLOW'], // Add other types as needed
+    enum: ['NEW_DEAL', 'NEW_COMMENT', 'DEAL_FOLLOW', 'USER_FOLLOW', 'SYSTEM'],
+    required: true
+  },
+  content: {
+    type: String,
     required: true
   },
   read: {
     type: Boolean,
     default: false
+  },
+  relatedUser: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  relatedDeal: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Deal'
+  },
+  relatedComment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Comment'
   },
   createdAt: {
     type: Date,

@@ -15,48 +15,35 @@ exports.createComment = catchAsync(async (req, res, next) => {
     return next(new AppError('No deal found with that ID', 404));
   }
 
-  const comment = await Comment.create({
+  const comment = new Comment({
     content,
     user: userId,
     deal: dealId
   });
 
-  const populatedComment = await Comment.findById(comment._id).populate('user', 'username profilePicture');
+  const newComment = await comment.save();
+
+  // Update the deal with the new comment
+  await Deal.findByIdAndUpdate(dealId, { $push: { comments: newComment._id } });
 
   // Create notification for deal owner
-  const notificationService = new NotificationService(req.app.get('io'));
   if (deal.user.toString() !== userId) {
+    const notificationService = new NotificationService(req.app.get('io'));
     await notificationService.createNotification({
       recipient: deal.user,
-      type: 'comment',
+      type: 'NEW_COMMENT',
       content: `${req.user.username} commented on your deal: ${deal.title}`,
       relatedUser: userId,
       relatedDeal: dealId,
-      relatedComment: comment._id
+      relatedComment: newComment._id
     });
-  }
-
-  // Handle @mentions
-  const mentionRegex = /@(\w+)/g;
-  let match;
-  while ((match = mentionRegex.exec(content)) !== null) {
-    const username = match[1];
-    const mentionedUser = await User.findOne({ username });
-    if (mentionedUser && mentionedUser._id.toString() !== userId) {
-      await notificationService.createNotification({
-        recipient: mentionedUser._id,
-        type: 'mention',
-        content: `${req.user.username} mentioned you in a comment on a deal`,
-        relatedUser: userId,
-        relatedDeal: dealId,
-        relatedComment: comment._id
-      });
-    }
   }
 
   res.status(201).json({
     status: 'success',
-    data: { comment: populatedComment }
+    data: {
+      comment: newComment
+    }
   });
 });
 
