@@ -13,7 +13,6 @@ const path = require('path');
 const fs = require('fs').promises;
 const NotificationService = require('../services/NotificationService');
 
-
 exports.getDeals = catchAsync(async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
@@ -72,7 +71,7 @@ exports.createDeal = catchAsync(async (req, res, next) => {
   for (let follower of followers) {
     await notificationService.createNotification({
       recipient: follower._id,
-      type: 'new_deal',
+      type: 'NEW_DEAL',
       content: `${user.username} posted a new deal: ${deal.title}`,
       relatedUser: user._id,
       relatedDeal: deal._id
@@ -143,81 +142,64 @@ exports.deleteDeal = catchAsync(async (req, res, next) => {
 });
 
 exports.voteDeal = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
-  const { value } = req.body;
-  const userId = req.user.id;
-
-  if (value !== 1 && value !== -1) {
-    return next(new AppError('Invalid vote value. Must be 1 or -1', 400));
-  }
-
-  const deal = await Deal.findById(id);
-
+  const deal = await Deal.findById(req.params.id);
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
   }
 
-  const existingVote = deal.votes.find(vote => vote.user.toString() === userId);
+  const { voteType } = req.body;
+  if (!['upvote', 'downvote'].includes(voteType)) {
+    return next(new AppError('Invalid vote type', 400));
+  }
 
-  if (existingVote) {
-    // User has already voted, update their vote
-    deal.voteScore += value - existingVote.value;
-    existingVote.value = value;
+  let vote = await Vote.findOne({ user: req.user.id, deal: deal._id });
+
+  if (vote) {
+    if (vote.voteType === voteType) {
+      // Remove the vote if it's the same type
+      await vote.deleteOne();
+      deal[`${voteType}s`] -= 1;
+    } else {
+      // Change the vote type
+      vote.voteType = voteType;
+      await vote.save();
+      deal[`${voteType}s`] += 1;
+      deal[`${voteType === 'upvote' ? 'downvotes' : 'upvotes'}`] -= 1;
+    }
   } else {
-    // New vote
-    deal.voteScore += value;
-    deal.votes.push({ user: userId, value });
+    // Create a new vote
+    vote = await Vote.create({ user: req.user.id, deal: deal._id, voteType });
+    deal[`${voteType}s`] += 1;
   }
 
   await deal.save();
 
   res.status(200).json({
     status: 'success',
-    data: { 
-      voteScore: deal.voteScore,
-      voteCount: deal.votes.length
-    }
-  });
-});
-
-exports.checkDealStatus = catchAsync(async (req, res, next) => {
-  const dealId = req.params.id;
-  const userId = req.user.id;
-
-  const user = await User.findById(userId);
-  const deal = await Deal.findById(dealId);
-
-  if (!user || !deal) {
-    return next(new AppError('User or Deal not found', 404));
-  }
-
-  const isFollowing = user.followedDeals.includes(dealId);
-  const hasBought = user.boughtDeals.includes(dealId);
-
-  res.status(200).json({
-    status: 'success',
     data: {
-      isFollowing,
-      hasBought
+      upvotes: deal.upvotes,
+      downvotes: deal.downvotes
     }
   });
 });
 
 exports.addComment = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
-  const { content } = req.body;
-
-  const deal = await Deal.findById(id);
-
+  const deal = await Deal.findById(req.params.id);
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
   }
 
   const comment = await Comment.create({
-    content,
+    content: req.body.content,
     user: req.user.id,
-    deal: id
+    deal: deal._id
   });
+
+  // Add this code to create a notification
+  if (deal.user.toString() !== req.user.id) {
+    const notificationService = new NotificationService(req.app.get('io'));
+    await notificationService.createCommentNotification(req.user.id, deal.user, deal._id);
+  }
 
   res.status(201).json({
     status: 'success',
@@ -226,15 +208,14 @@ exports.addComment = catchAsync(async (req, res, next) => {
 });
 
 exports.getDealComments = catchAsync(async (req, res, next) => {
-  const dealId = req.params.id;
-  
-  console.log('Fetching comments for dealId:', dealId);
+  const deal = await Deal.findById(req.params.id);
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
 
-  const comments = await Comment.find({ deal: dealId, status: 'active' })
+  const comments = await Comment.find({ deal: deal._id })
     .populate('user', 'username profilePicture')
     .sort('-createdAt');
-
-  console.log('Number of comments found:', comments.length);
 
   res.status(200).json({
     status: 'success',
@@ -242,36 +223,56 @@ exports.getDealComments = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.markAsBought = catchAsync(async (req, res, next) => {
+  const deal = await Deal.findById(req.params.id);
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  deal.boughtCount += 1;
+  await deal.save();
+
+  res.status(200).json({
+    status: 'success',
+    data: { boughtCount: deal.boughtCount }
+  });
+});
+
 exports.searchDeals = catchAsync(async (req, res, next) => {
-  const { query, category, store, minPrice, maxPrice } = req.query;
+  const { query, category, store, minPrice, maxPrice, sortBy } = req.query;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const skip = (page - 1) * limit;
 
-  const searchCriteria = { status: 'active' };
-
-  if (query) {
-    searchCriteria.$text = { $search: query };
-  }
-
-  if (category) {
-    searchCriteria.category = category;
-  }
-
-  if (store) {
-    searchCriteria.store = store;
-  }
-
+  let filter = { status: 'active' };
+  if (query) filter.title = { $regex: query, $options: 'i' };
+  if (category) filter.category = category;
+  if (store) filter.store = store;
   if (minPrice || maxPrice) {
-    searchCriteria.price = {};
-    if (minPrice) searchCriteria.price.$gte = parseFloat(minPrice);
-    if (maxPrice) searchCriteria.price.$lte = parseFloat(maxPrice);
+    filter.price = {};
+    if (minPrice) filter.price.$gte = parseFloat(minPrice);
+    if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
   }
 
-  const deals = await Deal.find(searchCriteria)
-    .sort('-createdAt')
+  let sort = {};
+  if (sortBy === 'price_asc') sort.price = 1;
+  else if (sortBy === 'price_desc') sort.price = -1;
+  else sort.createdAt = -1;
+
+  const deals = await Deal.find(filter)
+    .sort(sort)
+    .skip(skip)
+    .limit(limit)
     .populate('user', 'username profilePicture');
+
+  const total = await Deal.countDocuments(filter);
 
   res.status(200).json({
     status: 'success',
     results: deals.length,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
     data: { deals }
   });
 });
@@ -294,60 +295,43 @@ exports.getStores = catchAsync(async (req, res, next) => {
 
 exports.getTrendingDeals = catchAsync(async (req, res, next) => {
   const deals = await Deal.find({ status: 'active' })
-    .sort('-voteCount -createdAt')
+    .sort('-upvotes -commentCount -createdAt')
     .limit(10)
     .populate('user', 'username profilePicture');
 
   res.status(200).json({
     status: 'success',
-    results: deals.length,
     data: { deals }
   });
 });
 
 exports.getExpiringSoonDeals = catchAsync(async (req, res, next) => {
   const now = new Date();
+  const twentyFourHoursLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
   const deals = await Deal.find({
     status: 'active',
-    expiresAt: { $gt: now, $lt: new Date(now.getTime() + 24 * 60 * 60 * 1000) }
+    expirationDate: { $gte: now, $lte: twentyFourHoursLater }
   })
-    .sort('expiresAt')
+    .sort('expirationDate')
     .limit(10)
     .populate('user', 'username profilePicture');
 
   res.status(200).json({
     status: 'success',
-    results: deals.length,
     data: { deals }
   });
 });
 
-exports.markAsBought = catchAsync(async (req, res, next) => {
+exports.checkDealStatus = catchAsync(async (req, res, next) => {
   const deal = await Deal.findById(req.params.id);
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
   }
 
-  const user = await User.findById(req.user.id);
-  if (!user) {
-    return next(new AppError('User not found', 404));
-  }
-
-  if (!user.boughtDeals.includes(deal._id)) {
-    user.boughtDeals.push(deal._id);
-    await user.save();
-
-    deal.boughtCount += 1;
-    await deal.save();
-  }
-
   res.status(200).json({
     status: 'success',
-    message: 'Deal marked as bought',
-    data: {
-      boughtCount: deal.boughtCount,
-      hasBought: true
-    }
+    data: { status: deal.status }
   });
 });
 
@@ -358,15 +342,18 @@ exports.followDeal = catchAsync(async (req, res, next) => {
   }
 
   const user = await User.findById(req.user.id);
-  if (user.followedDeals.includes(deal._id)) {
-    return next(new AppError('You are already following this deal', 400));
+  if (!user.followedDeals.includes(deal._id)) {
+    user.followedDeals.push(deal._id);
+    await user.save();
+    deal.followCount += 1;
+    await deal.save();
+
+    // Add this code to create a notification
+    if (deal.user.toString() !== req.user.id) {
+      const notificationService = new NotificationService(req.app.get('io'));
+      await notificationService.createDealFollowNotification(req.user.id, deal.user, deal._id);
+    }
   }
-
-  user.followedDeals.push(deal._id);
-  await user.save();
-
-  deal.followCount += 1;
-  await deal.save();
 
   res.status(200).json({
     status: 'success',
@@ -385,15 +372,12 @@ exports.unfollowDeal = catchAsync(async (req, res, next) => {
   }
 
   const user = await User.findById(req.user.id);
-  if (!user.followedDeals.includes(deal._id)) {
-    return next(new AppError('You are not following this deal', 400));
+  if (user.followedDeals.includes(deal._id)) {
+    user.followedDeals = user.followedDeals.filter(id => id.toString() !== deal._id.toString());
+    await user.save();
+    deal.followCount = Math.max(0, deal.followCount - 1);
+    await deal.save();
   }
-
-  user.followedDeals = user.followedDeals.filter(id => id.toString() !== deal._id.toString());
-  await user.save();
-
-  deal.followCount = Math.max(0, deal.followCount - 1);
-  await deal.save();
 
   res.status(200).json({
     status: 'success',
@@ -455,50 +439,4 @@ exports.getFollowedDeals = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.followDeal = catchAsync(async (req, res, next) => {
-  const deal = await Deal.findById(req.params.id);
-  if (!deal) {
-    return next(new AppError('No deal found with that ID', 404));
-  }
-
-  const user = await User.findById(req.user.id);
-  if (!user.followedDeals.includes(deal._id)) {
-    user.followedDeals.push(deal._id);
-    await user.save();
-    deal.followCount += 1;
-    await deal.save();
-  }
-
-  res.status(200).json({
-    status: 'success',
-    message: 'Deal followed successfully',
-    data: {
-      isFollowing: true,
-      followCount: deal.followCount
-    }
-  });
-});
-
-exports.unfollowDeal = catchAsync(async (req, res, next) => {
-  const deal = await Deal.findById(req.params.id);
-  if (!deal) {
-    return next(new AppError('No deal found with that ID', 404));
-  }
-
-  const user = await User.findById(req.user.id);
-  if (user.followedDeals.includes(deal._id)) {
-    user.followedDeals = user.followedDeals.filter(id => id.toString() !== deal._id.toString());
-    await user.save();
-    deal.followCount = Math.max(0, deal.followCount - 1);
-    await deal.save();
-  }
-
-  res.status(200).json({
-    status: 'success',
-    message: 'Deal unfollowed successfully',
-    data: {
-      isFollowing: false,
-      followCount: deal.followCount
-    }
-  });
-});
+module.exports = exports;

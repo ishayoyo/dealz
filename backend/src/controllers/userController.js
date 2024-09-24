@@ -10,10 +10,9 @@ const sharp = require('sharp');
 const path = require('path');
 const NotificationService = require('../services/NotificationService');
 
-
 const signToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '1h' // This line is the fix
+    expiresIn: '1h'
   });
 };
 
@@ -35,15 +34,20 @@ exports.register = catchAsync(async (req, res, next) => {
       return next(new AppError('User with this email or username already exists', 400));
     }
 
-    console.log('Creating new user');
-    const newUser = await User.create({ username, email, password });
+    // Create new user
+    const newUser = await User.create({
+      username,
+      email,
+      password
+    });
 
     console.log('New user created:', newUser._id);
 
+    // Generate JWT
+    const token = signToken(newUser._id);
+
     // Remove password from output
     newUser.password = undefined;
-
-    const token = signToken(newUser._id);
 
     res.status(201).json({
       status: 'success',
@@ -52,15 +56,7 @@ exports.register = catchAsync(async (req, res, next) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      return next(new AppError(`Validation error: ${messages.join(', ')}`, 400));
-    }
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      return next(new AppError(`Duplicate ${field}. Please choose another ${field}.`, 400));
-    }
-    return next(new AppError('Error creating user', 500));
+    return next(new AppError('Error during registration', 500));
   }
 });
 
@@ -170,12 +166,7 @@ exports.followUser = catchAsync(async (req, res, next) => {
 
   // Create notification for new follower
   const notificationService = new NotificationService(req.app.get('io'));
-  await notificationService.createNotification({
-    recipient: userToFollow._id,
-    type: 'new_follower',
-    content: `${currentUser.username} started following you`,
-    relatedUser: currentUser._id
-  });
+  await notificationService.createFollowNotification(currentUser._id, userToFollow._id);
 
   res.status(200).json({
     status: 'success',
@@ -375,30 +366,6 @@ exports.checkUserStatus = catchAsync(async (req, res, next) => {
   });
 });
 
-// Add these new functions to userController.js
-
-exports.getCurrentUserFollowing = catchAsync(async (req, res, next) => {
-  console.log('getCurrentUserFollowing called');
-  console.log('User ID:', req.user._id);
-  try {
-    const user = await User.findById(req.user._id);
-    console.log('User found:', user);
-    console.log('User following array:', user.following);
-
-    const populatedUser = await User.findById(req.user._id).populate('following', 'username profilePicture');
-    console.log('Populated user:', populatedUser);
-    console.log('Populated following:', populatedUser.following);
-    
-    res.status(200).json({
-      status: 'success',
-      data: { following: populatedUser.following }
-    });
-  } catch (error) {
-    console.error('Error in getCurrentUserFollowing:', error);
-    next(error);
-  }
-});
-
 exports.getCurrentUserFollowers = catchAsync(async (req, res, next) => {
   console.log('User ID:', req.user._id);
   try {
@@ -430,8 +397,7 @@ exports.getCurrentUserDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.changePassword = catchAsync(async (req, res, next) => {
-  // Implementation here
-  console.log('Change password function called'); // Add this log
+  console.log('Change password function called');
   const { currentPassword, newPassword, confirmPassword } = req.body;
 
   // Check if new password and confirm password match
@@ -458,8 +424,6 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   });
 });
 
-// Add this new function at the end of the file
-
 exports.getCurrentUserCollections = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id).populate('collections');
   if (!user) {
@@ -471,10 +435,9 @@ exports.getCurrentUserCollections = catchAsync(async (req, res, next) => {
   });
 });
 
-// Add this new function to userController.js
-
 exports.getCurrentUserFollowedDeals = catchAsync(async (req, res, next) => {
   console.log('getCurrentUserFollowedDeals called');
+  console.log('User  called');
   console.log('User ID:', req.user._id);
   try {
     const user = await User.findById(req.user._id).populate({
@@ -527,3 +490,29 @@ exports.getCurrentUserFollowedDeals = catchAsync(async (req, res, next) => {
     next(error);
   }
 });
+
+exports.getUnreadNotifications = catchAsync(async (req, res, next) => {
+  const notificationService = new NotificationService(req.app.get('io'));
+  const notifications = await notificationService.getUnreadNotifications(req.user.id);
+
+  res.status(200).json({
+    status: 'success',
+    data: { notifications }
+  });
+});
+
+exports.markNotificationAsRead = catchAsync(async (req, res, next) => {
+  const notificationService = new NotificationService(req.app.get('io'));
+  const notification = await notificationService.markAsRead(req.params.id);
+
+  if (!notification) {
+    return next(new AppError('No notification found with that ID', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: { notification }
+  });
+});
+
+module.exports = exports;

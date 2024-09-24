@@ -9,15 +9,7 @@ class NotificationService {
 
   async createNotification(data) {
     try {
-      // Ensure 'content' is provided, use 'message' as content if available
-      const notificationData = {
-        ...data,
-        content: data.content || data.message,
-        // Use a valid type from your enum, e.g., 'SYSTEM' instead of 'TEST'
-        type: 'SYSTEM'
-      };
-
-      const notification = new Notification(notificationData);
+      const notification = new Notification(data);
       await notification.save();
       console.log('New notification created:', notification);
       this.sendNotification(notification);
@@ -31,6 +23,35 @@ class NotificationService {
   sendNotification(notification) {
     console.log('Sending notification to user:', notification.recipient.toString());
     this.io.to(notification.recipient.toString()).emit('newNotification', notification);
+  }
+
+  async createFollowNotification(followerId, followedId) {
+    return this.createNotification({
+      recipient: followedId,
+      type: 'FOLLOW',
+      content: 'You have a new follower!',
+      relatedUser: followerId
+    });
+  }
+
+  async createCommentNotification(commenterId, dealOwnerId, dealId) {
+    return this.createNotification({
+      recipient: dealOwnerId,
+      type: 'COMMENT',
+      content: 'Someone commented on your deal!',
+      relatedUser: commenterId,
+      relatedDeal: dealId
+    });
+  }
+
+  async createDealFollowNotification(followerId, dealOwnerId, dealId) {
+    return this.createNotification({
+      recipient: dealOwnerId,
+      type: 'DEAL_FOLLOW',
+      content: 'Someone followed your deal!',
+      relatedUser: followerId,
+      relatedDeal: dealId
+    });
   }
 
   async getUnreadNotifications(userId) {
