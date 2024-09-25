@@ -146,6 +146,11 @@ exports.followUser = catchAsync(async (req, res, next) => {
     return next(new AppError('No user found with that ID', 404));
   }
 
+  // Prevent users from following themselves
+  if (userToFollow._id.toString() === req.user.id) {
+    return next(new AppError('You cannot follow yourself', 400));
+  }
+
   const currentUser = await User.findById(req.user.id);
 
   // Check if already following

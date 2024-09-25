@@ -62,6 +62,11 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     user: req.user.id
   });
 
+  // Automatically follow the deal
+  await User.findByIdAndUpdate(req.user.id, { $addToSet: { followedDeals: deal._id } });
+  deal.followCount = 1;
+  await deal.save();
+
   // Get the user's followers
   const user = await User.findById(req.user.id);
   const followers = await User.find({ _id: { $in: user.followers } });
@@ -189,16 +194,23 @@ exports.addComment = catchAsync(async (req, res, next) => {
     return next(new AppError('No deal found with that ID', 404));
   }
 
+  const { content } = req.body;
+  const mentionedUsers = content.match(/@(\w+)/g) || [];
+
   const comment = await Comment.create({
-    content: req.body.content,
+    content,
     user: req.user.id,
     deal: deal._id
   });
 
-  // Add this code to create a notification
-  if (deal.user.toString() !== req.user.id) {
-    const notificationService = new NotificationService(req.app.get('io'));
-    await notificationService.createCommentNotification(req.user.id, deal.user, deal._id);
+  // Create notifications for mentioned users
+  const notificationService = new NotificationService(req.app.get('io'));
+  for (const mention of mentionedUsers) {
+    const username = mention.slice(1);
+    const mentionedUser = await User.findOne({ username });
+    if (mentionedUser) {
+      await notificationService.createMentionNotification(req.user.id, mentionedUser._id, deal._id, comment._id);
+    }
   }
 
   res.status(201).json({

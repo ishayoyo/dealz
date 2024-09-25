@@ -1,4 +1,3 @@
-```vue:my-nuxt-app/components/DealModal.vue
 <template>
   <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-lg w-full max-w-5xl overflow-hidden flex flex-col md:flex-row relative" :style="modalStyle">
@@ -54,7 +53,7 @@
             <div v-else class="comments-container space-y-4 mb-6">
               <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
               <div v-else>
-                <Comment v-for="comment in comments" :key="comment.id" :comment="comment" @reply="handleReply" @vote="handleVoteComment" />
+                <Comment v-for="comment in comments" :key="comment.id" :comment="comment" />
               </div>
             </div>
             <div class="mt-4">
@@ -226,6 +225,11 @@ const addComment = async () => {
   try {
     const response = await api.post(`/comments/${props.deal._id}`, { content: newComment.value })
     const newCommentData = response.data.data.comment
+    // Add the current user's information to the new comment
+    newCommentData.user = {
+      _id: authStore.user._id,
+      username: authStore.user.username
+    }
     comments.value.unshift(newCommentData)
     newComment.value = ''
   } catch (err) {
@@ -254,9 +258,15 @@ const followUser = async () => {
       await api.post(`/users/${props.deal.user._id}/follow`)
     }
     isFollowingUser.value = !isFollowingUser.value
+    // Show success message
+    toast.success(isFollowingUser.value ? 'User followed successfully' : 'User unfollowed successfully')
   } catch (error) {
     console.error('Error following/unfollowing user:', error)
-    // Add error handling, e.g., show a notification to the user
+    if (error.response && error.response.data) {
+      console.error('Error response:', error.response.data)
+    }
+    // Show error message
+    toast.error('An error occurred while following/unfollowing the user')
   }
 }
 
@@ -282,71 +292,6 @@ const onImageLoad = (event) => {
 
   if (imageContainer.value) {
     imageContainer.value.style.height = `${modalHeight}px`
-  }
-}
-
-const handleReply = (commentId, content) => {
-  if (!authStore.isAuthenticated) {
-    openAuthModal()
-    return
-  }
-  addReply(commentId, content)
-}
-
-const addReply = async (commentId, content) => {
-  if (!content.trim()) return
-  
-  try {
-    const response = await api.post(`/comments/${commentId}/reply`, { content })
-    const newReply = response.data.data.reply
-    const parentComment = findCommentById(comments.value, commentId)
-    if (parentComment) {
-      if (!parentComment.replies) {
-        parentComment.replies = []
-      }
-      parentComment.replies.push(newReply)
-    }
-  } catch (err) {
-    console.error('Error adding reply:', err)
-    toast.error("Failed to add reply. Please try again.")
-  }
-}
-
-const findCommentById = (comments, id) => {
-  for (const comment of comments) {
-    if (comment.id === id) {
-      return comment
-    }
-    if (comment.replies) {
-      const found = findCommentById(comment.replies, id)
-      if (found) {
-        return found
-      }
-    }
-  }
-  return null
-}
-
-const handleVoteComment = (commentId, value) => {
-  if (!authStore.isAuthenticated) {
-    openAuthModal()
-    return
-  }
-  voteComment(commentId, value)
-}
-
-const voteComment = async (commentId, value) => {
-  try {
-    const response = await api.post(`/comments/${commentId}/vote`, { value })
-    const updatedComment = findCommentById(comments.value, commentId)
-    if (updatedComment) {
-      updatedComment.voteScore = response.data.data.voteScore
-      updatedComment.voteCount = response.data.data.voteCount
-      updatedComment.userVote = value
-    }
-  } catch (error) {
-    console.error('Error voting comment:', error)
-    toast.error('Failed to vote on comment. Please try again.')
   }
 }
 

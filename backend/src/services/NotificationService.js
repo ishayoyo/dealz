@@ -35,7 +35,7 @@ class NotificationService {
   async createFollowNotification(followerId, followedId) {
     return this.createNotification({
       recipient: followedId,
-      type: 'FOLLOW',
+      type: 'USER_FOLLOW', // Change this from 'FOLLOW' to 'USER_FOLLOW'
       content: 'You have a new follower!',
       relatedUser: followerId
     });
@@ -103,6 +103,20 @@ class NotificationService {
       console.error('Error marking notification as read:', error);
       throw error;
     }
+  }
+
+  async createMentionNotification(senderId, recipientId, dealId, commentId) {
+    const notification = await Notification.create({
+      recipient: recipientId,
+      type: 'MENTION',
+      content: `You were mentioned in a comment`,
+      relatedUser: senderId,
+      relatedDeal: dealId,
+      relatedComment: commentId
+    });
+
+    this.io.to(recipientId.toString()).emit('notification', notification);
+    return notification;
   }
 }
 

@@ -35,7 +35,6 @@ router.get('/:id/status', dealController.checkDealStatus);
 router.post('/', dealController.createDeal);
 router.put('/:id', dealController.updateDeal);
 router.delete('/:id', dealController.deleteDeal);
-router.post('/:id/vote', dealController.voteDeal);
 router.post('/:id/buy', dealController.markAsBought);
 router.post('/:id/follow', dealController.followDeal);
 router.delete('/:id/follow', dealController.unfollowDeal);

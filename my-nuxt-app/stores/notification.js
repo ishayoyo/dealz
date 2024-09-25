@@ -47,6 +47,13 @@ export const useNotificationStore = defineStore('notification', {
       console.log('Received new notification:', notification)
       this.addNotification(notification)
     },
+    setupSocketListeners(socket) {
+      console.log('Setting up socket listeners for notifications')
+      socket.on('newNotification', (notification) => {
+        console.log('Received new notification:', notification)
+        this.addNotification(notification)
+      })
+    },
   },
 
   getters: {
