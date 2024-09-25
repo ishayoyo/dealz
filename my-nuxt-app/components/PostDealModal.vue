@@ -107,10 +107,11 @@ const fetchDealInfo = async () => {
   try {
     const response = await api.post('/deals/fetch-image', { url: dealLink.value })
     dealImage.value = `http://localhost:5000${response.data.data.imageUrl}`
-    step.value = 2
   } catch (error) {
     console.error('Error fetching deal image:', error)
-    toast.error('Failed to fetch deal image. Please try again.') // Show error toast
+    toast.error('Failed to fetch deal image. You can upload an image manually.')
+  } finally {
+    step.value = 2 // Always proceed to step 2, even if image fetching fails
   }
 }
 
