@@ -188,29 +188,58 @@ exports.voteDeal = catchAsync(async (req, res, next) => {
   });
 });
 
+const parseMentions = (content) => {
+  const mentionRegex = /@(\w+)/g;
+  return (content.match(mentionRegex) || []).map(mention => mention.slice(1));
+};
+
 exports.addComment = catchAsync(async (req, res, next) => {
+  console.log('Adding comment:', req.body);
   const deal = await Deal.findById(req.params.id);
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
   }
 
-  const { content } = req.body;
-  const mentionedUsers = content.match(/@(\w+)/g) || [];
-
   const comment = await Comment.create({
-    content,
+    content: req.body.content,
     user: req.user.id,
-    deal: deal._id
+    deal: deal.id
   });
 
-  // Create notifications for mentioned users
-  const notificationService = new NotificationService(req.app.get('io'));
-  for (const mention of mentionedUsers) {
-    const username = mention.slice(1);
-    const mentionedUser = await User.findOne({ username });
-    if (mentionedUser) {
-      await notificationService.createMentionNotification(req.user.id, mentionedUser._id, deal._id, comment._id);
+  console.log('Comment created:', comment);
+
+  // Handle mentions
+  console.log('Parsing mentions from:', req.body.content);
+  const mentionedUsernames = parseMentions(req.body.content);
+  console.log('Mentioned usernames:', mentionedUsernames);
+
+  try {
+    for (const username of mentionedUsernames) {
+      console.log('Looking up user:', username);
+      const mentionedUser = await User.findOne({ username });
+      console.log('Found user:', mentionedUser);
+      if (mentionedUser) {
+        console.log('Creating mention notification for:', mentionedUser.username);
+        await req.app.get('notificationService').createMentionNotification(
+          req.user.id,
+          mentionedUser.id,
+          deal.id,
+          comment.id
+        );
+      }
     }
+  } catch (error) {
+    console.error('Error handling mentions:', error);
+  }
+
+  // Create notification for deal owner
+  if (deal.user.toString() !== req.user.id) {
+    console.log('Creating comment notification for deal owner');
+    await req.app.get('notificationService').createCommentNotification(
+      req.user.id,
+      deal.user,
+      deal.id
+    );
   }
 
   res.status(201).json({
@@ -448,6 +477,35 @@ exports.getFollowedDeals = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: { followedDeals: user.followedDeals }
+  });
+});
+
+exports.getMentionableUsers = catchAsync(async (req, res, next) => {
+  const deal = await Deal.findById(req.params.id);
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  // Get users who commented on the deal
+  const commenters = await Comment.find({ deal: deal._id }).distinct('user');
+
+  // Get users who are following the deal
+  const followers = await User.find({ followedDeals: deal._id });
+
+  // Combine all user IDs, including the deal creator
+  const userIds = new Set([
+    ...commenters.map(id => id.toString()),
+    ...followers.map(user => user._id.toString()),
+    deal.user.toString()
+  ]);
+
+  // Fetch user details
+  const users = await User.find({ _id: { $in: Array.from(userIds) } })
+    .select('username profilePicture');
+
+  res.status(200).json({
+    status: 'success',
+    data: { users }
   });
 });
 

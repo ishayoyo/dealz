@@ -6,7 +6,7 @@
         <span class="font-semibold text-text">{{ commentUsername }}</span>
         <span class="text-sm text-gray-500 ml-2">{{ formatCommentDate(comment.createdAt) }}</span>
       </div>
-      <p class="text-gray-600">{{ comment.content }}</p>
+      <p class="text-gray-600" v-html="formattedContent"></p>
       <div v-if="comment.replies && comment.replies.length > 0" class="mt-4 ml-4 space-y-2">
         <Comment v-for="reply in comment.replies" :key="reply.id" :comment="reply" :disable-voting="disableVoting" />
       </div>
@@ -38,4 +38,15 @@ const commentUsername = computed(() => {
 const formatCommentDate = (date) => {
   return new Date(date).toLocaleString()
 }
+
+const formattedContent = computed(() => {
+  return props.comment.content.replace(/@(\w+)/g, '<span class="mention">@$1</span>')
+})
 </script>
+
+<style scoped>
+.comment :deep(.mention) {
+  color: #3b82f6; /* text-blue-500 */
+  font-weight: 600; /* font-semibold */
+}
+</style>

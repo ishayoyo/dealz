@@ -8,7 +8,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['NEW_DEAL', 'NEW_COMMENT', 'DEAL_FOLLOW', 'USER_FOLLOW', 'SYSTEM', 'FOLLOW'], // Add 'FOLLOW' here
+    enum: ['NEW_DEAL', 'NEW_COMMENT', 'DEAL_FOLLOW', 'USER_FOLLOW', 'SYSTEM', 'FOLLOW', 'MENTION'],
     required: true
   },
   content: {

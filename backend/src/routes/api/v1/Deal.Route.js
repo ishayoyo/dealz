@@ -6,6 +6,7 @@ const dealController = require('../../../controllers/dealController');
 const userController = require('../../../controllers/userController');
 const auth = require('../../../middleware/auth');
 const multer = require('multer');
+const commentController = require('../../../controllers/commentController');
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -29,7 +30,7 @@ router.use(auth);
 router.get('/followed', dealController.getFollowedDeals);
 
 router.get('/:id', dealController.getDeal);
-router.get('/:id/comments', dealController.getDealComments);
+router.get('/:id/comments', commentController.getComments);
 router.get('/:id/status', dealController.checkDealStatus);
 
 router.post('/', dealController.createDeal);
@@ -38,10 +39,13 @@ router.delete('/:id', dealController.deleteDeal);
 router.post('/:id/buy', dealController.markAsBought);
 router.post('/:id/follow', dealController.followDeal);
 router.delete('/:id/follow', dealController.unfollowDeal);
-router.post('/:id/comments', dealController.addComment);
+router.post('/:dealId/comments', auth, commentController.createComment);
 
 // Image-related routes
 router.post('/fetch-image', dealController.fetchImage);
 router.post('/upload-image', upload.single('image'), dealController.uploadImage);
+
+// New route to fetch mentionable users
+router.get('/:id/mentionable-users', auth, dealController.getMentionableUsers);
 
 module.exports = router;

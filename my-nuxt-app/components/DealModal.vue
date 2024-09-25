@@ -56,15 +56,24 @@
                 <Comment v-for="comment in comments" :key="comment.id" :comment="comment" />
               </div>
             </div>
-            <div class="mt-4">
-              <textarea v-model="newComment" 
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
-                        rows="3" 
-                        placeholder="Add a comment..."></textarea>
-              <button @click="handleAddComment" class="btn btn-primary mt-2">
-                Add Comment
-              </button>
+            <div class="mt-4 relative">
+              <textarea
+                v-model="newComment"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                rows="3"
+                placeholder="Add a comment..."
+                @input="handleInput"
+              ></textarea>
+              <UserMentionAutocomplete
+                v-if="showMentions"
+                :users="mentionableUsers"
+                :query="mentionQuery"
+                @select="handleUserSelect"
+              />
             </div>
+            <button @click="handleAddComment" class="btn btn-primary mt-2">
+              Add Comment
+            </button>
           </div>
           <div v-else class="text-center py-4">
             <p>Login to view comments</p>
@@ -111,6 +120,7 @@ import { format } from 'date-fns'
 import { useToast } from "vue-toastification";
 import { useAuthStore } from '~/stores/auth'
 import Comment from '~/components/Comment.vue'
+import UserMentionAutocomplete from '~/components/UserMentionAutocomplete.vue'
 
 const props = defineProps(['deal'])
 const emit = defineEmits(['close-modal', 'open-auth-modal'])
@@ -146,10 +156,15 @@ const formatCommentDate = (date) => {
 
 console.log('DealModal: Received deal prop:', props.deal)
 
+const mentionableUsers = ref([])
+const mentionQuery = ref('')
+const showMentions = ref(false)
+
 onMounted(async () => {
   console.log('DealModal: Mounted')
   if (props.deal && props.deal._id) {
     await fetchDealData()
+    await fetchMentionableUsers()
   }
 })
 
@@ -157,6 +172,7 @@ watch(() => props.deal, async (newDeal) => {
   console.log('DealModal: Deal prop changed:', newDeal)
   if (newDeal && newDeal._id) {
     await fetchDealData()
+    await fetchMentionableUsers()
   }
 })
 
@@ -185,6 +201,38 @@ const fetchDealData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const fetchMentionableUsers = async () => {
+  try {
+    const response = await api.get(`/deals/${props.deal._id}/mentionable-users`)
+    mentionableUsers.value = response.data.data.users
+  } catch (err) {
+    console.error('Error fetching mentionable users:', err)
+  }
+}
+
+const handleInput = (event) => {
+  const cursorPosition = event.target.selectionStart
+  const textBeforeCursor = newComment.value.slice(0, cursorPosition)
+  const lastAtSymbol = textBeforeCursor.lastIndexOf('@')
+  
+  if (lastAtSymbol !== -1 && lastAtSymbol === textBeforeCursor.lastIndexOf('@')) {
+    mentionQuery.value = textBeforeCursor.slice(lastAtSymbol + 1)
+    showMentions.value = true
+  } else {
+    mentionQuery.value = ''
+    showMentions.value = false
+  }
+}
+
+const handleUserSelect = (user) => {
+  const cursorPosition = newComment.value.lastIndexOf('@')
+  const textBeforeMention = newComment.value.slice(0, cursorPosition)
+  const textAfterMention = newComment.value.slice(cursorPosition + mentionQuery.value.length + 1)
+  newComment.value = `${textBeforeMention}@${user.username} ${textAfterMention}`
+  mentionQuery.value = ''
+  showMentions.value = false
 }
 
 const handleFollowDeal = () => {
@@ -223,7 +271,7 @@ const addComment = async () => {
   if (!newComment.value.trim()) return
   
   try {
-    const response = await api.post(`/comments/${props.deal._id}`, { content: newComment.value })
+    const response = await api.post(`/deals/${props.deal._id}/comments`, { content: newComment.value })
     const newCommentData = response.data.data.comment
     // Add the current user's information to the new comment
     newCommentData.user = {

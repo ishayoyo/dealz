@@ -47,5 +47,10 @@ export default defineNuxtPlugin((nuxtApp) => {
         }
       }
     }, { immediate: true })
+
+    socket.on('newNotification', (notification) => {
+      console.log('Received new notification:', notification);
+      notificationStore.handleNewNotification(notification);
+    });
   }
 })

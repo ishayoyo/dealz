@@ -105,18 +105,16 @@ class NotificationService {
     }
   }
 
-  async createMentionNotification(senderId, recipientId, dealId, commentId) {
-    const notification = await Notification.create({
-      recipient: recipientId,
+  async createMentionNotification(mentionedById, mentionedUserId, dealId, commentId) {
+    console.log('Creating mention notification:', { mentionedById, mentionedUserId, dealId, commentId });
+    return this.createNotification({
+      recipient: mentionedUserId,
       type: 'MENTION',
-      content: `You were mentioned in a comment`,
-      relatedUser: senderId,
+      content: 'You were mentioned in a comment',
+      relatedUser: mentionedById,
       relatedDeal: dealId,
       relatedComment: commentId
     });
-
-    this.io.to(recipientId.toString()).emit('notification', notification);
-    return notification;
   }
 }
 

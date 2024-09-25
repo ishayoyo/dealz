@@ -13,7 +13,15 @@
               </div>
               <div class="ml-3 w-0 flex-1">
                 <p class="text-sm font-medium text-gray-900" :class="{ 'font-bold': !notification.read }">
-                  {{ notification.content }}
+                  <template v-if="notification.type === 'MENTION'">
+                    You were mentioned in a comment on 
+                    <NuxtLink :to="`/deals/${notification.relatedDeal._id}`" class="text-blue-600 hover:underline">
+                      {{ notification.relatedDeal.title }}
+                    </NuxtLink>
+                  </template>
+                  <template v-else>
+                    {{ notification.content }}
+                  </template>
                 </p>
                 <p class="text-sm text-gray-500">
                   {{ formatDate(notification.createdAt) }}
@@ -56,6 +64,12 @@
   const formatDate = (date) => {
     return new Date(date).toLocaleString()
   }
+  
+  console.log('All notifications:', notifications.value);
+  const mentionNotifications = computed(() => 
+    notifications.value.filter(n => n.type === 'MENTION')
+  );
+  console.log('Mention notifications:', mentionNotifications.value);
   
   defineEmits(['close'])
   </script>

@@ -10,6 +10,8 @@ exports.createComment = catchAsync(async (req, res, next) => {
   const { dealId } = req.params;
   const userId = req.user.id;
 
+  console.log('Creating comment:', { content, dealId, userId });
+
   const deal = await Deal.findById(dealId);
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
@@ -22,13 +24,16 @@ exports.createComment = catchAsync(async (req, res, next) => {
   });
 
   const newComment = await comment.save();
+  console.log('New comment created:', newComment);
 
   // Update the deal with the new comment
   await Deal.findByIdAndUpdate(dealId, { $push: { comments: newComment._id } });
 
+  const notificationService = new NotificationService(req.app.get('io'));
+
   // Create notification for deal owner
   if (deal.user.toString() !== userId) {
-    const notificationService = new NotificationService(req.app.get('io'));
+    console.log('Creating notification for deal owner');
     await notificationService.createNotification({
       recipient: deal.user,
       type: 'NEW_COMMENT',
@@ -37,6 +42,27 @@ exports.createComment = catchAsync(async (req, res, next) => {
       relatedDeal: dealId,
       relatedComment: newComment._id
     });
+  }
+
+  // Handle @mentions
+  console.log('Parsing mentions from:', content);
+  const mentionRegex = /@(\w+)/g;
+  let match;
+  while ((match = mentionRegex.exec(content)) !== null) {
+    const username = match[1];
+    console.log('Found mention:', username);
+    const mentionedUser = await User.findOne({ username });
+    if (mentionedUser && mentionedUser._id.toString() !== userId) {
+      console.log('Creating mention notification for:', mentionedUser.username);
+      await notificationService.createNotification({
+        recipient: mentionedUser._id,
+        type: 'MENTION',
+        content: `${req.user.username} mentioned you in a comment on a deal`,
+        relatedUser: userId,
+        relatedDeal: dealId,
+        relatedComment: newComment._id
+      });
+    }
   }
 
   res.status(201).json({
