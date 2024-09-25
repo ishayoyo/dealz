@@ -128,43 +128,6 @@ exports.deleteComment = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.voteComment = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
-  const { value } = req.body;
-  const userId = req.user.id;
-
-  if (value !== 1 && value !== -1) {
-    return next(new AppError('Invalid vote value. Must be 1 or -1', 400));
-  }
-
-  const comment = await Comment.findById(id);
-
-  if (!comment) {
-    return next(new AppError('No comment found with that ID', 404));
-  }
-
-  const existingVote = comment.votes.find(vote => vote.user.toString() === userId);
-
-  if (existingVote) {
-    // User has already voted, update their vote
-    comment.voteScore += value - existingVote.value;
-    existingVote.value = value;
-  } else {
-    // New vote
-    comment.voteScore += value;
-    comment.votes.push({ user: userId, value });
-  }
-
-  await comment.save();
-
-  res.status(200).json({
-    status: 'success',
-    data: { 
-      voteScore: comment.voteScore,
-      voteCount: comment.votes.length
-    }
-  });
-});
 
 exports.getComments = catchAsync(async (req, res, next) => {
   const { dealId } = req.params;

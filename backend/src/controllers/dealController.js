@@ -146,48 +146,6 @@ exports.deleteDeal = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.voteDeal = catchAsync(async (req, res, next) => {
-  const deal = await Deal.findById(req.params.id);
-  if (!deal) {
-    return next(new AppError('No deal found with that ID', 404));
-  }
-
-  const { voteType } = req.body;
-  if (!['upvote', 'downvote'].includes(voteType)) {
-    return next(new AppError('Invalid vote type', 400));
-  }
-
-  let vote = await Vote.findOne({ user: req.user.id, deal: deal._id });
-
-  if (vote) {
-    if (vote.voteType === voteType) {
-      // Remove the vote if it's the same type
-      await vote.deleteOne();
-      deal[`${voteType}s`] -= 1;
-    } else {
-      // Change the vote type
-      vote.voteType = voteType;
-      await vote.save();
-      deal[`${voteType}s`] += 1;
-      deal[`${voteType === 'upvote' ? 'downvotes' : 'upvotes'}`] -= 1;
-    }
-  } else {
-    // Create a new vote
-    vote = await Vote.create({ user: req.user.id, deal: deal._id, voteType });
-    deal[`${voteType}s`] += 1;
-  }
-
-  await deal.save();
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      upvotes: deal.upvotes,
-      downvotes: deal.downvotes
-    }
-  });
-});
-
 const parseMentions = (content) => {
   const mentionRegex = /@(\w+)/g;
   return (content.match(mentionRegex) || []).map(mention => mention.slice(1));
