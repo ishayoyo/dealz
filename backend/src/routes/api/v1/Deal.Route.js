@@ -40,6 +40,7 @@ router.post('/:id/buy', dealController.markAsBought);
 router.post('/:id/follow', dealController.followDeal);
 router.delete('/:id/follow', dealController.unfollowDeal);
 router.post('/:dealId/comments', auth, commentController.createComment);
+router.get('/:dealId/comments', commentController.getComments);
 
 // Image-related routes
 router.post('/fetch-image', dealController.fetchImage);

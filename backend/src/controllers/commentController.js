@@ -5,6 +5,11 @@ const catchAsync = require('../utils/catchAsync');
 const NotificationService = require('../services/NotificationService');
 const User = require('../models/User.Model');
 
+const parseMentions = (content) => {
+  const mentionRegex = /@([\w.@]+)/g;
+  return (content.match(mentionRegex) || []).map(mention => mention.slice(1));
+};
+
 exports.createComment = catchAsync(async (req, res, next) => {
   const { content } = req.body;
   const { dealId } = req.params;
@@ -46,11 +51,11 @@ exports.createComment = catchAsync(async (req, res, next) => {
 
   // Handle @mentions
   console.log('Parsing mentions from:', content);
-  const mentionRegex = /@(\w+)/g;
-  let match;
-  while ((match = mentionRegex.exec(content)) !== null) {
-    const username = match[1];
-    console.log('Found mention:', username);
+  const mentionedUsernames = parseMentions(content);
+  console.log('Mentioned usernames:', mentionedUsernames);
+
+  for (const username of mentionedUsernames) {
+    console.log('Looking up user:', username);
     const mentionedUser = await User.findOne({ username });
     if (mentionedUser && mentionedUser._id.toString() !== userId) {
       console.log('Creating mention notification for:', mentionedUser.username);
