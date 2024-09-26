@@ -1,6 +1,6 @@
 <template>
-  <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" @click="openModal">
-    <div class="relative pb-[56.25%]"> <!-- 16:9 aspect ratio -->
+  <div v-if="deal" class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" @click="openModal">
+    <div class="relative pb-[56.25%]">
       <img :src="fullImageUrl" :alt="deal.title" class="absolute inset-0 w-full h-full object-cover">
       <div class="absolute top-0 right-0 bg-accent text-white px-3 py-1 m-2 rounded-full text-sm font-semibold">
         ${{ formattedPrice }}
@@ -44,26 +44,28 @@ const props = defineProps({
 const emit = defineEmits(['open-modal'])
 
 const fullImageUrl = computed(() => {
-  if (!props.deal.imageUrl) return '/default-deal-image.jpg'
+  if (!props.deal?.imageUrl) return '/default-deal-image.jpg'
   return props.deal.imageUrl.startsWith('http') 
     ? props.deal.imageUrl 
     : `${config.public.apiBase}${props.deal.imageUrl}`
 })
 
 const formattedPrice = computed(() => {
-  return parseFloat(props.deal.price || 0).toFixed(2)
+  return parseFloat(props.deal?.price || 0).toFixed(2)
 })
 
 const formattedDate = computed(() => {
-  return format(new Date(props.deal.createdAt || new Date()), 'MMM d, yyyy')
+  return format(new Date(props.deal?.createdAt || new Date()), 'MMM d, yyyy')
 })
 
 const dealUsername = computed(() => {
-  return props.deal.user?.username || 'Unknown User'
+  return props.deal?.user?.username || 'Unknown User'
 })
 
 const openModal = () => {
-  console.log('DealCard: Emitting open-modal event for deal:', props.deal)
-  emit('open-modal', props.deal)
+  if (props.deal) {
+    console.log('DealCard: Emitting open-modal event for deal:', props.deal)
+    emit('open-modal', props.deal)
+  }
 }
 </script>

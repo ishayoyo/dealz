@@ -4,7 +4,12 @@
     <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
     <div v-else class="container mx-auto px-4 py-8">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        <DealCard v-for="deal in deals" :key="deal._id" :deal="deal" @open-modal="openModal" />
+        <DealCard 
+          v-for="deal in deals" 
+          :key="deal._id" 
+          :deal="deal" 
+          @open-modal="openModal" 
+        />
       </div>
     </div>
     <DealModal 
@@ -29,12 +34,13 @@
       <p v-if="connectionError" class="mt-2 text-red-500">Error: {{ connectionError }}</p>
     </div>
   </div>
- </template> 
+</template>
 
 <script setup>
 import { useDealsStore } from '~/stores/deals'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
+import DealCard from '~/components/DealCard.vue'
 import DealModal from '~/components/DealModal.vue'
 import AuthModal from '~/components/AuthModal.vue'
 import { useSocket } from '~/composables/useSocket'
@@ -69,4 +75,7 @@ const closeAuthModal = () => {
 
 // Socket connection test
 const { isConnected, lastMessage, connectionError, testConnection } = useSocket()
+
+// Computed property to ensure deals is always an array
+const safeDeals = computed(() => Array.isArray(deals.value) ? deals.value : [])
 </script>

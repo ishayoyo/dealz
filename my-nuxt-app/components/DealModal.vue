@@ -34,7 +34,7 @@
           </span>
         </div>
         
-        <div class="mb-6 flex items-center" v-if="deal.user">
+        <div v-if="deal.user" class="mb-6 flex items-center">
           <UserAvatar :name="deal.user.username" :size="40" class="mr-3" />
           <div class="flex-grow">
             <span class="text-sm text-gray-500">Posted by:</span>
@@ -90,61 +90,47 @@
   </div>
 </template>
 
-<style scoped>
-.max-w-full {
-  max-width: 100%;
-}
-.max-h-full {
-  max-height: 100%;
-}
-.comments-container {
-  max-height: 400px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #CBD5E0 #EDF2F7;
-}
-
-.comments-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.comments-container::-webkit-scrollbar-track {
-  background: #EDF2F7;
-}
-
-.comments-container::-webkit-scrollbar-thumb {
-  background-color: #CBD5E0;
-  border-radius: 3px;
-}
-</style>
-
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
+import { useRuntimeConfig } from '#app'
 import api from '~/services/api'
-import { format } from 'date-fns'
-import { useToast } from "vue-toastification";
+import { useToast } from "vue-toastification"
 import { useAuthStore } from '~/stores/auth'
 import Comment from '~/components/Comment.vue'
 import UserMentionAutocomplete from '~/components/UserMentionAutocomplete.vue'
 
-const props = defineProps(['deal'])
+const props = defineProps({
+  deal: {
+    type: Object,
+    required: true
+  }
+})
+
 const emit = defineEmits(['close-modal', 'open-auth-modal'])
+
+const config = useRuntimeConfig()
+const authStore = useAuthStore()
+const toast = useToast()
+
 const comments = ref([])
 const isFollowing = ref(false)
 const isFollowingUser = ref(false)
 const newComment = ref('')
 const loading = ref(false)
 const error = ref(null)
-const toast = useToast();
+const mentionableUsers = ref([])
+const mentionQuery = ref('')
+const showMentions = ref(false)
+const imageContainer = ref(null)
+const modalStyle = ref({})
 
-const authStore = useAuthStore()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const imageUrl = computed(() => {
   if (!props.deal.imageUrl) return ''
   return props.deal.imageUrl.startsWith('http') 
     ? props.deal.imageUrl 
-    : `http://localhost:5000${props.deal.imageUrl}`
+    : `${config.public.apiBase}${props.deal.imageUrl}`
 })
 
 const formattedPrice = computed(() => {
@@ -155,42 +141,19 @@ const formattedFollowCount = computed(() => {
   return props.deal.followCount || 0
 })
 
-const formatCommentDate = (date) => {
-  return format(new Date(date), 'MMM d, yyyy HH:mm')
-}
-
-console.log('DealModal: Received deal prop:', props.deal)
-
-const mentionableUsers = ref([])
-const mentionQuery = ref('')
-const showMentions = ref(false)
-
 const isCurrentUser = computed(() => {
-  return authStore.user && deal.value && authStore.user._id === deal.value.user._id
+  return authStore.user && props.deal.user && authStore.user._id === props.deal.user._id
 })
 
-onMounted(async () => {
-  console.log('DealModal: Mounted')
-  if (props.deal && props.deal._id) {
-    await fetchDealData()
-    await fetchMentionableUsers()
-  }
-})
-
-watch(() => props.deal, async (newDeal) => {
-  console.log('DealModal: Deal prop changed:', newDeal)
-  if (newDeal && newDeal._id) {
-    await fetchDealData()
-    await fetchMentionableUsers()
-  }
-})
-
+// Define all functions first
 const fetchDealData = async () => {
+  loading.value = true
+  error.value = null
   try {
     const [commentsResponse, statusResponse, userStatusResponse] = await Promise.all([
       api.get(`/comments/deal/${props.deal._id}`),
       isAuthenticated.value ? api.get(`/deals/${props.deal._id}/status`) : Promise.resolve({ data: { data: { isFollowing: false } } }),
-      isAuthenticated.value ? api.get(`/users/${props.deal.user._id}/status`) : Promise.resolve({ data: { data: { isFollowing: false } } })
+      isAuthenticated.value && props.deal.user ? api.get(`/users/${props.deal.user._id}/status`) : Promise.resolve({ data: { data: { isFollowing: false } } })
     ])
     
     comments.value = commentsResponse.data.data.comments
@@ -207,6 +170,7 @@ const fetchDealData = async () => {
   } catch (err) {
     console.error('Error fetching deal data:', err)
     error.value = 'Failed to load data. Please try again.'
+    toast.error(error.value) // Added toast error notification
   } finally {
     loading.value = false
   }
@@ -262,9 +226,10 @@ const followDeal = async () => {
       props.deal.followCount++
     }
     isFollowing.value = !isFollowing.value
+    toast.success(isFollowing.value ? 'Deal followed successfully' : 'Deal unfollowed successfully')
   } catch (error) {
     console.error('Error following/unfollowing deal:', error)
-    // Add error handling, e.g., show a notification to the user
+    toast.error('An error occurred while following/unfollowing the deal')
   }
 }
 
@@ -289,9 +254,11 @@ const addComment = async () => {
     }
     comments.value.unshift(newCommentData)
     newComment.value = ''
+    toast.success('Comment added successfully')
   } catch (err) {
     console.error('Error adding comment:', err)
     error.value = 'Failed to add comment. Please try again.'
+    toast.error(error.value)
   }
 }
 
@@ -319,20 +286,17 @@ const followUser = async () => {
       await api.post(`/users/${props.deal.user._id}/follow`)
     }
     isFollowingUser.value = !isFollowingUser.value
-    // Show success message
     toast.success(isFollowingUser.value ? 'User followed successfully' : 'User unfollowed successfully')
   } catch (error) {
     console.error('Error following/unfollowing user:', error)
     if (error.response && error.response.data) {
       console.error('Error response:', error.response.data)
+      toast.error(error.response.data.message || 'An error occurred while following/unfollowing the user')
+    } else {
+      toast.error('An error occurred while following/unfollowing the user')
     }
-    // Show error message
-    toast.error('An error occurred while following/unfollowing the user')
   }
 }
-
-const imageContainer = ref(null)
-const modalStyle = ref({})
 
 const onImageLoad = (event) => {
   const img = event.target
@@ -359,4 +323,55 @@ const onImageLoad = (event) => {
 const openAuthModal = () => {
   emit('open-auth-modal')
 }
+
+// Now use the functions in watch and onMounted
+onMounted(async () => {
+  console.log('DealModal: Mounted')
+  if (props.deal && props.deal._id) {
+    await fetchDealData()
+    await fetchMentionableUsers()
+  }
+})
+
+watch(() => props.deal, async (newDeal) => {
+  console.log('DealModal: Deal prop changed:', newDeal)
+  if (newDeal && newDeal._id) {
+    try {
+      await fetchDealData()
+      await fetchMentionableUsers()
+    } catch (err) {
+      console.error('Error in watch effect:', err)
+      error.value = 'An error occurred while loading deal data.' // Added error handling
+      toast.error(error.value) // Added toast error notification
+    }
+  }
+}, { immediate: true })
 </script>
+
+<style scoped>
+.max-w-full {
+  max-width: 100%;
+}
+.max-h-full {
+  max-height: 100%;
+}
+.comments-container {
+  max-height: 400px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E0 #EDF2F7;
+}
+
+.comments-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.comments-container::-webkit-scrollbar-track {
+  background: #EDF2F7;
+}
+
+.comments-container::-webkit-scrollbar-thumb {
+  background-color: #CBD5E0;
+  border-radius: 3px;
+}
+</style>
