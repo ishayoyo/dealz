@@ -40,7 +40,12 @@
             <span class="text-sm text-gray-500">Posted by:</span>
             <span class="font-semibold ml-1 text-text">{{ deal.user.username }}</span>
           </div>
-          <button @click="handleFollowUser" class="btn btn-primary text-sm">
+          <button 
+            @click="handleFollowUser" 
+            class="btn btn-primary text-sm"
+            :disabled="isCurrentUser"
+            :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
+          >
             {{ isFollowingUser ? 'Unfollow' : 'Follow' }}
           </button>
         </div>
@@ -159,6 +164,10 @@ console.log('DealModal: Received deal prop:', props.deal)
 const mentionableUsers = ref([])
 const mentionQuery = ref('')
 const showMentions = ref(false)
+
+const isCurrentUser = computed(() => {
+  return authStore.user && deal.value && authStore.user._id === deal.value.user._id
+})
 
 onMounted(async () => {
   console.log('DealModal: Mounted')
@@ -293,6 +302,10 @@ const closeModal = () => {
 const handleFollowUser = () => {
   if (!authStore.isAuthenticated) {
     openAuthModal()
+    return
+  }
+  if (isCurrentUser.value) {
+    toast.info("You can't follow yourself!")
     return
   }
   followUser()
