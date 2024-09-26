@@ -8,7 +8,7 @@
       </div>
       <p class="text-gray-600" v-html="formattedContent"></p>
       <div v-if="comment.replies && comment.replies.length > 0" class="mt-4 ml-4 space-y-2">
-        <Comment v-for="reply in comment.replies" :key="reply.id" :comment="reply" :disable-voting="disableVoting" />
+        <Comment v-for="reply in comment.replies" :key="reply._id" :comment="reply" :disable-voting="disableVoting" />
       </div>
     </div>
   </div>
@@ -19,7 +19,10 @@ import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
 const props = defineProps({
-  comment: Object,
+  comment: {
+    type: Object,
+    required: true
+  },
   disableVoting: {
     type: Boolean,
     default: false

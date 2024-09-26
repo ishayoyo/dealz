@@ -35,10 +35,10 @@
         </div>
         
         <div v-if="deal.user" class="mb-6 flex items-center">
-          <UserAvatar :name="deal.user.username" :size="40" class="mr-3" />
+          <UserAvatar :name="dealUserName" :size="40" class="mr-3" />
           <div class="flex-grow">
             <span class="text-sm text-gray-500">Posted by:</span>
-            <span class="font-semibold ml-1 text-text">{{ deal.user.username }}</span>
+            <span class="font-semibold ml-1 text-text">{{ dealUserName }}</span>
           </div>
           <button 
             @click="handleFollowUser" 
@@ -58,7 +58,7 @@
             <div v-else class="comments-container space-y-4 mb-6">
               <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
               <div v-else>
-                <Comment v-for="comment in comments" :key="comment.id" :comment="comment" />
+                <Comment v-for="comment in comments" :key="comment._id" :comment="comment" />
               </div>
             </div>
             <div class="mt-4 relative">
@@ -96,6 +96,7 @@ import { useRuntimeConfig } from '#app'
 import api from '~/services/api'
 import { useToast } from "vue-toastification"
 import { useAuthStore } from '~/stores/auth'
+import { useDealsStore } from '~/stores/deals'
 import Comment from '~/components/Comment.vue'
 import UserMentionAutocomplete from '~/components/UserMentionAutocomplete.vue'
 
@@ -110,6 +111,7 @@ const emit = defineEmits(['close-modal', 'open-auth-modal'])
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
+const dealsStore = useDealsStore()
 const toast = useToast()
 
 const comments = ref([])
@@ -145,7 +147,10 @@ const isCurrentUser = computed(() => {
   return authStore.user && props.deal.user && authStore.user._id === props.deal.user._id
 })
 
-// Define all functions first
+const dealUserName = computed(() => {
+  return props.deal.user && props.deal.user.username ? props.deal.user.username : 'Anonymous'
+})
+
 const fetchDealData = async () => {
   loading.value = true
   error.value = null
@@ -164,13 +169,10 @@ const fetchDealData = async () => {
       isFollowing.value = false
       isFollowingUser.value = false
     }
-    console.log('DealModal: Fetched comments:', comments.value)
-    console.log('DealModal: Fetched deal following status:', isFollowing.value)
-    console.log('DealModal: Fetched user following status:', isFollowingUser.value)
   } catch (err) {
     console.error('Error fetching deal data:', err)
     error.value = 'Failed to load data. Please try again.'
-    toast.error(error.value) // Added toast error notification
+    toast.error(error.value)
   } finally {
     loading.value = false
   }
@@ -324,7 +326,6 @@ const openAuthModal = () => {
   emit('open-auth-modal')
 }
 
-// Now use the functions in watch and onMounted
 onMounted(async () => {
   console.log('DealModal: Mounted')
   if (props.deal && props.deal._id) {
@@ -333,45 +334,21 @@ onMounted(async () => {
   }
 })
 
-watch(() => props.deal, async (newDeal) => {
+watch(() => props.deal, async (newDeal, oldDeal) => {
   console.log('DealModal: Deal prop changed:', newDeal)
-  if (newDeal && newDeal._id) {
+  if (newDeal && newDeal._id && (!oldDeal || newDeal._id !== oldDeal._id)) {
     try {
       await fetchDealData()
       await fetchMentionableUsers()
     } catch (err) {
       console.error('Error in watch effect:', err)
-      error.value = 'An error occurred while loading deal data.' // Added error handling
-      toast.error(error.value) // Added toast error notification
+      error.value = 'An error occurred while loading deal data.'
+      toast.error(error.value)
     }
   }
-}, { immediate: true })
+}, { immediate: true, deep: true })
 </script>
 
 <style scoped>
-.max-w-full {
-  max-width: 100%;
-}
-.max-h-full {
-  max-height: 100%;
-}
-.comments-container {
-  max-height: 400px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #CBD5E0 #EDF2F7;
-}
-
-.comments-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.comments-container::-webkit-scrollbar-track {
-  background: #EDF2F7;
-}
-
-.comments-container::-webkit-scrollbar-thumb {
-  background-color: #CBD5E0;
-  border-radius: 3px;
-}
+/* Add any scoped styles here if needed */
 </style>

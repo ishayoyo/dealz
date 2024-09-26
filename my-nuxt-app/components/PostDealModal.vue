@@ -61,18 +61,6 @@
             <input type="number" id="price" v-model="dealDetails.price" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
           
-          <div class="mb-6">
-            <label for="category" class="block text-gray-700 text-sm font-bold mb-2">Category</label>
-            <select id="category" v-model="dealDetails.category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-              <option value="">Select a category</option>
-              <option value="electronics">Electronics</option>
-              <option value="fashion">Fashion</option>
-              <option value="home">Home & Garden</option>
-              <option value="toys">Toys & Games</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          
           <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">
             Post Deal
           </button>
@@ -86,8 +74,9 @@
 import { ref, reactive } from 'vue'
 import api from '~/services/api'
 import { useToast } from "vue-toastification"
+import { useDealsStore } from '~/stores/deals'
 
-const emit = defineEmits(['close', 'post-deal'])
+const emit = defineEmits(['close'])
 
 const step = ref(1)
 const dealLink = ref('')
@@ -97,11 +86,11 @@ const fileInput = ref(null)
 const dealDetails = reactive({
   title: '',
   description: '',
-  price: '',
-  category: ''
+  price: ''
 })
 
-const toast = useToast() // Initialize toast
+const toast = useToast()
+const dealsStore = useDealsStore()
 
 const fetchDealInfo = async () => {
   try {
@@ -131,34 +120,36 @@ const handleFileChange = async (event) => {
         }
       })
       dealImage.value = `http://localhost:5000${response.data.data.imageUrl}`
-      toast.success('Image uploaded successfully') // Show success toast
+      toast.success('Image uploaded successfully')
     } catch (error) {
       console.error('Error uploading image:', error)
-      toast.error('Failed to upload image. Please try again.') // Show error toast
+      toast.error('Failed to upload image. Please try again.')
     }
   }
 }
 
 const removeImage = () => {
   dealImage.value = ''
-  toast.info('Image removed') // Show info toast
+  toast.info('Image removed')
 }
 
 const submitDeal = async () => {
   try {
     const dealData = {
       ...dealDetails,
-      price: parseFloat(dealDetails.price).toFixed(2), // Ensure price is a number with 2 decimal places
+      price: parseFloat(dealDetails.price).toFixed(2),
       imageUrl: dealImage.value,
       link: dealLink.value
     }
     const response = await api.post('/deals', dealData)
-    emit('post-deal', response.data.data.deal)
+    const newDeal = response.data.data.deal
+    console.log('New deal from API:', newDeal)
+    dealsStore.handleNewDeal(newDeal)
     emit('close')
-    toast.success('Deal posted successfully!') // Show success toast
+    toast.success('Deal posted successfully!')
   } catch (error) {
-    console.error('Error posting deal:', error)
-    toast.error('Failed to post deal. Please try again.') // Show error toast
+    console.error('Error submitting deal:', error)
+    toast.error('Failed to submit deal. Please try again.')
   }
 }
 </script>

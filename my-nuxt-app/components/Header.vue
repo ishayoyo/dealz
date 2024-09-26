@@ -48,12 +48,14 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
+import { useDealsStore } from '~/stores/deals' // {{ edit_1 }}
 import { storeToRefs } from 'pinia'
 import NotificationList from '~/components/NotificationList.vue'
 import { useToast } from 'vue-toastification'
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
+const dealsStore = useDealsStore() // {{ edit_2 }}
 const { isAuthenticated, user } = storeToRefs(authStore)
 const { unreadCount } = storeToRefs(notificationStore)
 const toast = useToast()
@@ -99,6 +101,17 @@ const openPostDealModal = () => {
 
 const closePostDealModal = () => {
   showPostDealModal.value = false
+}
+
+const handlePostDeal = async (dealData) => { // {{ edit_3 }}
+  try {
+    await dealsStore.postDeal(dealData)
+    closePostDealModal()
+    toast.success('Deal posted successfully!')
+  } catch (error) {
+    console.error('Error posting deal:', error)
+    toast.error('Failed to post deal. Please try again.')
+  }
 }
 
 const handleLogin = async (credentials) => {

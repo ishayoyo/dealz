@@ -37,28 +37,22 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.createDeal = catchAsync(async (req, res, next) => {
-  const { title, description, price, originalPrice, url, store, category, tags, imageUrl, link } = req.body;
+  const { title, description, price, imageUrl, link } = req.body;
 
   if (!imageUrl) {
     return next(new AppError('Image URL is required', 400));
   }
 
-  const dealUrl = url || link;
-
-  if (!dealUrl) {
-    return next(new AppError('URL is required', 400));
+  if (!link) {
+    return next(new AppError('Deal link is required', 400));
   }
 
   const deal = await Deal.create({
     title,
     description,
     price,
-    originalPrice,
-    url: dealUrl,
     imageUrl,
-    store,
-    category,
-    tags,
+    url: link,
     user: req.user.id
   });
 
@@ -82,6 +76,13 @@ exports.createDeal = catchAsync(async (req, res, next) => {
       relatedDeal: deal._id
     });
   }
+
+  // Populate the user field
+  await deal.populate('user', 'username profilePicture');
+
+  // Emit socket event for new deal
+  const io = req.app.get('io');
+  io.emit('newDeal', { deal });
 
   res.status(201).json({
     status: 'success',

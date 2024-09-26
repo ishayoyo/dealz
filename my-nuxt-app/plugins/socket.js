@@ -1,17 +1,21 @@
 import io from 'socket.io-client'
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
+import { useDealsStore } from '~/stores/deals'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
   const authStore = useAuthStore()
   const notificationStore = useNotificationStore()
+  const dealsStore = useDealsStore()
 
   const socket = io(config.public.socketUrl || 'http://localhost:5000', {
     autoConnect: false,
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    randomizationFactor: 0.5,
   })
 
   nuxtApp.provide('socket', socket)
@@ -31,6 +35,16 @@ export default defineNuxtPlugin((nuxtApp) => {
 
     socket.on('connect_error', (error) => {
       console.error('Socket connection error in plugin:', error.message)
+      // You can add additional error handling here, such as showing a toast message
+    })
+
+    socket.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason)
+      if (reason === 'io server disconnect') {
+        // The disconnection was initiated by the server, you need to reconnect manually
+        socket.connect()
+      }
+      // Else the socket will automatically try to reconnect
     })
 
     // Listen for authentication changes
@@ -51,6 +65,11 @@ export default defineNuxtPlugin((nuxtApp) => {
     socket.on('newNotification', (notification) => {
       console.log('Received new notification:', notification);
       notificationStore.handleNewNotification(notification);
+    });
+
+    socket.on('newDeal', (deal) => {
+      console.log('Received new deal:', deal);
+      dealsStore.addNewDeal(deal);
     });
   }
 })
