@@ -35,10 +35,26 @@
         
         <div class="mb-6">
           <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-          <input type="password" id="password" v-model="form.password" autocomplete="current-password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          <input 
+            type="password" 
+            id="password" 
+            v-model="form.password" 
+            @input="validatePassword"
+            autocomplete="current-password" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            :class="{'border-red-500': passwordError, 'border-green-500': isPasswordValid && form.password.length > 0}" 
+            required
+          >
+          <p v-if="form.password.length > 0" class="text-sm mt-1" :class="isPasswordValid ? 'text-green-500' : 'text-red-500'">
+            {{ passwordFeedback }}
+          </p>
         </div>
         
-        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">
+        <button 
+          type="submit" 
+          class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300"
+          :disabled="!isPasswordValid"
+        >
           {{ isLogin ? 'Log In' : 'Sign Up' }}
         </button>
       </form>
@@ -58,7 +74,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
@@ -84,20 +100,34 @@ const form = reactive({
 
 const isLogin = ref(props.isLogin)
 const error = ref(null)
+const passwordError = ref('')
+const isPasswordValid = computed(() => form.password.length >= 8)
+const passwordFeedback = computed(() => {
+  if (form.password.length === 0) return ''
+  return isPasswordValid.value 
+    ? 'Password meets the minimum length requirement' 
+    : 'Password must be at least 8 characters long'
+})
 
 const toggleAuthMode = () => {
   isLogin.value = !isLogin.value
   error.value = null
 }
 
+const validatePassword = () => {
+  passwordError.value = isPasswordValid.value ? '' : 'Password is too short'
+}
+
 const handleSubmit = async () => {
   try {
     error.value = null
+    if (!isPasswordValid.value) {
+      error.value = 'Please ensure your password is at least 8 characters long'
+      return
+    }
     if (isLogin.value) {
-      // Change this line
       emit('login', { email: form.email, password: form.password })
     } else {
-      // Change this line
       emit('signup', {
         username: form.username,
         email: form.email,
@@ -115,7 +145,6 @@ const handleSubmit = async () => {
 // Watch for authentication state changes
 watch(() => authStore.isAuthenticated, (newValue) => {
   if (!newValue) {
-    // If user becomes unauthenticated (e.g., token expired), close the modal
     emit('close')
     // No need to redirect, as the auth store will handle it
   }
@@ -124,7 +153,6 @@ watch(() => authStore.isAuthenticated, (newValue) => {
 // Check authentication status on component mount
 onMounted(() => {
   if (!authStore.isAuthenticated) {
-    // If user is not authenticated, ensure they can't access protected routes
     const currentRoute = router.currentRoute.value
     if (currentRoute.meta.requiresAuth) {
       router.push('/')

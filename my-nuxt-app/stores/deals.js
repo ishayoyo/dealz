@@ -110,7 +110,7 @@ export const useDealsStore = defineStore('deals', {
       this.error = null
       try {
         const response = await api.get('/deals/search', { params: { query } })
-        return response.data.data.deals
+        return response.data.data.deals // Make sure this matches your API response structure
       } catch (error) {
         console.error('Error searching deals:', error)
         this.error = error.response?.data?.message || 'Failed to search deals'

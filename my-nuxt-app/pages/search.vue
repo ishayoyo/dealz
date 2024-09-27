@@ -37,18 +37,19 @@
   const selectedDeal = ref(null)
   
   const fetchDeals = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await dealsStore.searchDeals(route.query.q)
-      deals.value = response.deals
-    } catch (err) {
-      console.error('Error fetching deals:', err)
-      error.value = 'An error occurred while fetching deals'
-    } finally {
-      loading.value = false
-    }
+  loading.value = true
+  error.value = null
+  try {
+    const searchQuery = route.query.q
+    const response = await dealsStore.searchDeals(searchQuery)
+    deals.value = response // Assuming the response is already the array of deals
+  } catch (err) {
+    console.error('Error fetching deals:', err)
+    error.value = err.message || 'An error occurred while fetching deals'
+  } finally {
+    loading.value = false
   }
+}
   
   const openModal = (deal) => {
     selectedDeal.value = deal
