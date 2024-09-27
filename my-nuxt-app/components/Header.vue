@@ -5,7 +5,17 @@
         <NuxtLink to="/" class="text-xl font-bold mr-4 text-primary hover:text-blue-600 transition duration-300">
           Logo
         </NuxtLink>
-        <input type="search" placeholder="Search deals..." class="bg-background rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary transition duration-300">
+        <form @submit.prevent="handleSearch" class="relative">
+          <input 
+            type="search" 
+            v-model="searchQuery"
+            placeholder="Search deals..." 
+            class="bg-background rounded-md px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-primary transition duration-300"
+          >
+          <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2">
+            <i class="fas fa-search text-gray-400"></i>
+          </button>
+        </form>
       </div>
       <div class="flex items-center">
         <ClientOnly>
@@ -52,6 +62,7 @@ import { useDealsStore } from '~/stores/deals' // {{ edit_1 }}
 import { storeToRefs } from 'pinia'
 import NotificationList from '~/components/NotificationList.vue'
 import { useToast } from 'vue-toastification'
+import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
@@ -59,6 +70,8 @@ const dealsStore = useDealsStore() // {{ edit_2 }}
 const { isAuthenticated, user } = storeToRefs(authStore)
 const { unreadCount } = storeToRefs(notificationStore)
 const toast = useToast()
+const router = useRouter()
+const searchQuery = ref('')
 
 const showAuthModal = ref(false)
 const showPostDealModal = ref(false)
@@ -165,6 +178,12 @@ const profilePictureUrl = computed(() => {
   }
   return null
 })
+
+const handleSearch = () => {
+  if (searchQuery.value.trim()) {
+    router.push({ path: '/search', query: { q: searchQuery.value } })
+  }
+}
 
 watch(() => isAuthenticated.value, (newValue) => {
   if (newValue) {

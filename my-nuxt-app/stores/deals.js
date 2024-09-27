@@ -107,6 +107,16 @@ export const useDealsStore = defineStore('deals', {
       return authStore.user ? authStore.user._id : null
     },
 
+    async searchDeals(query) {
+      try {
+        const response = await api.get('/deals/search', { params: { query } })
+        return response.data.data
+      } catch (error) {
+        console.error('Error searching deals:', error)
+        throw error
+      }
+    },
+
     // You can add more actions here as needed, such as followDeal, unfollowDeal, etc.
   },
 })

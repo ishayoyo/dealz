@@ -245,7 +245,13 @@ exports.searchDeals = catchAsync(async (req, res, next) => {
   const skip = (page - 1) * limit;
 
   let filter = { status: 'active' };
-  if (query) filter.title = { $regex: query, $options: 'i' };
+  if (query) {
+    filter.$or = [
+      { title: { $regex: query, $options: 'i' } },
+      { description: { $regex: query, $options: 'i' } },
+      { 'user.username': { $regex: query, $options: 'i' } }
+    ];
+  }
   if (category) filter.category = category;
   if (store) filter.store = store;
   if (minPrice || maxPrice) {
