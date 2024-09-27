@@ -5,7 +5,7 @@
         <NuxtLink to="/" class="text-xl font-bold mr-4 text-primary hover:text-blue-600 transition duration-300">
           Logo
         </NuxtLink>
-        <form @submit.prevent="handleSearch" class="relative">
+        <form @submit.prevent="handleSearch" class="relative hidden md:block">
           <input 
             type="search" 
             v-model="searchQuery"
@@ -78,6 +78,7 @@ const showPostDealModal = ref(false)
 const isLoginMode = ref(true)
 const scrolled = ref(false)
 const showNotifications = ref(false)
+const mobileMenuOpen = ref(false) // {{ edit_3 }}
 
 const handleScroll = () => {
   scrolled.value = window.scrollY > 0
@@ -116,7 +117,7 @@ const closePostDealModal = () => {
   showPostDealModal.value = false
 }
 
-const handlePostDeal = async (dealData) => { // {{ edit_3 }}
+const handlePostDeal = async (dealData) => { // {{ edit_4 }}
   try {
     await dealsStore.postDeal(dealData)
     closePostDealModal()
@@ -183,6 +184,10 @@ const handleSearch = () => {
   if (searchQuery.value.trim()) {
     router.push({ path: '/search', query: { q: searchQuery.value } })
   }
+}
+
+const toggleMobileMenu = () => { // {{ edit_5 }}
+  mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
 watch(() => isAuthenticated.value, (newValue) => {

@@ -30,7 +30,7 @@ export const useDealsStore = defineStore('deals', {
         console.log('Fetched deals:', this.deals)
       } catch (error) {
         console.error('Error fetching deals:', error)
-        this.error = error.message || 'Failed to fetch deals'
+        this.error = error.response?.data?.message || 'Failed to fetch deals'
       } finally {
         this.loading = false
       }
@@ -39,32 +39,30 @@ export const useDealsStore = defineStore('deals', {
     handleNewDeal(deal) {
       console.log('Handling new deal in store:', deal)
       const authStore = useAuthStore()
-      if (deal.user && deal.user._id === authStore.user?._id) {
-        const index = this.deals.findIndex(d => d._id === deal._id)
-        if (index !== -1) {
-          // Update existing deal
-          this.deals = [
-            ...this.deals.slice(0, index),
-            { ...this.deals[index], ...deal },
-            ...this.deals.slice(index + 1)
+      const index = this.deals.findIndex(d => d._id === deal._id)
+      if (index !== -1) {
+        // Update existing deal
+        this.deals = [
+          ...this.deals.slice(0, index),
+          { ...this.deals[index], ...deal },
+          ...this.deals.slice(index + 1)
+        ]
+      } else {
+        // Add new deal
+        this.deals = [deal, ...this.deals]
+      }
+      
+      // Update userDeals if necessary
+      if (deal.user._id === this.getCurrentUserId()) {
+        const userIndex = this.userDeals.findIndex(d => d._id === deal._id)
+        if (userIndex !== -1) {
+          this.userDeals = [
+            ...this.userDeals.slice(0, userIndex),
+            { ...this.userDeals[userIndex], ...deal },
+            ...this.userDeals.slice(userIndex + 1)
           ]
         } else {
-          // Add new deal
-          this.deals = [deal, ...this.deals]
-        }
-        
-        // Update userDeals if necessary
-        if (deal.user._id === this.getCurrentUserId()) {
-          const userIndex = this.userDeals.findIndex(d => d._id === deal._id)
-          if (userIndex !== -1) {
-            this.userDeals = [
-              ...this.userDeals.slice(0, userIndex),
-              { ...this.userDeals[userIndex], ...deal },
-              ...this.userDeals.slice(userIndex + 1)
-            ]
-          } else {
-            this.userDeals = [deal, ...this.userDeals]
-          }
+          this.userDeals = [deal, ...this.userDeals]
         }
       }
       console.log('Updated deals in store:', this.deals)
@@ -108,15 +106,46 @@ export const useDealsStore = defineStore('deals', {
     },
 
     async searchDeals(query) {
+      this.loading = true
+      this.error = null
       try {
         const response = await api.get('/deals/search', { params: { query } })
-        return response.data.data
+        return response.data.data.deals
       } catch (error) {
         console.error('Error searching deals:', error)
+        this.error = error.response?.data?.message || 'Failed to search deals'
         throw error
+      } finally {
+        this.loading = false
       }
     },
 
-    // You can add more actions here as needed, such as followDeal, unfollowDeal, etc.
+    async toggleFollowDeal(dealId) {
+      try {
+        const deal = this.deals.find(d => d._id === dealId)
+        if (!deal) throw new Error('Deal not found')
+
+        const endpoint = deal.isFollowing ? `/deals/${dealId}/unfollow` : `/deals/${dealId}/follow`
+        const method = deal.isFollowing ? 'delete' : 'post'
+
+        await api[method](endpoint)
+
+        // Update the deal in the store
+        deal.isFollowing = !deal.isFollowing
+        deal.followCount += deal.isFollowing ? 1 : -1
+
+        // Update followedDeals if necessary
+        if (deal.isFollowing) {
+          this.followedDeals.push(deal)
+        } else {
+          this.followedDeals = this.followedDeals.filter(d => d._id !== dealId)
+        }
+
+        return deal
+      } catch (error) {
+        console.error('Error toggling deal follow status:', error)
+        throw error
+      }
+    }
   },
 })
