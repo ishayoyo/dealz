@@ -19,20 +19,6 @@
       @open-auth-modal="openAuthModal" 
     />
     <AuthModal v-if="showAuthModal" @close="closeAuthModal" />
-
-    <!-- Socket Connection Test Section -->
-    <div class="container mx-auto px-4 py-8 mt-8 bg-gray-100 rounded-lg">
-      <h2 class="text-2xl font-bold mb-4">Socket Connection Test</h2>
-      <p>Connection status: {{ isConnected ? 'Connected' : 'Disconnected' }}</p>
-      <button 
-        @click="testConnection" 
-        class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        Test Socket Connection
-      </button>
-      <p v-if="lastMessage" class="mt-2">Last message: {{ lastMessage }}</p>
-      <p v-if="connectionError" class="mt-2 text-red-500">Error: {{ connectionError }}</p>
-    </div>
   </div>
 </template>
 
@@ -43,7 +29,6 @@ import { onMounted, ref, computed, onUnmounted, watch } from 'vue'
 import DealCard from '~/components/DealCard.vue'
 import DealModal from '~/components/DealModal.vue'
 import AuthModal from '~/components/AuthModal.vue'
-import { useSocket } from '~/composables/useSocket'
 import { useToast } from 'vue-toastification'
 
 const dealsStore = computed(() => useDealsStore())
@@ -94,9 +79,6 @@ const openAuthModal = () => {
 const closeAuthModal = () => {
   showAuthModal.value = false
 }
-
-// Socket connection test
-const { isConnected, lastMessage, connectionError, testConnection } = useSocket()
 
 // Computed property to ensure deals is always an array and sorted
 const safeDeals = computed(() => {
