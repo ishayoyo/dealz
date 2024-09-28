@@ -96,28 +96,30 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
-        if (!this.$api) {
-          console.error('API instance is not available')
-          return
-        }
-
         // Remove the token from the API headers
-        delete this.$api.defaults.headers.common['Authorization']
+        delete api.defaults.headers.common['Authorization']
 
         // Call the logout endpoint
-        await this.$api.post('/auth/logout')
+        await api.post('/auth/logout')
 
         // Clear the user data and token
         this.user = null
         this.token = null
-        localStorage.removeItem('token')
+        this.tokenExpirationTime = null
+        if (process.client) {
+          localStorage.removeItem('token')
+          localStorage.removeItem('tokenExpirationTime')
+        }
 
-        // Redirect to login page or home page
-        // You might want to use the router for this
-        // this.router.push('/login')
+        console.log('Logout successful')
       } catch (error) {
         console.error('Logout failed:', error)
         // Handle the error (e.g., show a notification to the user)
+      } finally {
+        // Ensure state is reset even if the API call fails
+        this.user = null
+        this.token = null
+        this.tokenExpirationTime = null
       }
     },
 

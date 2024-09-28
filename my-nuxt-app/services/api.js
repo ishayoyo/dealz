@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: isProduction 
     ? 'https://dealz-z1n5.onrender.com/api/v1'
     : 'http://localhost:5000/api/v1',

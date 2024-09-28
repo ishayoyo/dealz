@@ -58,7 +58,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
-import { useDealsStore } from '~/stores/deals' // {{ edit_1 }}
+import { useDealsStore } from '~/stores/deals'
 import { storeToRefs } from 'pinia'
 import NotificationList from '~/components/NotificationList.vue'
 import { useToastification } from '~/composables/useToastification'
@@ -66,19 +66,22 @@ import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
-const dealsStore = useDealsStore() // {{ edit_2 }}
-const { isAuthenticated, user } = storeToRefs(authStore)
+const dealsStore = useDealsStore()
+const { user } = storeToRefs(authStore)
 const { unreadCount } = storeToRefs(notificationStore)
 const toast = useToastification()
 const router = useRouter()
 const searchQuery = ref('')
+
+// Replace the destructured isAuthenticated with a computed property
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const showAuthModal = ref(false)
 const showPostDealModal = ref(false)
 const isLoginMode = ref(true)
 const scrolled = ref(false)
 const showNotifications = ref(false)
-const mobileMenuOpen = ref(false) // {{ edit_3 }}
+const mobileMenuOpen = ref(false)
 
 const handleScroll = () => {
   scrolled.value = window.scrollY > 0
@@ -96,9 +99,11 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
 })
 
-const handleLogout = () => {
-  authStore.logout()
+const handleLogout = async () => {
+  await authStore.logout()
   notificationStore.clearNotifications()
+  router.push('/') // Redirect to home page after logout
+  toast.success('Logged out successfully!')
 }
 
 const openAuthModal = (mode) => {
@@ -118,7 +123,7 @@ const closePostDealModal = () => {
   showPostDealModal.value = false
 }
 
-const handlePostDeal = async (dealData) => { // {{ edit_4 }}
+const handlePostDeal = async (dealData) => {
   try {
     await dealsStore.postDeal(dealData)
     closePostDealModal()
@@ -187,7 +192,7 @@ const handleSearch = () => {
   }
 }
 
-const toggleMobileMenu = () => { // {{ edit_5 }}
+const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
@@ -204,15 +209,13 @@ watch(isAuthenticated, (newValue) => {
   console.log('Authentication state changed:', newValue)
 })
 
-// Add this computed property
-const authStatus = computed(() => {
-  return {
-    isAuthenticated: isAuthenticated.value,
-    user: user.value,
-    token: authStore.token,
-    tokenExpirationTime: authStore.tokenExpirationTime
-  }
-})
+// Update the authStatus computed property
+const authStatus = computed(() => ({
+  isAuthenticated: isAuthenticated.value,
+  user: user.value,
+  token: authStore.token,
+  tokenExpirationTime: authStore.tokenExpirationTime
+}))
 
 // Log authentication status changes
 watch(authStatus, (newStatus) => {
