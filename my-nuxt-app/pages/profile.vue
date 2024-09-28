@@ -4,16 +4,15 @@
     <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
     <div v-else-if="!user" class="text-center py-8 text-red-500">User data not available. Please try logging in again.</div>
     <div v-else class="bg-white shadow-lg rounded-lg overflow-hidden">
-      <div class="p-6">
-        <div class="flex items-center mb-6">
-          <div class="relative">
+      <div class="p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row items-center mb-6">
+          <div class="relative mb-4 sm:mb-0 sm:mr-6">
             <UserAvatar 
               :name="getUserName" 
               :size="80" 
               :src="fullProfilePictureUrl" 
-              class="mr-6" 
             />
-            <button @click="triggerFileInput" class="absolute bottom-0 right-6 bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600">
+            <button @click="triggerFileInput" class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -21,17 +20,17 @@
             </button>
             <input type="file" ref="fileInput" @change="handleFileChange" class="hidden" accept="image/*">
           </div>
-          <div>
+          <div class="text-center sm:text-left">
             <h3 class="text-xl font-semibold">{{ getUserName }}</h3>
             <p class="text-gray-600">{{ user.email }}</p>
           </div>
         </div>
 
         <!-- Tabs -->
-        <div class="border-b border-gray-200 mb-6">
-          <nav class="flex">
+        <div class="border-b border-gray-200 mb-6 overflow-x-auto">
+          <nav class="flex whitespace-nowrap">
             <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" 
-                    :class="['mr-8 py-2 px-1 border-b-2 font-medium text-sm', 
+                    :class="['mr-4 sm:mr-8 py-2 px-1 border-b-2 font-medium text-sm', 
                              currentTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300']">
               {{ tab.name }}
             </button>
@@ -39,27 +38,27 @@
         </div>
 
         <!-- Tab content -->
-        <div v-if="currentTab === 'info'" class="grid grid-cols-2 gap-4">
+        <div v-if="currentTab === 'info'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div v-for="field in userFields" :key="field.key" class="flex flex-col">
             <label :for="field.key" class="text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
             <input :id="field.key" v-model="user[field.key]" :type="field.type" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
-          <div class="col-span-2">
-            <button @click="saveChanges" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-300">Save Changes</button>
+          <div class="col-span-1 sm:col-span-2">
+            <button @click="saveChanges" class="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-300">Save Changes</button>
           </div>
         </div>
 
-        <div v-else-if="currentTab === 'password'" class="grid grid-cols-2 gap-4">
+        <div v-else-if="currentTab === 'password'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div v-for="field in passwordFields" :key="field.key" class="flex flex-col">
             <label :for="field.key" class="text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
             <input :id="field.key" v-model="passwordChange[field.key]" type="password" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
-          <div class="col-span-2">
-            <button @click="changePassword" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-300">Change Password</button>
+          <div class="col-span-1 sm:col-span-2">
+            <button @click="changePassword" class="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-300">Change Password</button>
           </div>
         </div>
 
-        <div v-else-if="currentTab === 'following'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-else-if="currentTab === 'following'" class="grid grid-cols-1 gap-4">
           <div v-for="followedUser in followingUsers" :key="followedUser._id" class="flex items-center justify-between border-b border-gray-200 py-3">
             <div class="flex items-center">
               <UserAvatar 
@@ -74,7 +73,7 @@
           </div>
         </div>
 
-        <div v-else-if="currentTab === 'followers'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-else-if="currentTab === 'followers'" class="grid grid-cols-1 gap-4">
           <div v-for="follower in followers" :key="follower._id" class="flex items-center justify-between border-b border-gray-200 py-3">
             <div class="flex items-center">
               <UserAvatar 
@@ -85,8 +84,20 @@
               />
               <span class="font-medium">{{ follower.username }}</span>
             </div>
-            <button v-if="!isFollowing(follower._id)" @click="followUser(follower._id)" class="text-blue-600 hover:text-blue-800">Follow Back</button>
-            <span v-else class="text-gray-500">Following</span>
+            <button 
+              v-if="!isFollowing(follower._id)" 
+              @click="followUser(follower._id)" 
+              class="text-blue-600 hover:text-blue-800"
+            >
+              Follow Back
+            </button>
+            <button 
+              v-else 
+              @click="unfollowUser(follower._id)" 
+              class="text-gray-500 hover:text-gray-700"
+            >
+              Unfollow
+            </button>
           </div>
         </div>
 
@@ -218,21 +229,24 @@ const fetchFollowers = async () => {
   }
 }
 
+const followUser = async (userId) => {
+  try {
+    await api.post(`/users/${userId}/follow`)
+    const followedUser = followers.value.find(user => user._id === userId)
+    if (followedUser) {
+      followingUsers.value.push(followedUser)
+    }
+  } catch (error) {
+    console.error('Error following user:', error)
+  }
+}
+
 const unfollowUser = async (userId) => {
   try {
     await api.delete(`/users/${userId}/follow`)
     followingUsers.value = followingUsers.value.filter(user => user._id !== userId)
   } catch (error) {
     console.error('Error unfollowing user:', error)
-  }
-}
-
-const followUser = async (userId) => {
-  try {
-    await api.post(`/users/${userId}/follow`)
-    await fetchFollowers()
-  } catch (error) {
-    console.error('Error following user:', error)
   }
 }
 
@@ -322,3 +336,12 @@ const changePassword = async () => {
   }
 }
 </script>
+
+<style scoped>
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+</style>

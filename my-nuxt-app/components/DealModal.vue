@@ -1,6 +1,10 @@
 <template>
-  <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg w-full max-w-5xl overflow-hidden flex flex-col md:flex-row relative" :style="modalStyle">
+  <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div 
+      class="bg-white rounded-lg w-full overflow-hidden flex flex-col md:flex-row relative"
+      :class="modalSizeClass"
+      :style="modalStyle"
+    >
       <!-- Close button -->
       <button @click="closeModal" class="absolute top-4 right-4 text-gray-700 hover:text-text z-20 bg-white rounded-full p-2 shadow-md transition duration-300">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -10,11 +14,17 @@
 
       <!-- Left column: Image -->
       <div ref="imageContainer" class="w-full md:w-1/2 flex items-center justify-center p-4 bg-gray-100">
-        <img :src="imageUrl" :alt="deal.title" @load="onImageLoad" class="max-w-full max-h-full object-contain rounded-lg shadow-md">
+        <img 
+          :src="imageUrl" 
+          :alt="deal.title" 
+          @load="onImageLoad" 
+          class="w-full h-full object-contain rounded-lg"
+          :style="imageStyle"
+        >
       </div>
       
       <!-- Right column: Content -->
-      <div class="w-full md:w-1/2 p-6 overflow-y-auto">
+      <div class="w-full md:w-1/2 p-6 overflow-y-auto flex flex-col">
         <h2 class="text-2xl font-bold mb-2 text-text">{{ deal.title }}</h2>
         <p class="text-gray-600 mb-4">{{ deal.description }}</p>
         
@@ -25,11 +35,11 @@
           </a>
         </div>
         
-        <div class="flex items-center space-x-4 mb-4">
-          <button @click="handleFollowDeal" class="btn btn-primary">
+        <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
+          <button @click="handleFollowDeal" class="btn btn-primary w-full sm:w-auto">
             {{ isFollowing ? 'Unfollow' : 'Follow' }} Deal
           </button>
-          <span class="text-sm text-gray-500">
+          <span class="text-sm text-gray-500 whitespace-nowrap">
             {{ formattedFollowCount }} {{ formattedFollowCount === 1 ? 'follower' : 'followers' }}
           </span>
         </div>
@@ -42,7 +52,7 @@
           </div>
           <button 
             @click="handleFollowUser" 
-            class="btn btn-primary text-sm"
+            class="btn btn-secondary text-sm"
             :disabled="isCurrentUser"
             :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
           >
@@ -50,12 +60,12 @@
           </button>
         </div>
         
-        <div class="border-t border-gray-200 pt-4">
+        <div class="border-t border-gray-200 pt-4 flex-grow">
           <h3 class="font-bold text-xl mb-4 text-text">Comments</h3>
           <div v-if="isAuthenticated">
             <div v-if="loading" class="text-gray-500">Loading comments...</div>
             <div v-else-if="error" class="text-red-500">{{ error }}</div>
-            <div v-else class="comments-container space-y-4 mb-6">
+            <div v-else class="comments-container space-y-4 mb-6 max-h-64 overflow-y-auto">
               <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
               <div v-else>
                 <Comment v-for="comment in comments" :key="comment._id" :comment="comment" />
@@ -76,13 +86,13 @@
                 @select="handleUserSelect"
               />
             </div>
-            <button @click="handleAddComment" class="btn btn-primary mt-2">
+            <button @click="handleAddComment" class="btn btn-primary mt-2 w-full">
               Add Comment
             </button>
           </div>
           <div v-else class="text-center py-4">
             <p>Login to view comments</p>
-            <button @click="openAuthModal" class="mt-2 btn btn-primary">Login</button>
+            <button @click="openAuthModal" class="mt-2 btn btn-primary w-full">Login</button>
           </div>
         </div>
       </div>
@@ -91,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, onUnmounted } from 'vue'
 import { useRuntimeConfig } from '#app'
 import api from '~/services/api'
 import { useToast } from "vue-toastification"
@@ -124,7 +134,7 @@ const mentionableUsers = ref([])
 const mentionQuery = ref('')
 const showMentions = ref(false)
 const imageContainer = ref(null)
-const modalStyle = ref({})
+const imageStyle = ref({})
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
@@ -302,28 +312,55 @@ const followUser = async () => {
 
 const onImageLoad = (event) => {
   const img = event.target
-  const aspectRatio = img.naturalWidth / img.naturalHeight
-  let modalHeight
+  const containerWidth = imageContainer.value.clientWidth
+  const containerHeight = imageContainer.value.clientHeight
+  const imgAspectRatio = img.naturalWidth / img.naturalHeight
+  const containerAspectRatio = containerWidth / containerHeight
 
-  if (aspectRatio > 1) {
-    // Landscape image
-    modalHeight = Math.min(window.innerHeight * 0.9, img.naturalHeight)
+  let width, height
+
+  if (imgAspectRatio > containerAspectRatio) {
+    width = containerWidth
+    height = containerWidth / imgAspectRatio
   } else {
-    // Portrait image
-    modalHeight = Math.min(window.innerHeight * 0.9, img.naturalHeight, 800)
+    height = containerHeight
+    width = containerHeight * imgAspectRatio
   }
 
-  modalStyle.value = {
-    maxHeight: `${modalHeight}px`
-  }
-
-  if (imageContainer.value) {
-    imageContainer.value.style.height = `${modalHeight}px`
+  imageStyle.value = {
+    width: `${width}px`,
+    height: `${height}px`,
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'contain'
   }
 }
 
 const openAuthModal = () => {
   emit('open-auth-modal')
+}
+
+const modalSizeClass = computed(() => {
+  return {
+    'max-w-full min-h-screen md:min-h-0': window.innerWidth < 768, // Full screen on mobile
+    'max-w-5xl': window.innerWidth >= 768 && window.innerWidth < 1024, // Large screens
+    'max-w-6xl': window.innerWidth >= 1024 && window.innerWidth < 1280, // Extra large screens
+    'max-w-7xl': window.innerWidth >= 1280, // 2XL screens
+  }
+})
+
+const modalStyle = computed(() => {
+  if (window.innerWidth < 768) {
+    return { height: '100%' }
+  } else {
+    return { height: '90vh', maxHeight: '900px' } // Increased height for desktop
+  }
+})
+
+const onResize = () => {
+  if (imageContainer.value) {
+    onImageLoad({ target: imageContainer.value.querySelector('img') })
+  }
 }
 
 onMounted(async () => {
@@ -332,6 +369,11 @@ onMounted(async () => {
     await fetchDealData()
     await fetchMentionableUsers()
   }
+  window.addEventListener('resize', onResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', onResize)
 })
 
 watch(() => props.deal, async (newDeal, oldDeal) => {
@@ -348,7 +390,3 @@ watch(() => props.deal, async (newDeal, oldDeal) => {
   }
 }, { immediate: true, deep: true })
 </script>
-
-<style scoped>
-/* Add any scoped styles here if needed */
-</style>
