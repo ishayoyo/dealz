@@ -60,8 +60,10 @@ export const useAuthStore = defineStore('auth', {
       this.user = data.user || data.data?.user || null
       this.tokenExpirationTime = Date.now() + 3600000 // 1 hour from now
       if (process.client) {
-        localStorage.setItem('token', this.token)
-        localStorage.setItem('tokenExpirationTime', this.tokenExpirationTime.toString())
+        const authCookie = useCookie('auth_token', { maxAge: 3600 })
+        authCookie.value = this.token
+        const expirationCookie = useCookie('tokenExpirationTime', { maxAge: 3600 })
+        expirationCookie.value = this.tokenExpirationTime.toString()
         api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
         this.setupTokenExpirationCheck()
       }
@@ -107,8 +109,10 @@ export const useAuthStore = defineStore('auth', {
         this.token = null
         this.tokenExpirationTime = null
         if (process.client) {
-          localStorage.removeItem('token')
-          localStorage.removeItem('tokenExpirationTime')
+          const authCookie = useCookie('auth_token')
+          const expirationCookie = useCookie('tokenExpirationTime')
+          authCookie.value = null
+          expirationCookie.value = null
         }
 
         console.log('Logout successful')
