@@ -21,8 +21,8 @@
             <label for="dealLink" class="block text-gray-700 text-sm font-bold mb-2">Deal Link</label>
             <input type="url" id="dealLink" v-model="dealLink" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
-          <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">
-            Next
+          <button type="submit" :disabled="isLoading" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">
+            {{ isLoading ? 'Fetching...' : 'Next' }}
           </button>
         </form>
       </div>
@@ -32,6 +32,7 @@
         <div class="mb-6">
           <div class="w-full h-64 flex items-center justify-center mb-2 overflow-hidden">
             <img v-if="dealImage" :src="dealImage" alt="Deal Image" class="max-w-full max-h-full object-contain">
+            <span v-else-if="isLoading" class="text-gray-500">Loading image...</span>
             <span v-else class="text-gray-500">No image available</span>
           </div>
           <div class="flex justify-between">
@@ -72,9 +73,9 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import api from '~/services/api'
 import { useToastification } from '~/composables/useToastification'
 import { useDealsStore } from '~/stores/deals'
+import { useRuntimeConfig } from '#app'
 
 const emit = defineEmits(['close'])
 
@@ -82,6 +83,7 @@ const step = ref(1)
 const dealLink = ref('')
 const dealImage = ref('')
 const fileInput = ref(null)
+const isLoading = ref(false)
 
 const dealDetails = reactive({
   title: '',
@@ -91,16 +93,19 @@ const dealDetails = reactive({
 
 const toast = useToastification()
 const dealsStore = useDealsStore()
+const config = useRuntimeConfig()
 
 const fetchDealInfo = async () => {
+  isLoading.value = true
   try {
     const response = await api.post('/deals/fetch-image', { url: dealLink.value })
-    dealImage.value = `http://localhost:5000${response.data.data.imageUrl}`
+    dealImage.value = `${config.public.apiBase}${response.data.data.imageUrl}`
   } catch (error) {
     console.error('Error fetching deal image:', error)
     toast.error('Failed to fetch deal image. You can upload an image manually.')
   } finally {
-    step.value = 2 // Always proceed to step 2, even if image fetching fails
+    isLoading.value = false
+    step.value = 2
   }
 }
 
@@ -111,6 +116,7 @@ const triggerFileInput = () => {
 const handleFileChange = async (event) => {
   const file = event.target.files[0]
   if (file) {
+    isLoading.value = true
     const formData = new FormData()
     formData.append('image', file)
     try {
@@ -119,11 +125,13 @@ const handleFileChange = async (event) => {
           'Content-Type': 'multipart/form-data'
         }
       })
-      dealImage.value = `http://localhost:5000${response.data.data.imageUrl}`
+      dealImage.value = `${config.public.apiBase}${response.data.data.imageUrl}`
       toast.success('Image uploaded successfully')
     } catch (error) {
       console.error('Error uploading image:', error)
       toast.error('Failed to upload image. Please try again.')
+    } finally {
+      isLoading.value = false
     }
   }
 }
