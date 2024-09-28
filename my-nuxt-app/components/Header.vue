@@ -2,8 +2,14 @@
   <header class="fixed top-0 left-0 right-0 bg-white bg-opacity-90 shadow-sm z-40 transition-all duration-300" :class="{ 'shadow-md': scrolled }">
     <div class="container mx-auto px-4 py-3 flex items-center justify-between">
       <div class="flex items-center">
-        <NuxtLink to="/" class="text-xl font-bold mr-4 text-primary hover:text-blue-600 transition duration-300">
-          Logo
+        <NuxtLink to="/" class="flex items-center mr-4">
+          <img 
+            src="/images/logo.png" 
+            alt="Logo" 
+            class="h-12 w-auto mr-2"
+            @error="handleImageError"
+          >
+          <span class="text-xl font-bold text-primary hover:text-blue-600 transition duration-300">Dealz</span>
         </NuxtLink>
         <form @submit.prevent="handleSearch" class="relative hidden md:block">
           <input 
@@ -226,4 +232,13 @@ watch(authStatus, (newStatus) => {
 onMounted(() => {
   console.log('Initial auth status:', authStatus.value)
 })
+
+const imageError = ref(false)
+
+const handleImageError = () => {
+  console.error('Failed to load logo image')
+  imageError.value = true
+}
+
+const logoUrl = ref('/images/logo.png') // Direct reference to the public folder
 </script>
