@@ -13,60 +13,43 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    async initializeAuth() {
-      if (process.client) {
-        const token = localStorage.getItem('token')
-        const tokenExpirationTime = localStorage.getItem('tokenExpirationTime')
-        if (token && tokenExpirationTime) {
-          this.token = token
-          this.tokenExpirationTime = parseInt(tokenExpirationTime)
-          if (this.isAuthenticated) {
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-            await this.fetchUser()
-          } else {
-            this.logout()
-          }
+    async login(email, password) {
+      try {
+        const response = await api.post('/users/login', { email, password });
+        if (response.data && response.data.token) {
+          this.setAuthData(response.data);
+          return true;
+        } else {
+          console.error('Invalid response from server:', response.data);
+          return false;
         }
+      } catch (error) {
+        console.error('Login error:', error);
+        if (error.response) {
+          console.error('Error response:', error.response.data);
+        }
+        throw error;
       }
     },
 
-    async login(email, password) {
-        try {
-          const response = await api.post('/users/login', { email, password });
-          if (response.data && response.data.token) {
-            this.setAuthData(response.data);
-            return true;
-          } else {
-            console.error('Invalid response from server:', response.data);
-            return false;
-          }
-        } catch (error) {
-          console.error('Login error:', error);
-          if (error.response) {
-            console.error('Error response:', error.response.data);
-          }
-          throw error;
+    async signup(userData) {
+      try {
+        const response = await api.post('/users/register', userData);
+        if (response.data && response.data.token) {
+          this.setAuthData(response.data);
+          return true;
+        } else {
+          console.error('Invalid response from server:', response.data);
+          return false;
         }
-      },
-
-      async signup(userData) {
-        try {
-          const response = await api.post('/users/register', userData);
-          if (response.data && response.data.token) {
-            this.setAuthData(response.data);
-            return true;
-          } else {
-            console.error('Invalid response from server:', response.data);
-            return false;
-          }
-        } catch (error) {
-          console.error('Signup error:', error);
-          if (error.response) {
-            console.error('Error response:', error.response.data);
-          }
-          throw error;
+      } catch (error) {
+        console.error('Signup error:', error);
+        if (error.response) {
+          console.error('Error response:', error.response.data);
         }
-      },
+        throw error;
+      }
+    },
 
     setAuthData(data) {
       this.token = data.token

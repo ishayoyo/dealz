@@ -13,8 +13,14 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:5000/api/v1',
-      socketUrl: process.env.NUXT_PUBLIC_SOCKET_URL || 'http://localhost:5000'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 
+        (process.env.NODE_ENV === 'production' 
+          ? 'https://dealz-z1n5.onrender.com/api/v1' 
+          : 'http://localhost:5000/api/v1'),
+      socketUrl: process.env.NUXT_PUBLIC_SOCKET_URL || 
+        (process.env.NODE_ENV === 'production'
+          ? 'https://dealz-z1n5.onrender.com'
+          : 'http://localhost:5000')
     }
   },
 

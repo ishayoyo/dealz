@@ -1,28 +1,26 @@
 import axios from 'axios'
 
-export default defineNuxtPlugin((nuxtApp) => {
-  const config = useRuntimeConfig()
+const isProduction = process.env.NODE_ENV === 'production'
 
-  const api = axios.create({
-    baseURL: config.public.apiBase,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
+const api = axios.create({
+  baseURL: isProduction 
+    ? 'https://dealz-z1n5.onrender.com/api/v1'
+    : 'http://localhost:5000/api/v1',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
+if (process.client) {
   api.interceptors.request.use(config => {
-    if (process.client) {
-      const token = localStorage.getItem('token')
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`
-      }
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
     }
     return config
   })
+}
 
-  return {
-    provide: {
-      api
-    }
-  }
-})
+console.log('API baseURL:', api.defaults.baseURL)
+
+export default api

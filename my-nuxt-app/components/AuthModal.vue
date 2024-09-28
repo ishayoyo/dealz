@@ -126,13 +126,15 @@ const handleSubmit = async () => {
       return
     }
     if (isLogin.value) {
-      emit('login', { email: form.email, password: form.password })
+      await authStore.login(form.email, form.password)
+      toast.success('Logged in successfully!')
     } else {
-      emit('signup', {
+      await authStore.signup({
         username: form.username,
         email: form.email,
         password: form.password
       })
+      toast.success('Signed up successfully!')
     }
     emit('close')
   } catch (err) {
@@ -144,15 +146,16 @@ const handleSubmit = async () => {
 
 // Watch for authentication state changes
 watch(() => authStore.isAuthenticated, (newValue) => {
-  if (!newValue) {
+  if (newValue) {
     emit('close')
-    // No need to redirect, as the auth store will handle it
+    // You might want to redirect here if needed
+    // router.push('/dashboard')
   }
 })
 
 // Check authentication status on component mount
 onMounted(() => {
-  if (!authStore.isAuthenticated) {
+  if (authStore.isAuthenticated) {
     const currentRoute = router.currentRoute.value
     if (currentRoute.meta.requiresAuth) {
       router.push('/')
