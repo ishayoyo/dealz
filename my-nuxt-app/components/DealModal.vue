@@ -140,9 +140,7 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const imageUrl = computed(() => {
   if (!props.deal.imageUrl) return ''
-  const baseUrl = config.public.apiBase.includes('localhost') 
-    ? 'http://localhost:5000' 
-    : 'https://dealz-z1n5.onrender.com'
+  const baseUrl = getImageBaseUrl()
   return props.deal.imageUrl.startsWith('http') 
     ? props.deal.imageUrl 
     : `${baseUrl}${props.deal.imageUrl}`
@@ -373,6 +371,12 @@ const onResize = () => {
   if (imageContainer.value) {
     onImageLoad({ target: imageContainer.value.querySelector('img') })
   }
+}
+
+const getImageBaseUrl = () => {
+  return config.public.apiBase.includes('localhost') 
+    ? 'http://localhost:5000' 
+    : 'https://dealz-z1n5.onrender.com'
 }
 
 onMounted(async () => {

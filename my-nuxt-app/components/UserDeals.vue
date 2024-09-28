@@ -30,8 +30,15 @@
   
   const getFullImageUrl = (imageUrl) => {
     if (!imageUrl) return ''
+    const baseUrl = getImageBaseUrl()
     return imageUrl.startsWith('http') 
       ? imageUrl 
-      : `${config.public.apiBase}${imageUrl}`
+      : `${baseUrl}${imageUrl}`
+  }
+
+  const getImageBaseUrl = () => {
+    return config.public.apiBase.includes('localhost') 
+      ? 'http://localhost:5000' 
+      : 'https://dealz-z1n5.onrender.com'
   }
   </script>

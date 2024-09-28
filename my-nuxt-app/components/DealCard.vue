@@ -51,9 +51,7 @@ const imageError = ref(false)
 
 const fullImageUrl = computed(() => {
   if (imageError.value || !props.deal?.imageUrl) return '/default-deal-image.jpg'
-  const baseUrl = config.public.apiBase.includes('localhost') 
-    ? 'http://localhost:5000' 
-    : 'https://dealz-z1n5.onrender.com'
+  const baseUrl = getImageBaseUrl()
   return props.deal.imageUrl.startsWith('http') 
     ? props.deal.imageUrl 
     : `${baseUrl}${props.deal.imageUrl}`
@@ -80,5 +78,11 @@ const openModal = () => {
     console.log('DealCard: Emitting open-modal event for deal:', props.deal)
     emit('open-modal', props.deal)
   }
+}
+
+const getImageBaseUrl = () => {
+  return config.public.apiBase.includes('localhost') 
+    ? 'http://localhost:5000' 
+    : 'https://dealz-z1n5.onrender.com'
 }
 </script>
