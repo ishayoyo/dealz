@@ -1,5 +1,6 @@
-import { useToast } from 'vue-toastification'
+import Toast from 'vue-toastification'
 
 export const useToastification = () => {
+  const { useToast } = Toast
   return useToast()
 }

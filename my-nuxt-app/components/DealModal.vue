@@ -104,7 +104,7 @@
 import { ref, onMounted, watch, computed, onUnmounted } from 'vue'
 import { useRuntimeConfig } from '#app'
 import api from '~/services/api'
-import { useToast } from "vue-toastification"
+import { useToastification } from '~/composables/useToastification'
 import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
 import Comment from '~/components/Comment.vue'
@@ -122,7 +122,7 @@ const emit = defineEmits(['close-modal', 'open-auth-modal'])
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const dealsStore = useDealsStore()
-const toast = useToast()
+const toast = useToastification()
 
 const comments = ref([])
 const isFollowing = ref(false)
