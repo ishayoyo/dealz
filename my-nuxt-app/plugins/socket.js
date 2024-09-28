@@ -9,7 +9,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   const notificationStore = useNotificationStore()
   const dealsStore = useDealsStore()
 
-  const socket = io(config.public.socketUrl || 'http://localhost:5000', {
+  const socket = io(config.public.socketUrl, {
     autoConnect: false,
     reconnection: true,
     reconnectionAttempts: Infinity,
