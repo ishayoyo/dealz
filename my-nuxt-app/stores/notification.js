@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '../services/api'
+import { useAuthStore } from './auth'
 
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
@@ -33,22 +34,28 @@ export const useNotificationStore = defineStore('notification', {
     },
 
     async fetchNotifications() {
-      this.loading = true
-      this.error = null
+      const authStore = useAuthStore();
+      
+      if (!authStore.isAuthenticated) {
+        this.setNotifications([]);
+        return;
+      }
+
+      this.loading = true;
+      this.error = null;
       try {
-        const response = await api.get('/users/notifications')
-        console.log('Fetch notifications API response:', response.data)
+        const response = await api.get('/users/notifications');
         if (response.data.status === 'success') {
-          this.setNotifications(response.data.data.notifications)
-          console.log('Fetched notifications:', this.notifications)
-          console.log('Unread count after fetch:', this.unreadCount)
+          this.setNotifications(response.data.data.notifications);
         }
       } catch (error) {
-        console.error('Error fetching notifications:', error)
-        this.error = error.response?.data?.message || 'Failed to fetch notifications'
-        this.setNotifications([])
+        if (error.response && error.response.status !== 401) {
+          console.error('Error fetching notifications:', error);
+          this.error = error.response?.data?.message || 'Failed to fetch notifications';
+        }
+        this.setNotifications([]);
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 

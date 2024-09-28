@@ -162,7 +162,7 @@ const handleSignup = async (userData) => {
 
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
-  if (showNotifications.value) {
+  if (showNotifications.value && isAuthenticated.value) {
     notificationStore.fetchNotifications()
   }
 }
