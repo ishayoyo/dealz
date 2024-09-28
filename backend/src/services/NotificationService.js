@@ -116,6 +116,28 @@ class NotificationService {
       relatedComment: commentId
     });
   }
+
+  async markAllAsRead(userId) {
+    try {
+      const result = await Notification.updateMany(
+        { recipient: userId, read: false },
+        { $set: { read: true } }
+      );
+      
+      // Fetch the updated notifications
+      const updatedNotifications = await Notification.find({ recipient: userId });
+      
+      // Emit socket events for each updated notification
+      updatedNotifications.forEach(notification => {
+        this.io.to(userId.toString()).emit('updateNotification', notification);
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = NotificationService;

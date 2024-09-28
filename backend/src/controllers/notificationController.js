@@ -3,9 +3,14 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
 exports.getNotifications = catchAsync(async (req, res, next) => {
+  console.log('Fetching notifications for user:', req.user.id);
+  
   const notifications = await Notification.find({ recipient: req.user.id })
     .sort('-createdAt')
     .limit(20);
+  
+  console.log('Fetched notifications:', notifications);
+
   res.status(200).json({
     status: 'success',
     data: { notifications }
@@ -15,7 +20,7 @@ exports.getNotifications = catchAsync(async (req, res, next) => {
 exports.markAsRead = catchAsync(async (req, res, next) => {
   const notification = await Notification.findOneAndUpdate(
     { _id: req.params.id, recipient: req.user.id },
-    { isRead: true },
+    { read: true },  // Changed from isRead to read
     { new: true }
   );
 
@@ -30,10 +35,25 @@ exports.markAsRead = catchAsync(async (req, res, next) => {
 });
 
 exports.markAllAsRead = catchAsync(async (req, res, next) => {
-  await Notification.updateMany({ recipient: req.user.id }, { isRead: true });
+  console.log('Marking all notifications as read for user:', req.user.id);
+  
+  const updateResult = await Notification.updateMany(
+    { recipient: req.user.id, read: false },
+    { read: true }
+  );
+  
+  console.log('Update result:', updateResult);
+  
+  const updatedNotifications = await Notification.find({ recipient: req.user.id })
+    .sort('-createdAt')
+    .limit(20);
+
+  console.log('Updated notifications:', updatedNotifications);
+
   res.status(200).json({
     status: 'success',
-    message: 'All notifications marked as read'
+    message: 'All notifications marked as read',
+    data: { notifications: updatedNotifications }
   });
 });
 

@@ -41,11 +41,12 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useNotificationStore } from '~/stores/notification'
+import { useNotificationStore } from '@/stores/notification'
 import { storeToRefs } from 'pinia'
 
 const notificationStore = useNotificationStore()
-const { notifications } = storeToRefs(notificationStore)
+const { notifications, unreadCount } = storeToRefs(notificationStore)
+const emit = defineEmits(['close'])  // This line should already exist
 
 const sortedNotifications = computed(() => {
   return notifications.value.slice(0, 5).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -56,12 +57,17 @@ const markAsRead = async (notificationId) => {
 }
 
 const markAllAsRead = async () => {
-  await notificationStore.markAllNotificationsAsRead()
+  try {
+    await notificationStore.markAllNotificationsAsRead()
+    await notificationStore.fetchNotifications() // Fetch fresh notifications
+    emit('close')
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error)
+    // Handle the error (e.g., show a toast notification)
+  }
 }
 
 const formatDate = (date) => {
   return new Date(date).toLocaleString()
 }
-
-defineEmits(['close'])
 </script>

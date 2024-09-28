@@ -11,6 +11,6 @@ router.use('/users', userRoutes);
 router.use('/deals', dealRoutes);
 router.use('/comments', commentRoutes);
 router.use('/admin', adminRoutes);
-router.use('/notifications', notificationRoutes);
+router.use('/users/notifications', notificationRoutes);  // Change this line
 
 module.exports = router;

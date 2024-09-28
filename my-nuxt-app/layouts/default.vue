@@ -9,4 +9,12 @@
 
 <script setup>
 import Header from '~/components/Header.vue'
+import { onMounted } from 'vue'
+import { useNotificationStore } from '@/stores/notification'
+
+const notificationStore = useNotificationStore()
+
+onMounted(async () => {
+  await notificationStore.fetchNotifications()
+})
 </script>
