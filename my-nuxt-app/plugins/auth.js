@@ -6,6 +6,8 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   // Initialize auth state
   await authStore.initializeAuth()
 
+  console.log('Auth plugin: isAuthenticated =', authStore.isAuthenticated)
+
   // Add auth store to the context for easy access in components
   nuxtApp.provide('auth', authStore)
 })

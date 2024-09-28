@@ -4,6 +4,7 @@ export default defineNuxtConfig({
   modules: [
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt'
+    // Remove '@nuxtjs/toast' from here
   ],
   css: [
     '@/assets/css/tailwind.css',

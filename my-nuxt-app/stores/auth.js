@@ -9,7 +9,11 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.token && state.tokenExpirationTime > Date.now(),
+    isAuthenticated: (state) => {
+      const isValid = !!state.token && state.tokenExpirationTime > Date.now()
+      console.log('isAuthenticated getter called:', { isValid, token: state.token, expiration: state.tokenExpirationTime })
+      return isValid
+    },
   },
 
   actions: {
@@ -54,14 +58,14 @@ export const useAuthStore = defineStore('auth', {
     setAuthData(data) {
       this.token = data.token
       this.user = data.user || data.data?.user || null
-      // Assume token expires in 1 hour (3600000 ms)
-      this.tokenExpirationTime = Date.now() + 3600000
+      this.tokenExpirationTime = Date.now() + 3600000 // 1 hour from now
       if (process.client) {
         localStorage.setItem('token', this.token)
         localStorage.setItem('tokenExpirationTime', this.tokenExpirationTime.toString())
         api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
         this.setupTokenExpirationCheck()
       }
+      console.log('Auth data set:', { token: this.token, user: this.user, expiration: this.tokenExpirationTime })
     },
 
     setupTokenExpirationCheck() {
@@ -114,6 +118,32 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Logout failed:', error)
         // Handle the error (e.g., show a notification to the user)
+      }
+    },
+
+    async initializeAuth() {
+      if (process.client) {
+        const token = useCookie('auth_token').value
+        const tokenExpirationTime = useCookie('tokenExpirationTime').value
+        
+        console.log('Initializing auth with stored data:', { token, tokenExpirationTime })
+        
+        if (token && tokenExpirationTime) {
+          this.token = token
+          this.tokenExpirationTime = parseInt(tokenExpirationTime)
+          
+          if (this.isAuthenticated) {
+            api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+            await this.fetchUser()
+            this.setupTokenExpirationCheck()
+          } else {
+            console.log('Token expired, logging out')
+            this.logout()
+          }
+        } else {
+          console.log('No stored auth data found')
+        }
+        console.log('Auth initialized:', { token: this.token, expiration: this.tokenExpirationTime, isAuthenticated: this.isAuthenticated })
       }
     },
   },

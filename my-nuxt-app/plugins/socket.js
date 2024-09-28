@@ -35,19 +35,15 @@ export default defineNuxtPlugin((nuxtApp) => {
 
     socket.on('connect_error', (error) => {
       console.error('Socket connection error in plugin:', error.message)
-      // You can add additional error handling here, such as showing a toast message
     })
 
     socket.on('disconnect', (reason) => {
       console.log('Socket disconnected:', reason)
       if (reason === 'io server disconnect') {
-        // The disconnection was initiated by the server, you need to reconnect manually
         socket.connect()
       }
-      // Else the socket will automatically try to reconnect
     })
 
-    // Listen for authentication changes
     watch(() => authStore.isAuthenticated, (isAuthenticated) => {
       if (isAuthenticated) {
         if (!socket.connected) {
@@ -63,13 +59,13 @@ export default defineNuxtPlugin((nuxtApp) => {
     }, { immediate: true })
 
     socket.on('newNotification', (notification) => {
-      console.log('Received new notification:', notification);
-      notificationStore.handleNewNotification(notification);
-    });
+      console.log('Received new notification:', notification)
+      notificationStore.handleNewNotification(notification)
+    })
 
     socket.on('newDeal', (deal) => {
-      console.log('Received new deal:', deal);
-      dealsStore.addNewDeal(deal);
-    });
+      console.log('Received new deal:', deal)
+      dealsStore.addNewDeal(deal)
+    })
   }
 })

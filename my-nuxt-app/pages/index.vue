@@ -38,22 +38,27 @@ const toast = useToastification()
 const { $socket } = useNuxtApp()
 
 onMounted(async () => {
-  // Fetch deals only if the store is empty
-  if (dealsStore.value.deals.length === 0) {
-    await dealsStore.value.fetchDeals()
+  try {
+    // Fetch deals only if the store is empty
+    if (dealsStore.value.deals.length === 0) {
+      await dealsStore.value.fetchDeals()
+    }
+
+    $socket.on('newDeal', (data) => {
+      console.log('Received new deal:', data)
+      dealsStore.value.handleNewDeal(data.deal)
+      toast.success(`New deal added: ${data.deal.title}`)
+    })
+
+    $socket.on('updateDeal', (data) => {
+      console.log('Received deal update:', data)
+      dealsStore.value.handleNewDeal(data.deal) // We can use the same method for updates
+      toast.info(`Deal updated: ${data.deal.title}`)
+    })
+  } catch (error) {
+    console.error('Error in onMounted hook:', error)
+    toast.error('An error occurred while loading deals. Please try again.')
   }
-
-  $socket.on('newDeal', (data) => {
-    console.log('Received new deal:', data)
-    dealsStore.value.handleNewDeal(data.deal)
-    toast.success(`New deal added: ${data.deal.title}`)
-  })
-
-  $socket.on('updateDeal', (data) => {
-    console.log('Received deal update:', data)
-    dealsStore.value.handleNewDeal(data.deal) // We can use the same method for updates
-    toast.info(`Deal updated: ${data.deal.title}`)
-  })
 })
 
 onUnmounted(() => {

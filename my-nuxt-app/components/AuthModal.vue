@@ -76,11 +76,11 @@
 <script setup>
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-import { useToast } from 'vue-toastification'
+import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
-const toast = useToast()
+const toast = useToastification()
 const router = useRouter()
 
 const props = defineProps({

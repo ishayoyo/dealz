@@ -61,7 +61,7 @@ import { useNotificationStore } from '~/stores/notification'
 import { useDealsStore } from '~/stores/deals' // {{ edit_1 }}
 import { storeToRefs } from 'pinia'
 import NotificationList from '~/components/NotificationList.vue'
-import { useToast } from 'vue-toastification'
+import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
@@ -69,7 +69,7 @@ const notificationStore = useNotificationStore()
 const dealsStore = useDealsStore() // {{ edit_2 }}
 const { isAuthenticated, user } = storeToRefs(authStore)
 const { unreadCount } = storeToRefs(notificationStore)
-const toast = useToast()
+const toast = useToastification()
 const router = useRouter()
 const searchQuery = ref('')
 
@@ -89,6 +89,7 @@ onMounted(() => {
   if (isAuthenticated.value) {
     notificationStore.fetchNotifications()
   }
+  console.log('Initial authentication state:', isAuthenticated.value)
 })
 
 onUnmounted(() => {
@@ -196,5 +197,30 @@ watch(() => isAuthenticated.value, (newValue) => {
   } else {
     notificationStore.clearNotifications()
   }
+})
+
+// Add this watch effect to log authentication state changes
+watch(isAuthenticated, (newValue) => {
+  console.log('Authentication state changed:', newValue)
+})
+
+// Add this computed property
+const authStatus = computed(() => {
+  return {
+    isAuthenticated: isAuthenticated.value,
+    user: user.value,
+    token: authStore.token,
+    tokenExpirationTime: authStore.tokenExpirationTime
+  }
+})
+
+// Log authentication status changes
+watch(authStatus, (newStatus) => {
+  console.log('Auth status changed:', newStatus)
+}, { deep: true })
+
+// Log initial auth status on component mount
+onMounted(() => {
+  console.log('Initial auth status:', authStatus.value)
 })
 </script>

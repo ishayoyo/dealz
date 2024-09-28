@@ -73,7 +73,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import api from '~/services/api'
-import { useToast } from "vue-toastification"
+import { useToastification } from '~/composables/useToastification'
 import { useDealsStore } from '~/stores/deals'
 
 const emit = defineEmits(['close'])
@@ -89,7 +89,7 @@ const dealDetails = reactive({
   price: ''
 })
 
-const toast = useToast()
+const toast = useToastification()
 const dealsStore = useDealsStore()
 
 const fetchDealInfo = async () => {
