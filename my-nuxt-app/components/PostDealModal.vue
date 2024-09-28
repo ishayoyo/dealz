@@ -73,6 +73,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import api from '~/services/api'
 import { useToastification } from '~/composables/useToastification'
 import { useDealsStore } from '~/stores/deals'
 import { useRuntimeConfig } from '#app'
@@ -95,11 +96,18 @@ const toast = useToastification()
 const dealsStore = useDealsStore()
 const config = useRuntimeConfig()
 
+const getImageBaseUrl = () => {
+  return config.public.apiBase.includes('localhost') 
+    ? 'http://localhost:5000' 
+    : 'https://dealz-z1n5.onrender.com'
+}
+
 const fetchDealInfo = async () => {
   isLoading.value = true
   try {
     const response = await api.post('/deals/fetch-image', { url: dealLink.value })
-    dealImage.value = `${config.public.apiBase}${response.data.data.imageUrl}`
+    const imageBaseUrl = getImageBaseUrl()
+    dealImage.value = `${imageBaseUrl}${response.data.data.imageUrl}`
   } catch (error) {
     console.error('Error fetching deal image:', error)
     toast.error('Failed to fetch deal image. You can upload an image manually.')
@@ -125,7 +133,8 @@ const handleFileChange = async (event) => {
           'Content-Type': 'multipart/form-data'
         }
       })
-      dealImage.value = `${config.public.apiBase}${response.data.data.imageUrl}`
+      const imageBaseUrl = getImageBaseUrl()
+      dealImage.value = `${imageBaseUrl}${response.data.data.imageUrl}`
       toast.success('Image uploaded successfully')
     } catch (error) {
       console.error('Error uploading image:', error)
@@ -143,10 +152,11 @@ const removeImage = () => {
 
 const submitDeal = async () => {
   try {
+    const imageBaseUrl = getImageBaseUrl()
     const dealData = {
       ...dealDetails,
       price: parseFloat(dealDetails.price).toFixed(2),
-      imageUrl: dealImage.value,
+      imageUrl: dealImage.value.replace(imageBaseUrl, ''), // Remove the base URL
       link: dealLink.value
     }
     const response = await api.post('/deals', dealData)
