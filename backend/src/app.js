@@ -6,7 +6,7 @@ const routes = require('./routes/api/v1');
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:3000', // or whatever port your frontend is running on
+  origin: ["https://dealz-1.onrender.com", "http://localhost:3000"],
   credentials: true
 }));
 app.use(express.json());
