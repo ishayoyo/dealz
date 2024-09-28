@@ -9,7 +9,7 @@
             <p class="text-sm text-gray-600">${{ deal.price }}</p>
           </div>
         </div>
-        <span class="text-gray-600">{{ deal.upvotes }} upvotes</span>
+        <span class="text-gray-600">{{ deal.followCount || 0 }} followers</span>
       </div>
     </div>
   </template>

@@ -189,11 +189,20 @@ const fetchDealData = async () => {
 }
 
 const fetchMentionableUsers = async () => {
+  if (!props.deal || !props.deal._id) return
   try {
     const response = await api.get(`/deals/${props.deal._id}/mentionable-users`)
     mentionableUsers.value = response.data.data.users
   } catch (err) {
     console.error('Error fetching mentionable users:', err)
+    if (err.response && err.response.status === 401) {
+      toast.error('Please log in to view mentionable users')
+      // Optionally, you can trigger the auth modal here
+      // openAuthModal()
+    } else {
+      toast.error('Failed to fetch mentionable users')
+    }
+    mentionableUsers.value = [] // Reset to empty array in case of error
   }
 }
 
@@ -365,7 +374,7 @@ const onResize = () => {
 
 onMounted(async () => {
   console.log('DealModal: Mounted')
-  if (props.deal && props.deal._id) {
+  if (props.deal && props.deal._id && isAuthenticated.value) {
     await fetchDealData()
     await fetchMentionableUsers()
   }
@@ -376,9 +385,10 @@ onUnmounted(() => {
   window.removeEventListener('resize', onResize)
 })
 
-watch(() => props.deal, async (newDeal, oldDeal) => {
-  console.log('DealModal: Deal prop changed:', newDeal)
-  if (newDeal && newDeal._id && (!oldDeal || newDeal._id !== oldDeal._id)) {
+watch(() => [props.deal, isAuthenticated.value], async ([newDeal, newIsAuthenticated], [oldDeal, oldIsAuthenticated]) => {
+  console.log('DealModal: Deal prop or authentication state changed:', newDeal, newIsAuthenticated)
+  if (newDeal && newDeal._id && newIsAuthenticated && 
+      (!oldDeal || newDeal._id !== oldDeal._id || newIsAuthenticated !== oldIsAuthenticated)) {
     try {
       await fetchDealData()
       await fetchMentionableUsers()
