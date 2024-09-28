@@ -58,55 +58,20 @@
           </div>
         </div>
 
-        <div v-else-if="currentTab === 'following'" class="grid grid-cols-1 gap-4">
-          <div v-for="followedUser in followingUsers" :key="followedUser._id" class="flex items-center justify-between border-b border-gray-200 py-3">
-            <div class="flex items-center">
-              <UserAvatar 
-                :name="followedUser.firstName && followedUser.lastName ? `${followedUser.firstName} ${followedUser.lastName}` : followedUser.username || ''" 
-                :size="40" 
-                :src="getFullProfilePictureUrl(followedUser.profilePicture)" 
-                class="mr-3" 
-              />
-              <span class="font-medium">{{ followedUser.username }}</span>
-            </div>
-            <button @click="unfollowUser(followedUser._id)" class="text-blue-600 hover:text-blue-800">Unfollow</button>
-          </div>
+        <div v-else-if="currentTab === 'following'">
+          <FollowingList :following="followingUsers" @unfollow="unfollowUser" />
         </div>
 
-        <div v-else-if="currentTab === 'followers'" class="grid grid-cols-1 gap-4">
-          <div v-for="follower in followers" :key="follower._id" class="flex items-center justify-between border-b border-gray-200 py-3">
-            <div class="flex items-center">
-              <UserAvatar 
-                :name="follower.firstName && follower.lastName ? `${follower.firstName} ${follower.lastName}` : follower.username || ''" 
-                :size="40" 
-                :src="getFullProfilePictureUrl(follower.profilePicture)" 
-                class="mr-3" 
-              />
-              <span class="font-medium">{{ follower.username }}</span>
-            </div>
-            <button 
-              v-if="!isFollowing(follower._id)" 
-              @click="followUser(follower._id)" 
-              class="text-blue-600 hover:text-blue-800"
-            >
-              Follow Back
-            </button>
-            <button 
-              v-else 
-              @click="unfollowUser(follower._id)" 
-              class="text-gray-500 hover:text-gray-700"
-            >
-              Unfollow
-            </button>
-          </div>
+        <div v-else-if="currentTab === 'followers'">
+          <FollowersList :followers="followers" :followingIds="followingUserIds" @follow="followUser" @unfollow="unfollowUser" />
         </div>
 
         <div v-else-if="currentTab === 'deals'">
-          <UserDeals :userDeals="userDeals" />
+          <UserDeals :userDeals="userDeals" @dealClicked="navigateToDeal" />
         </div>
 
         <div v-else-if="currentTab === 'followedDeals'">
-          <FollowedDeals :followedDeals="followedDeals" @unfollow="unfollowDeal" />
+          <UserDeals :userDeals="followedDeals" @dealClicked="navigateToDeal" />
         </div>
       </div>
     </div>
@@ -117,18 +82,21 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRuntimeConfig } from '#app'
 import api from '~/services/api'
-import FollowedDeals from '~/components/FollowedDeals.vue'
+import FollowingList from '~/components/FollowingList.vue'
+import FollowersList from '~/components/FollowersList.vue'
 import UserDeals from '~/components/UserDeals.vue'
 import UserAvatar from '~/components/UserAvatar.vue'
-import { useAuthStore } from '~/stores/auth'
-import { useDealsStore } from '~/stores/deals'
-import { storeToRefs } from 'pinia'
 import { useToastification } from '~/composables/useToastification'
 
 const config = useRuntimeConfig()
 const fileInput = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const user = ref(null)
+const followingUsers = ref([])
+const followers = ref([])
+const userDeals = ref([])
+const followedDeals = ref([])
 
 const currentTab = ref('info')
 const tabs = [
@@ -140,30 +108,16 @@ const tabs = [
   { id: 'followedDeals', name: 'Followed Deals' }
 ]
 
-const authStore = useAuthStore()
-const dealsStore = useDealsStore()
-
-const { user } = storeToRefs(authStore)
-const userDeals = ref([])
-const followedDeals = ref([])
-
-const followingUsers = ref([])
-const followers = ref([])
-
 onMounted(async () => {
   try {
-    if (!user.value) {
-      await authStore.fetchUser()
-    }
-    await Promise.all([
-      fetchUserDeals(),
-      fetchFollowedDeals(),
-      fetchFollowing(),
-      fetchFollowers()
-    ])
+    loading.value = true
+    const response = await api.get('/users/me')
+    user.value = response.data.data.user
+    await fetchFollowedDeals()
+    await fetchUserDeals()
   } catch (err) {
-    console.error('Error loading user data:', err)
-    error.value = 'Error loading user data. Please try again.'
+    error.value = 'Failed to load user data'
+    console.error(err)
   } finally {
     loading.value = false
   }
@@ -316,28 +270,31 @@ const saveChanges = async () => {
   try {
     const response = await api.put('/users/me', user.value)
     user.value = response.data.data.user
-    // Show success message
-    console.log('User data updated successfully')
+    toast.success('User data updated successfully')
   } catch (error) {
     console.error('Error updating user data:', error)
-    // Show error message
+    toast.error('Failed to update user data')
   }
 }
 
 const changePassword = async () => {
   try {
     await api.post('/users/change-password', passwordChange.value)
-    // Show success message
-    console.log('Password changed successfully')
-    // Clear the form fields
+    toast.success('Password changed successfully')
     passwordChange.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
   } catch (error) {
     console.error('Error changing password:', error)
-    // Show error message
+    toast.error('Failed to change password')
   }
 }
 
 const toast = useToastification()
+
+const followingUserIds = computed(() => followingUsers.value.map(user => user._id))
+
+const navigateToDeal = (dealId) => {
+  navigateTo(`/deals/${dealId}`)
+}
 </script>
 
 <style scoped>
