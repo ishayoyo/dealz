@@ -123,6 +123,7 @@ import UserAvatar from '~/components/UserAvatar.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
 import { storeToRefs } from 'pinia'
+import { useToastification } from '~/composables/useToastification'
 
 const config = useRuntimeConfig()
 const fileInput = ref(null)
@@ -335,6 +336,8 @@ const changePassword = async () => {
     // Show error message
   }
 }
+
+const toast = useToastification()
 </script>
 
 <style scoped>

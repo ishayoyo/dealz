@@ -29,11 +29,11 @@ import { onMounted, ref, computed, onUnmounted, watch } from 'vue'
 import DealCard from '~/components/DealCard.vue'
 import DealModal from '~/components/DealModal.vue'
 import AuthModal from '~/components/AuthModal.vue'
-import { useToast } from 'vue-toastification'
+import { useToastification } from '~/composables/useToastification'
 
 const dealsStore = computed(() => useDealsStore())
 const { deals, loading, error } = storeToRefs(dealsStore)
-const toast = useToast()
+const toast = useToastification()
 
 const { $socket } = useNuxtApp()
 

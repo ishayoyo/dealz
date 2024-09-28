@@ -27,5 +27,8 @@ export default defineNuxtConfig({
     '~/plugins/socket.js',
     { src: '~/plugins/vue-toastification.js', mode: 'client' }
   ],
-  ssr: true
+  ssr: true,
+  build: {
+    transpile: ['vue-toastification']
+  }
 })

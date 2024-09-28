@@ -45,6 +45,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useNotificationStore } from '~/stores/notification'
 import { storeToRefs } from 'pinia'
+import { useToastification } from '~/composables/useToastification'
+const toast = useToastification()
 
 const notificationStore = useNotificationStore()
 const { notifications } = storeToRefs(notificationStore)
