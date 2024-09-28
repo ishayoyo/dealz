@@ -51,9 +51,12 @@ const imageError = ref(false)
 
 const fullImageUrl = computed(() => {
   if (imageError.value || !props.deal?.imageUrl) return '/default-deal-image.jpg'
+  const baseUrl = config.public.apiBase.includes('localhost') 
+    ? 'http://localhost:5000' 
+    : 'https://dealz-z1n5.onrender.com'
   return props.deal.imageUrl.startsWith('http') 
     ? props.deal.imageUrl 
-    : `${config.public.apiBase}${props.deal.imageUrl}`
+    : `${baseUrl}${props.deal.imageUrl}`
 })
 
 const handleImageError = () => {
