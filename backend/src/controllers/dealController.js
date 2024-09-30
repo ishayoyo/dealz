@@ -102,29 +102,40 @@ exports.getDeal = catchAsync(async (req, res, next) => {
     return next(new AppError('No deal found with that ID', 404));
   }
 
+  let isFollowing = false;
+  if (req.user) {
+    const user = await User.findById(req.user.id);
+    isFollowing = user.followedDeals.includes(deal._id);
+  }
+
   res.status(200).json({
     status: 'success',
-    data: { deal }
+    data: { 
+      deal,
+      isFollowing
+    }
   });
 });
 
-exports.updateDeal = catchAsync(async (req, res, next) => {
+exports.checkDealStatus = catchAsync(async (req, res, next) => {
   const deal = await Deal.findById(req.params.id);
-
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
   }
 
-  if (deal.user.toString() !== req.user.id && req.user.role !== 'admin') {
-    return next(new AppError('You do not have permission to perform this action', 403));
+  let isFollowing = false;
+  if (req.user) {
+    const user = await User.findById(req.user.id);
+    isFollowing = user.followedDeals.includes(deal._id);
   }
-
-  Object.assign(deal, req.body);
-  await deal.save();
 
   res.status(200).json({
     status: 'success',
-    data: { deal }
+    data: { 
+      status: deal.status,
+      isFollowing,
+      followCount: deal.followCount
+    }
   });
 });
 
@@ -326,18 +337,6 @@ exports.getExpiringSoonDeals = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: { deals }
-  });
-});
-
-exports.checkDealStatus = catchAsync(async (req, res, next) => {
-  const deal = await Deal.findById(req.params.id);
-  if (!deal) {
-    return next(new AppError('No deal found with that ID', 404));
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: { status: deal.status }
   });
 });
 

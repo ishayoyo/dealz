@@ -146,6 +146,30 @@ export const useDealsStore = defineStore('deals', {
         console.error('Error toggling deal follow status:', error)
         throw error
       }
+    },
+
+    updateDealFollowStatus(dealId, isFollowing, followCount) {
+      const deal = this.deals.find(d => d._id === dealId)
+      if (deal) {
+        deal.isFollowing = isFollowing
+        deal.followCount = followCount
+      }
+
+      // Update in userDeals if present
+      const userDeal = this.userDeals.find(d => d._id === dealId)
+      if (userDeal) {
+        userDeal.isFollowing = isFollowing
+        userDeal.followCount = followCount
+      }
+
+      // Update in followedDeals
+      if (isFollowing) {
+        if (!this.followedDeals.some(d => d._id === dealId)) {
+          this.followedDeals.push({ ...deal })
+        }
+      } else {
+        this.followedDeals = this.followedDeals.filter(d => d._id !== dealId)
+      }
     }
   },
 })

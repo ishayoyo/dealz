@@ -34,7 +34,8 @@ router.get('/:id/comments', commentController.getComments);
 router.get('/:id/status', dealController.checkDealStatus);
 
 router.post('/', dealController.createDeal);
-router.put('/:id', dealController.updateDeal);
+// Remove or comment out this line if updateDeal is not implemented
+// router.put('/:id', dealController.updateDeal);
 router.delete('/:id', dealController.deleteDeal);
 router.post('/:id/buy', dealController.markAsBought);
 router.post('/:id/follow', dealController.followDeal);

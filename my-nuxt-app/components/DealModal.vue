@@ -240,14 +240,10 @@ const handleFollowDeal = () => {
 
 const followDeal = async () => {
   try {
-    if (isFollowing.value) {
-      await api.delete(`/deals/${props.deal._id}/follow`)
-      props.deal.followCount--
-    } else {
-      await api.post(`/deals/${props.deal._id}/follow`)
-      props.deal.followCount++
-    }
-    isFollowing.value = !isFollowing.value
+    const response = await api[isFollowing.value ? 'delete' : 'post'](`/deals/${props.deal._id}/follow`)
+    isFollowing.value = response.data.data.isFollowing
+    props.deal.followCount = response.data.data.followCount
+    dealsStore.updateDealFollowStatus(props.deal._id, isFollowing.value, props.deal.followCount)
     toast.success(isFollowing.value ? 'Deal followed successfully' : 'Deal unfollowed successfully')
   } catch (error) {
     console.error('Error following/unfollowing deal:', error)
