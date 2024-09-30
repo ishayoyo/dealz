@@ -11,7 +11,7 @@ console.log('MONGODB_URI:', process.env.MONGODB_URI);
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["https://dealz-1.onrender.com", "http://localhost:3000"],
+    origin: ["https://deals.ishay.me", "http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true
   }
