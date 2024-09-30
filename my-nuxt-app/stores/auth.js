@@ -97,34 +97,22 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async logout() {
-      try {
-        // Remove the token from the API headers
-        delete api.defaults.headers.common['Authorization']
+      // Remove the token from the API headers
+      delete api.defaults.headers.common['Authorization']
 
-        // Call the logout endpoint
-        await api.post('/auth/logout')
+      // Clear the user data and token
+      this.user = null
+      this.token = null
+      this.tokenExpirationTime = null
 
-        // Clear the user data and token
-        this.user = null
-        this.token = null
-        this.tokenExpirationTime = null
-        if (process.client) {
-          const authCookie = useCookie('auth_token')
-          const expirationCookie = useCookie('tokenExpirationTime')
-          authCookie.value = null
-          expirationCookie.value = null
-        }
-
-        console.log('Logout successful')
-      } catch (error) {
-        console.error('Logout failed:', error)
-        // Handle the error (e.g., show a notification to the user)
-      } finally {
-        // Ensure state is reset even if the API call fails
-        this.user = null
-        this.token = null
-        this.tokenExpirationTime = null
+      if (process.client) {
+        const authCookie = useCookie('auth_token')
+        const expirationCookie = useCookie('tokenExpirationTime')
+        authCookie.value = null
+        expirationCookie.value = null
       }
+
+      console.log('Logout successful')
     },
 
     async initializeAuth() {

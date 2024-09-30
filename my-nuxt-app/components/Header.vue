@@ -108,8 +108,8 @@ onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
 })
 
-const handleLogout = async () => {
-  await authStore.logout()
+const handleLogout = () => {
+  authStore.logout()
   notificationStore.clearNotifications()
   router.push('/') // Redirect to home page after logout
   toast.success('Logged out successfully!')
