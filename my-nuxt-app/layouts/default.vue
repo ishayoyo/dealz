@@ -1,20 +1,47 @@
 <template>
   <div>
-    <Header />
-    <main class="pt-16"> <!-- Add padding-top to account for fixed header -->
+    <Header @open-post-deal-modal="openPostDealModal" />
+    <main>
       <slot />
     </main>
+    <Footer />
+    <ClientOnly>
+      <FloatingActionButton v-if="isAuthenticated" @click="openPostDealModal" />
+      <PostDealModal v-if="showPostDealModal" @close="closePostDealModal" @post-deal="handlePostDeal" />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup>
-import Header from '~/components/Header.vue'
-import { onMounted } from 'vue'
-import { useNotificationStore } from '@/stores/notification'
+import { ref } from 'vue'
+import { useAuthStore } from '~/stores/auth'
+import { useDealsStore } from '~/stores/deals'
+import { storeToRefs } from 'pinia'
+import { useToastification } from '~/composables/useToastification'
 
-const notificationStore = useNotificationStore()
+const authStore = useAuthStore()
+const dealsStore = useDealsStore()
+const { isAuthenticated } = storeToRefs(authStore)
+const toast = useToastification()
 
-onMounted(async () => {
-  await notificationStore.fetchNotifications()
-})
+const showPostDealModal = ref(false)
+
+const openPostDealModal = () => {
+  showPostDealModal.value = true
+}
+
+const closePostDealModal = () => {
+  showPostDealModal.value = false
+}
+
+const handlePostDeal = async (dealData) => {
+  try {
+    await dealsStore.postDeal(dealData)
+    closePostDealModal()
+    toast.success('Deal posted successfully!')
+  } catch (error) {
+    console.error('Error posting deal:', error)
+    toast.error('Failed to post deal. Please try again.')
+  }
+}
 </script>

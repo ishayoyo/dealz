@@ -26,19 +26,21 @@
       <div class="flex items-center">
         <ClientOnly>
           <template v-if="!isAuthenticated">
-            <button @click="openAuthModal('login')" class="btn btn-secondary mr-4">Log In</button>
+            <button @click="openAuthModal('login')" class="btn btn-secondary mr-2 sm:mr-4">Log In</button>
             <button @click="openAuthModal('signup')" class="btn btn-primary">Sign Up</button>
           </template>
           <template v-else>
-            <button @click="openPostDealModal" class="btn btn-secondary mr-4">Post a Deal</button>
-            <NuxtLink to="/profile" class="text-text hover:text-primary mr-4 transition duration-300">
+            <!-- Post Deal button for desktop -->
+            <button @click="openPostDealModal" class="btn btn-secondary mr-4 hidden md:block">Post a Deal</button>
+            
+            <NuxtLink to="/profile" class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300">
               <img v-if="profilePictureUrl" :src="profilePictureUrl" alt="Profile" class="w-8 h-8 rounded-full object-cover">
               <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </NuxtLink>
             <div class="relative">
-              <button @click="toggleNotifications" class="text-text hover:text-primary mr-4 transition duration-300">
+              <button @click="toggleNotifications" class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
