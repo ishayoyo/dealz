@@ -388,8 +388,15 @@ onUnmounted(() => {
   window.removeEventListener('resize', onResize)
 })
 
-watch(() => [props.deal, isAuthenticated.value], async ([newDeal, newIsAuthenticated], [oldDeal, oldIsAuthenticated]) => {
+watch(() => {
+  // Safely return an array, even if props.deal or isAuthenticated are undefined
+  return [props.deal, isAuthenticated?.value]
+}, async (newValues, oldValues) => {
+  const [newDeal, newIsAuthenticated] = newValues || []
+  const [oldDeal, oldIsAuthenticated] = oldValues || []
+
   console.log('DealModal: Deal prop or authentication state changed:', newDeal, newIsAuthenticated)
+  
   if (newDeal && newDeal._id && newIsAuthenticated && 
       (!oldDeal || newDeal._id !== oldDeal._id || newIsAuthenticated !== oldIsAuthenticated)) {
     try {
