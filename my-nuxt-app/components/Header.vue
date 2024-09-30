@@ -1,19 +1,20 @@
 <template>
   <header class="fixed top-0 left-0 right-0 bg-white bg-opacity-90 shadow-sm z-40 transition-all duration-300" :class="{ 'shadow-md': scrolled }">
-    <div class="container mx-auto px-4 flex items-center justify-between h-16 md:h-20"> <!-- Adjusted height -->
+    <div class="container mx-auto px-4 flex items-center justify-between h-16 md:h-20">
       <div class="flex items-center">
         <NuxtLink to="/" class="flex items-center">
           <img 
             src="/images/logo.png"
             alt="Dealz Logo" 
             class="h-8 md:h-10 w-auto"
+          />
         </NuxtLink>
-        <form @submit.prevent="handleSearch" class="relative hidden md:block">
+        <form @submit.prevent="handleSearch" class="relative hidden md:block ml-4">
           <input 
             type="search" 
             v-model="searchQuery"
             placeholder="Search deals..." 
-            class="bg-background rounded-md px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-primary transition duration-300"
+            class="bg-background rounded-md px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-primary transition duration-300 h-8 md:h-10"
           >
           <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2">
             <i class="fas fa-search text-gray-400"></i>
