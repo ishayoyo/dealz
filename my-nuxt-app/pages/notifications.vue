@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-8 pt-24">
+  <div class="container mx-auto px-4 py-8 pt-24 md:pt-28">
     <div v-if="loading" class="text-center py-8">Loading notifications...</div>
     <div v-else class="bg-white shadow-lg rounded-lg overflow-hidden">
       <div class="p-6">

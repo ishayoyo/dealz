@@ -1,7 +1,7 @@
 <template>
   <div>
     <Header @open-post-deal-modal="openPostDealModal" />
-    <main>
+    <main class="pt-16 md:pt-20"> <!-- Adjusted padding-top to match new header height -->
       <slot />
     </main>
     <Footer />

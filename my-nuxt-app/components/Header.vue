@@ -1,15 +1,12 @@
 <template>
   <header class="fixed top-0 left-0 right-0 bg-white bg-opacity-90 shadow-sm z-40 transition-all duration-300" :class="{ 'shadow-md': scrolled }">
-    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="container mx-auto px-4 flex items-center justify-between h-16 md:h-20"> <!-- Adjusted height -->
       <div class="flex items-center">
-        <NuxtLink to="/" class="flex items-center mr-4">
+        <NuxtLink to="/" class="flex items-center">
           <img 
-            src="/images/logo.png" 
-            alt="Logo" 
-            class="h-12 w-auto mr-2"
-            @error="handleImageError"
-          >
-          <span class="text-xl font-bold text-primary hover:text-blue-600 transition duration-300">Dealz</span>
+            src="/images/logo.png"
+            alt="Dealz Logo" 
+            class="h-8 md:h-10 w-auto"
         </NuxtLink>
         <form @submit.prevent="handleSearch" class="relative hidden md:block">
           <input 
@@ -40,7 +37,7 @@
               </svg>
             </NuxtLink>
             <div class="relative">
-              <button @click="toggleNotifications" class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300">
+              <button @click="handleNotificationClick" class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
@@ -48,7 +45,7 @@
                   {{ unreadCount }}
                 </span>
               </button>
-              <NotificationList v-if="showNotifications" @close="closeNotifications" />
+              <NotificationList v-if="showNotifications && !isMobile" @close="closeNotifications" />
             </div>
             <button @click="handleLogout" class="btn btn-accent">Logout</button>
           </template>
@@ -90,6 +87,7 @@ const isLoginMode = ref(true)
 const scrolled = ref(false)
 const showNotifications = ref(false)
 const mobileMenuOpen = ref(false)
+const isMobile = ref(false)
 
 const handleScroll = () => {
   scrolled.value = window.scrollY > 0
@@ -101,10 +99,13 @@ onMounted(() => {
     notificationStore.fetchNotifications()
   }
   console.log('Initial authentication state:', isAuthenticated.value)
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('resize', checkMobile)
 })
 
 const handleLogout = async () => {
@@ -243,4 +244,28 @@ const handleImageError = () => {
 }
 
 const logoUrl = ref('/images/logo.png') // Direct reference to the public folder
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768 // Adjust this breakpoint as needed
+}
+
+const handleNotificationClick = () => {
+  if (isMobile.value) {
+    router.push('/notifications')
+  } else {
+    toggleNotifications()
+  }
+}
 </script>
+
+<style scoped>
+header {
+  height: 64px; /* For mobile */
+}
+
+@media (min-width: 768px) {
+  header {
+    height: 80px; /* For larger screens */
+  }
+}
+</style>
