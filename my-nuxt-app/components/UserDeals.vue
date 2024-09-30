@@ -39,6 +39,6 @@
   const getImageBaseUrl = () => {
     return config.public.apiBase.includes('localhost') 
       ? 'http://localhost:5000' 
-      : 'https://dealz-z1n5.onrender.com'
+      : 'https://deals.ishay.me'
   }
   </script>

@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: my-nuxt-app
-    env: node
-    buildCommand: cd my-nuxt-app && npm install && npm run build
-    startCommand: cd my-nuxt-app && npm run start
-    envVars:
-      - key: NODE_ENV
-        value: production
