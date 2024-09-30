@@ -13,7 +13,14 @@ export const useDealsStore = defineStore('deals', {
 
   getters: {
     getSortedDeals: (state) => {
-      return [...state.deals].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      const now = new Date()
+      return [...state.deals].sort((a, b) => {
+        // Calculate scores for each deal
+        const scoreA = calculateDealScore(a, now)
+        const scoreB = calculateDealScore(b, now)
+        // Sort in descending order of score
+        return scoreB - scoreA
+      })
     },
     getDealById: (state) => (id) => {
       return state.deals.find(deal => deal._id === id)
@@ -27,6 +34,11 @@ export const useDealsStore = defineStore('deals', {
       try {
         const response = await api.get('/deals')
         this.deals = response.data.data.deals || []
+        // Ensure each deal has a commentCount property
+        this.deals = this.deals.map(deal => ({
+          ...deal,
+          commentCount: deal.commentCount || 0
+        }))
         console.log('Fetched deals:', this.deals)
       } catch (error) {
         console.error('Error fetching deals:', error)
@@ -173,3 +185,11 @@ export const useDealsStore = defineStore('deals', {
     }
   },
 })
+
+// Helper function to calculate deal score
+function calculateDealScore(deal, now) {
+  const ageInHours = (now - new Date(deal.createdAt)) / (1000 * 60 * 60)
+  const recencyScore = Math.max(0, 100 - ageInHours) // Score decreases over time, max 100
+  const commentScore = Math.min(100, deal.commentCount * 5) // 5 points per comment, max 100
+  return recencyScore + commentScore // Total score out of 200
+}

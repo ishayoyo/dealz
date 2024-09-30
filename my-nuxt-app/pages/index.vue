@@ -85,9 +85,9 @@ const closeAuthModal = () => {
   showAuthModal.value = false
 }
 
-// Computed property to ensure deals is always an array and sorted
+// Computed property to ensure deals are always an array and sorted
 const safeDeals = computed(() => {
-  console.log('Computing safeDeals:', dealsStore.value.getSortedDeals) // Added console log for debugging
+  console.log('Computing safeDeals:', dealsStore.value.getSortedDeals)
   return dealsStore.value.getSortedDeals
 })
 
