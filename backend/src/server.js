@@ -7,6 +7,8 @@ const app = require('./app'); // Import the Express app from app.js
 const PORT = process.env.PORT || 5000;
 
 console.log('MONGODB_URI:', process.env.MONGODB_URI);
+console.log('Current working directory:', process.cwd());
+console.log('NODE_ENV:', process.env.NODE_ENV);
 
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -55,8 +57,12 @@ app.use('/api/test', testRoutes);
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
+    console.log('Connected to database:', mongoose.connection.name);
     server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
   })
-  .catch(err => console.error('Could not connect to MongoDB', err));
+  .catch(err => {
+    console.error('Could not connect to MongoDB', err);
+    console.error('Connection string used:', process.env.MONGODB_URI);
+  });
