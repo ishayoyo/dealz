@@ -63,9 +63,13 @@ export default defineNuxtPlugin((nuxtApp) => {
       notificationStore.handleNewNotification(notification)
     })
 
-    socket.on('newDeal', (deal) => {
-      console.log('Received new deal:', deal)
-      dealsStore.addNewDeal(deal)
+    socket.on('newDeal', (payload) => {
+      console.log('Received new deal payload:', payload)
+      if (!payload || typeof payload !== 'object') {
+        console.error('Invalid deal payload received:', payload)
+        return
+      }
+      dealsStore.handleNewDeal(payload)
     })
   }
 })

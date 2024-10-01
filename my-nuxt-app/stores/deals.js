@@ -48,8 +48,20 @@ export const useDealsStore = defineStore('deals', {
       }
     },
 
-    handleNewDeal(deal) {
-      console.log('Handling new deal in store:', deal)
+    handleNewDeal(payload) {
+      console.log('Handling new deal in store:', payload)
+      if (!payload) {
+        console.error('Received undefined payload in handleNewDeal')
+        return
+      }
+      
+      const deal = payload.deal || payload
+      
+      if (!deal._id) {
+        console.error('Received deal without _id in handleNewDeal:', deal)
+        return
+      }
+
       const authStore = useAuthStore()
       const index = this.deals.findIndex(d => d._id === deal._id)
       if (index !== -1) {
@@ -65,7 +77,7 @@ export const useDealsStore = defineStore('deals', {
       }
       
       // Update userDeals if necessary
-      if (deal.user._id === this.getCurrentUserId()) {
+      if (deal.user && deal.user._id === this.getCurrentUserId()) {
         const userIndex = this.userDeals.findIndex(d => d._id === deal._id)
         if (userIndex !== -1) {
           this.userDeals = [
