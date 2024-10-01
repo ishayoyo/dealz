@@ -4,7 +4,6 @@
     <main class="pt-16 md:pt-20"> <!-- Adjusted padding-top to match new header height -->
       <slot />
     </main>
-    <Footer />
     <ClientOnly>
       <FloatingActionButton v-if="isAuthenticated" @click="openPostDealModal" />
       <PostDealModal v-if="showPostDealModal" @close="closePostDealModal" @post-deal="handlePostDeal" />
