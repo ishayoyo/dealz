@@ -31,8 +31,11 @@ exports.createComment = catchAsync(async (req, res, next) => {
   const newComment = await comment.save();
   console.log('New comment created:', newComment);
 
-  // Update the deal with the new comment
-  await Deal.findByIdAndUpdate(dealId, { $push: { comments: newComment._id } });
+  // Update the deal with the new comment and increment commentCount
+  await Deal.findByIdAndUpdate(dealId, { 
+    $push: { comments: newComment._id },
+    $inc: { commentCount: 1 }
+  });
 
   const notificationService = new NotificationService(req.app.get('io'));
 
@@ -121,6 +124,9 @@ exports.deleteComment = catchAsync(async (req, res, next) => {
   if (!comment) {
     return next(new AppError('No comment found with that ID or you are not authorized', 404));
   }
+
+  // Decrement the deal's commentCount
+  await Deal.findByIdAndUpdate(comment.deal, { $inc: { commentCount: -1 } });
 
   res.status(204).json({
     status: 'success',

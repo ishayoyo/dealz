@@ -42,6 +42,11 @@ const dealSchema = new mongoose.Schema({
   boughtCount: { type: Number, default: 0 },
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   buyers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  commentCount: { type: Number, default: 0 },
+}, { 
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Add this before any virtual definitions
