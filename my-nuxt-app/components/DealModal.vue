@@ -1,5 +1,5 @@
 <template>
-  <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+  <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto">
     <div 
       class="bg-white rounded-lg w-full overflow-hidden flex flex-col md:flex-row relative"
       :class="modalSizeClass"
@@ -12,87 +12,90 @@
         </svg>
       </button>
 
-      <!-- Left column: Image -->
-      <div ref="imageContainer" class="w-full md:w-1/2 flex items-center justify-center p-4 bg-gray-100">
-        <img 
-          :src="imageUrl" 
-          :alt="deal.title" 
-          @load="onImageLoad" 
-          class="w-full h-full object-contain rounded-lg"
-          :style="imageStyle"
-        >
-      </div>
-      
-      <!-- Right column: Content -->
-      <div class="w-full md:w-1/2 p-6 overflow-y-auto flex flex-col">
-        <h2 class="text-2xl font-bold mb-2 text-text">{{ deal.title }}</h2>
-        <p class="text-gray-600 mb-4">{{ deal.description }}</p>
-        
-        <div class="flex items-center justify-between mb-4">
-          <span class="font-bold text-accent text-2xl">${{ formattedPrice }}</span>
-          <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
-            Go to Deal
-          </a>
-        </div>
-        
-        <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
-          <button @click="handleFollowDeal" class="btn btn-primary w-full sm:w-auto">
-            {{ isFollowing ? 'Unfollow' : 'Follow' }} Deal
-          </button>
-          <span class="text-sm text-gray-500 whitespace-nowrap">
-            {{ formattedFollowCount }} {{ formattedFollowCount === 1 ? 'follower' : 'followers' }}
-          </span>
-        </div>
-        
-        <div v-if="deal.user" class="mb-6 flex items-center">
-          <UserAvatar :name="dealUserName" :size="40" class="mr-3" />
-          <div class="flex-grow">
-            <span class="text-sm text-gray-500">Posted by:</span>
-            <span class="font-semibold ml-1 text-text">{{ dealUserName }}</span>
-          </div>
-          <button 
-            @click="handleFollowUser" 
-            class="btn btn-secondary text-sm"
-            :disabled="isCurrentUser"
-            :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
+      <!-- Scrollable container for modal content -->
+      <div class="flex flex-col md:flex-row h-full overflow-y-auto">
+        <!-- Left column: Image -->
+        <div ref="imageContainer" class="w-full md:w-1/2 flex items-center justify-center p-4 bg-gray-100">
+          <img 
+            :src="imageUrl" 
+            :alt="deal.title" 
+            @load="onImageLoad" 
+            class="w-full h-full object-contain rounded-lg"
+            :style="imageStyle"
           >
-            {{ isFollowingUser ? 'Unfollow' : 'Follow' }}
-          </button>
         </div>
         
-        <div class="border-t border-gray-200 pt-4 flex-grow">
-          <h3 class="font-bold text-xl mb-4 text-text">Comments</h3>
-          <div v-if="isAuthenticated">
-            <div v-if="loading" class="text-gray-500">Loading comments...</div>
-            <div v-else-if="error" class="text-red-500">{{ error }}</div>
-            <div v-else class="comments-container space-y-4 mb-6 max-h-64 overflow-y-auto">
-              <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
-              <div v-else>
-                <Comment v-for="comment in comments" :key="comment._id" :comment="comment" />
-              </div>
+        <!-- Right column: Content -->
+        <div class="w-full md:w-1/2 p-6 overflow-y-auto flex flex-col">
+          <h2 class="text-2xl font-bold mb-2 text-text">{{ deal.title }}</h2>
+          <p class="text-gray-600 mb-4">{{ deal.description }}</p>
+          
+          <div class="flex items-center justify-between mb-4">
+            <span class="font-bold text-accent text-2xl">${{ formattedPrice }}</span>
+            <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+              Go to Deal
+            </a>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
+            <button @click="handleFollowDeal" class="btn btn-primary w-full sm:w-auto">
+              {{ isFollowing ? 'Unfollow' : 'Follow' }} Deal
+            </button>
+            <span class="text-sm text-gray-500 whitespace-nowrap">
+              {{ formattedFollowCount }} {{ formattedFollowCount === 1 ? 'follower' : 'followers' }}
+            </span>
+          </div>
+          
+          <div v-if="deal.user" class="mb-6 flex items-center">
+            <UserAvatar :name="dealUserName" :size="40" class="mr-3" />
+            <div class="flex-grow">
+              <span class="text-sm text-gray-500">Posted by:</span>
+              <span class="font-semibold ml-1 text-text">{{ dealUserName }}</span>
             </div>
-            <div class="mt-4 relative">
-              <textarea
-                v-model="newComment"
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                rows="3"
-                placeholder="Add a comment..."
-                @input="handleInput"
-              ></textarea>
-              <UserMentionAutocomplete
-                v-if="showMentions"
-                :users="mentionableUsers"
-                :query="mentionQuery"
-                @select="handleUserSelect"
-              />
-            </div>
-            <button @click="handleAddComment" class="btn btn-primary mt-2 w-full">
-              Add Comment
+            <button 
+              @click="handleFollowUser" 
+              class="btn btn-secondary text-sm"
+              :disabled="isCurrentUser"
+              :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
+            >
+              {{ isFollowingUser ? 'Unfollow' : 'Follow' }}
             </button>
           </div>
-          <div v-else class="text-center py-4">
-            <p>Login to view comments</p>
-            <button @click="openAuthModal" class="mt-2 btn btn-primary w-full">Login</button>
+          
+          <div class="border-t border-gray-200 pt-4 flex-grow">
+            <h3 class="font-bold text-xl mb-4 text-text">Comments</h3>
+            <div v-if="isAuthenticated">
+              <div v-if="loading" class="text-gray-500">Loading comments...</div>
+              <div v-else-if="error" class="text-red-500">{{ error }}</div>
+              <div v-else class="comments-container space-y-4 mb-6 max-h-64 overflow-y-auto">
+                <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
+                <div v-else>
+                  <Comment v-for="comment in comments" :key="comment._id" :comment="comment" />
+                </div>
+              </div>
+              <div class="mt-4 relative">
+                <textarea
+                  v-model="newComment"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  rows="3"
+                  placeholder="Add a comment..."
+                  @input="handleInput"
+                ></textarea>
+                <UserMentionAutocomplete
+                  v-if="showMentions"
+                  :users="mentionableUsers"
+                  :query="mentionQuery"
+                  @select="handleUserSelect"
+                />
+              </div>
+              <button @click="handleAddComment" class="btn btn-primary mt-2 w-full">
+                Add Comment
+              </button>
+            </div>
+            <div v-else class="text-center py-4">
+              <p>Login to view comments</p>
+              <button @click="openAuthModal" class="mt-2 btn btn-primary w-full">Login</button>
+            </div>
           </div>
         </div>
       </div>
@@ -357,9 +360,13 @@ const modalSizeClass = computed(() => {
 
 const modalStyle = computed(() => {
   if (window.innerWidth < 768) {
-    return { height: '100%' }
+    return { 
+      height: '100%',
+      marginTop: '1rem', // Add some top margin on mobile
+      marginBottom: '1rem' // Add some bottom margin on mobile
+    }
   } else {
-    return { height: '90vh', maxHeight: '900px' } // Increased height for desktop
+    return { height: '90vh', maxHeight: '900px' }
   }
 })
 

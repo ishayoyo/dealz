@@ -1,19 +1,19 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg w-full max-w-2xl p-8 relative">
-      <button @click="$emit('close')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg w-full max-w-2xl p-4 sm:p-8 relative">
+      <button @click="$emit('close')" class="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
       
-      <h2 class="text-3xl font-bold mb-6 text-center text-blue-600">
+      <h2 class="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center text-blue-600">
         {{ step === 1 ? 'Post a New Deal' : 'Complete Deal Details' }}
       </h2>
 
       <!-- Step 1: Enter deal link -->
       <div v-if="step === 1">
-        <p class="text-center text-gray-600 mb-6">
+        <p class="text-center text-gray-600 mb-4 sm:mb-6">
           Enter the link to the deal you want to share
         </p>
         <form @submit.prevent="fetchDealInfo">
@@ -29,17 +29,17 @@
 
       <!-- Step 2: Complete deal details -->
       <div v-else>
-        <div class="mb-6">
-          <div class="w-full h-64 flex items-center justify-center mb-2 overflow-hidden">
+        <div class="mb-4 sm:mb-6">
+          <div class="w-full h-48 sm:h-64 flex items-center justify-center mb-2 overflow-hidden">
             <img v-if="dealImage" :src="dealImage" alt="Deal Image" class="max-w-full max-h-full object-contain">
             <span v-else-if="isLoading" class="text-gray-500">Loading image...</span>
             <span v-else class="text-gray-500">No image available</span>
           </div>
           <div class="flex justify-between">
-            <button @click="triggerFileInput" class="text-blue-600 hover:text-blue-800">
+            <button @click="triggerFileInput" class="text-blue-600 hover:text-blue-800 text-sm sm:text-base">
               {{ dealImage ? 'Replace Image' : 'Upload Image' }}
             </button>
-            <button v-if="dealImage" @click="removeImage" class="text-red-600 hover:text-red-800">
+            <button v-if="dealImage" @click="removeImage" class="text-red-600 hover:text-red-800 text-sm sm:text-base">
               Remove Image
             </button>
           </div>
