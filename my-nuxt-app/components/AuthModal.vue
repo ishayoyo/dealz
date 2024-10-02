@@ -79,7 +79,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
@@ -95,7 +95,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'login', 'signup'])
+const emit = defineEmits(['close'])
 
 const form = reactive({
   username: '',
@@ -151,20 +151,31 @@ const handleSubmit = async () => {
       return
     }
     if (isLogin.value) {
-      await authStore.login(form.email, form.password)
-      toast.success('Logged in successfully!')
+      const success = await authStore.login(form.email, form.password)
+      if (success) {
+        toast.success('Logged in successfully!')
+        emit('close')
+      } else {
+        error.value = 'Login failed. Please check your credentials and try again.'
+        toast.error(error.value)
+      }
     } else {
-      await authStore.signup({
+      const success = await authStore.signup({
         username: form.username,
         email: form.email,
         password: form.password
       })
-      toast.success('Signed up successfully!')
+      if (success) {
+        toast.success('Signed up successfully!')
+        emit('close')
+      } else {
+        error.value = 'Signup failed. Please try again.'
+        toast.error(error.value)
+      }
     }
-    emit('close')
   } catch (err) {
     console.error('Auth error:', err)
-    error.value = err.message || 'An error occurred. Please try again.'
+    error.value = err.response?.data?.message || 'An error occurred. Please try again.'
     toast.error(error.value)
   }
 }

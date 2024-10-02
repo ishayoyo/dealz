@@ -52,19 +52,18 @@ exports.register = catchAsync(async (req, res, next) => {
     const accessToken = signToken(newUser._id);
     const refreshToken = signRefreshToken(newUser._id);
 
-    // Set httpOnly cookies
     res.cookie('accessToken', accessToken, {
-      expires: new Date(Date.now() + 15 * 60 * 1000),
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
     res.cookie('refreshToken', refreshToken, {
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
     // Remove password from output
@@ -103,19 +102,18 @@ exports.login = catchAsync(async (req, res, next) => {
     const accessToken = signToken(user._id);
     const refreshToken = signRefreshToken(user._id);
 
-    // Set httpOnly cookies
     res.cookie('accessToken', accessToken, {
-      expires: new Date(Date.now() + 15 * 60 * 1000),
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
     res.cookie('refreshToken', refreshToken, {
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
     // Remove password from output

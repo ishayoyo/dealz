@@ -77,18 +77,14 @@ import NotificationList from '~/components/NotificationList.vue'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
 
-
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 const dealsStore = useDealsStore()
-const { user } = storeToRefs(authStore)
+const { user, isAuthenticated } = storeToRefs(authStore)
 const { unreadCount } = storeToRefs(notificationStore)
 const toast = useToastification()
 const router = useRouter()
 const searchQuery = ref('')
-
-// Replace the destructured isAuthenticated with a computed property
-const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const showAuthModal = ref(false)
 const showPostDealModal = ref(false)

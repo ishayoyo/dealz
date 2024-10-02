@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 const routes = require('./routes/api/v1');
 
 const app = express();
@@ -11,6 +12,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Serve static files from the 'public' directory
 app.use('/images', express.static(path.join(__dirname, '../public/images')));

@@ -4,9 +4,11 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
 const auth = catchAsync(async (req, res, next) => {
+  console.log('Cookies:', req.cookies);  // Added logging for cookies
   const token = req.cookies.accessToken;
 
   if (!token) {
+    console.log('No access token found in cookies');  // Added logging for missing token
     return next(new AppError('You are not logged in! Please log in to get access.', 401));
   }
 

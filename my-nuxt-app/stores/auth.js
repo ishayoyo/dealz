@@ -14,8 +14,8 @@ export const useAuthStore = defineStore('auth', {
     async login(email, password) {
       try {
         const response = await api.post('/users/login', { email, password });
-        if (response.data && response.data.user) {
-          this.setUser(response.data.user);
+        if (response.data && response.data.status === 'success') {
+          this.setUser(response.data.data.user);
           return true;
         } else {
           console.error('Invalid response from server:', response.data);
