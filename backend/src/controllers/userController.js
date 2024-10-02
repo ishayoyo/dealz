@@ -94,6 +94,9 @@ exports.login = catchAsync(async (req, res, next) => {
     
     if (!user || !(await user.comparePassword(password))) {
       console.log('Incorrect email or password');
+      // Clear any existing tokens
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
       return next(new AppError('Incorrect email or password', 401));
     }
 
@@ -102,6 +105,7 @@ exports.login = catchAsync(async (req, res, next) => {
     const accessToken = signToken(user._id);
     const refreshToken = signRefreshToken(user._id);
 
+    // Set cookies only on successful login
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -572,6 +576,9 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
 
   if (!refreshToken) {
+    // Clear any existing tokens
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
     return next(new AppError('No refresh token found', 401));
   }
 
@@ -588,6 +595,9 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
 
     res.status(200).json({ status: 'success' });
   } catch (error) {
+    // Clear any existing tokens
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
     return next(new AppError('Invalid refresh token', 401));
   }
 });

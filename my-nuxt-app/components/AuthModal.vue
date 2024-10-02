@@ -33,7 +33,7 @@
             :class="{'border-red-500': emailError, 'border-green-500': isEmailValid && form.email.length > 0}" 
             required
           >
-          <p v-if="form.email.length > 0" class="text-sm mt-1" :class="isEmailValid ? 'text-green-500' : 'text-red-500'">
+          <p v-if="!isLogin && form.email.length > 0" class="text-sm mt-1" :class="isEmailValid ? 'text-green-500' : 'text-red-500'">
             {{ emailFeedback }}
           </p>
         </div>
@@ -50,7 +50,7 @@
             :class="{'border-red-500': passwordError, 'border-green-500': isPasswordValid && form.password.length > 0}" 
             required
           >
-          <p v-if="form.password.length > 0" class="text-sm mt-1" :class="isPasswordValid ? 'text-green-500' : 'text-red-500'">
+          <p v-if="!isLogin && form.password.length > 0" class="text-sm mt-1" :class="isPasswordValid ? 'text-green-500' : 'text-red-500'">
             {{ passwordFeedback }}
           </p>
         </div>
@@ -142,13 +142,15 @@ const validateEmail = () => {
 const handleSubmit = async () => {
   try {
     error.value = null
-    if (!isPasswordValid.value) {
-      error.value = 'Please ensure your password is at least 8 characters long'
-      return
-    }
-    if (!isEmailValid.value) {
-      error.value = 'Please enter a valid email address'
-      return
+    if (!isLogin.value) {
+      if (!isPasswordValid.value) {
+        error.value = 'Please ensure your password is at least 8 characters long'
+        return
+      }
+      if (!isEmailValid.value) {
+        error.value = 'Please enter a valid email address'
+        return
+      }
     }
     if (isLogin.value) {
       const success = await authStore.login(form.email, form.password)

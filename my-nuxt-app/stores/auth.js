@@ -76,6 +76,8 @@ export const useAuthStore = defineStore('auth', {
         console.error('Error during logout:', error);
       } finally {
         this.user = null;
+        this.token = null;
+        useCookie('auth_token').value = null;
         console.log('Logout successful');
       }
     },
@@ -103,6 +105,22 @@ export const useAuthStore = defineStore('auth', {
           console.log('No stored auth data found')
         }
         console.log('Auth initialized:', { token: this.token, expiration: this.tokenExpirationTime, isAuthenticated: this.isAuthenticated })
+      }
+    },
+
+    async refreshToken() {
+      try {
+        const response = await api.post('/users/refresh-token');
+        if (response.data && response.data.token) {
+          // Update the token in your store and cookie
+          this.setToken(response.data.token);
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('Error refreshing token:', error);
+        this.logout();
+        return false;
       }
     },
   },

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useAuthStore } from '~/stores/auth'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -9,7 +10,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true // This is crucial for sending and receiving cookies
+  withCredentials: true
 })
 
 if (process.client) {
@@ -22,27 +23,68 @@ if (process.client) {
   })
 }
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If the error is due to an expired token and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({resolve, reject})
+        }).then(token => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
-        // Call the refresh token endpoint
-        await api.post('/users/refresh-token');
+        const response = await api.post('/users/refresh-token');
+        const { token } = response.data;
         
-        // Retry the original request
-        return api(originalRequest);
+        if (token) {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token;
+          processQueue(null, token);
+          return api(originalRequest);
+        } else {
+          processQueue(new Error('No new token received'), null);
+          if (process.client) {
+            const authStore = useAuthStore();
+            authStore.logout();
+            window.location.href = '/login';
+          }
+          return Promise.reject(error);
+        }
       } catch (refreshError) {
-        // If refresh fails, redirect to login
+        processQueue(refreshError, null);
         if (process.client) {
+          const authStore = useAuthStore();
+          authStore.logout();
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
 
