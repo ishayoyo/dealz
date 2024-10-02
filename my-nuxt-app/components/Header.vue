@@ -37,6 +37,13 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </NuxtLink>
+                      <NuxtLink 
+            v-if="user && user.role === 'admin'" 
+            to="/admin/dashboard" 
+            class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300"
+          >
+            Admin Dashboard
+          </NuxtLink>
             <div class="relative">
               <button @click="handleNotificationClick" class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -69,6 +76,7 @@ import { storeToRefs } from 'pinia'
 import NotificationList from '~/components/NotificationList.vue'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
+
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
