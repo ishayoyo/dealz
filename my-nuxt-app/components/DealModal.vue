@@ -1,7 +1,7 @@
 <template>
-  <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+  <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
     <div 
-      class="bg-white rounded-lg w-full overflow-hidden flex flex-col md:flex-row relative"
+      class="bg-white rounded-lg w-full overflow-hidden flex flex-col relative"
       :class="modalSizeClass"
       :style="modalStyle"
     >
@@ -13,20 +13,20 @@
       </button>
 
       <!-- Scrollable container for modal content -->
-      <div class="flex flex-col md:flex-row h-full overflow-y-auto">
+      <div class="flex flex-col md:flex-row h-full w-full overflow-y-auto">
         <!-- Left column: Image -->
         <div ref="imageContainer" class="w-full md:w-1/2 flex items-center justify-center p-4 bg-gray-100">
           <img 
             :src="imageUrl" 
             :alt="deal.title" 
             @load="onImageLoad" 
-            class="w-full h-full object-contain rounded-lg"
+            class="max-w-full max-h-full object-contain rounded-lg"
             :style="imageStyle"
           >
         </div>
         
         <!-- Right column: Content -->
-        <div class="w-full md:w-1/2 p-6 overflow-y-auto flex flex-col">
+        <div class="w-full md:w-1/2 p-6 flex flex-col">
           <h2 class="text-2xl font-bold mb-2 text-text">{{ deal.title }}</h2>
           <p class="text-gray-600 mb-4">{{ deal.description }}</p>
           
@@ -351,7 +351,7 @@ const openAuthModal = () => {
 
 const modalSizeClass = computed(() => {
   return {
-    'max-w-full min-h-screen md:min-h-0': window.innerWidth < 768, // Full screen on mobile
+    'max-w-full h-full md:h-auto': window.innerWidth < 768, // Full screen on mobile
     'max-w-5xl': window.innerWidth >= 768 && window.innerWidth < 1024, // Large screens
     'max-w-6xl': window.innerWidth >= 1024 && window.innerWidth < 1280, // Extra large screens
     'max-w-7xl': window.innerWidth >= 1280, // 2XL screens
@@ -362,11 +362,16 @@ const modalStyle = computed(() => {
   if (window.innerWidth < 768) {
     return { 
       height: '100%',
-      marginTop: '1rem', // Add some top margin on mobile
-      marginBottom: '1rem' // Add some bottom margin on mobile
+      maxHeight: '100%',
+      margin: '0',
+      display: 'flex',
+      flexDirection: 'column',
     }
   } else {
-    return { height: '90vh', maxHeight: '900px' }
+    return { 
+      maxHeight: '90vh',
+      margin: '2rem auto',
+    }
   }
 })
 
@@ -417,3 +422,11 @@ watch(() => {
   }
 }, { immediate: true, deep: true })
 </script>
+
+<style scoped>
+@media (max-width: 767px) {
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+</style>
