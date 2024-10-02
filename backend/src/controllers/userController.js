@@ -12,7 +12,13 @@ const NotificationService = require('../services/NotificationService');
 
 const signToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '1h'
+    expiresIn: '15m'  // Access token expires in 15 minutes
+  });
+};
+
+const signRefreshToken = id => {
+  return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: '7d'  // Refresh token expires in 7 days
   });
 };
 
@@ -43,15 +49,29 @@ exports.register = catchAsync(async (req, res, next) => {
 
     console.log('New user created:', newUser._id);
 
-    // Generate JWT
-    const token = signToken(newUser._id);
+    const accessToken = signToken(newUser._id);
+    const refreshToken = signRefreshToken(newUser._id);
+
+    // Set httpOnly cookies
+    res.cookie('accessToken', accessToken, {
+      expires: new Date(Date.now() + 15 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
 
     // Remove password from output
     newUser.password = undefined;
 
     res.status(201).json({
       status: 'success',
-      token,
       data: { user: newUser }
     });
   } catch (error) {
@@ -80,14 +100,29 @@ exports.login = catchAsync(async (req, res, next) => {
 
     console.log('Login successful:', user._id);
 
-    const token = signToken(user._id);
-    
+    const accessToken = signToken(user._id);
+    const refreshToken = signRefreshToken(user._id);
+
+    // Set httpOnly cookies
+    res.cookie('accessToken', accessToken, {
+      expires: new Date(Date.now() + 15 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
     // Remove password from output
     user.password = undefined;
 
     res.status(200).json({ 
       status: 'success', 
-      token,
       data: { user }
     });
   } catch (error) {
@@ -97,11 +132,19 @@ exports.login = catchAsync(async (req, res, next) => {
 });
 
 exports.logout = catchAsync(async (req, res) => {
-  // If you're keeping track of valid tokens, invalidate this token
-  // For example, if you're using a blacklist of invalid tokens:
-  // await BlacklistedToken.create({ token: req.token });
-
-  res.status(200).json({ status: 'success', message: 'Logged out successfully' });
+  res.cookie('accessToken', 'logged out', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  res.cookie('refreshToken', 'logged out', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  res.status(200).json({ status: 'success' });
 });
 
 exports.getCurrentUser = catchAsync(async (req, res, next) => {
@@ -525,6 +568,30 @@ exports.markNotificationAsRead = catchAsync(async (req, res, next) => {
     status: 'success',
     data: { notification }
   });
+});
+
+exports.refreshToken = catchAsync(async (req, res, next) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return next(new AppError('No refresh token found', 401));
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const newAccessToken = signToken(decoded.id);
+
+    res.cookie('accessToken', newAccessToken, {
+      expires: new Date(Date.now() + 15 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    res.status(200).json({ status: 'success' });
+  } catch (error) {
+    return next(new AppError('Invalid refresh token', 401));
+  }
 });
 
 module.exports = exports;

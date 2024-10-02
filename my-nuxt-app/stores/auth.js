@@ -4,24 +4,18 @@ import api from '~/services/api'
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
-    token: null,
-    tokenExpirationTime: null,
   }),
 
   getters: {
-    isAuthenticated: (state) => {
-      const isValid = !!state.token && state.tokenExpirationTime > Date.now()
-      console.log('isAuthenticated getter called:', { isValid, token: state.token, expiration: state.tokenExpirationTime })
-      return isValid
-    },
+    isAuthenticated: (state) => !!state.user,
   },
 
   actions: {
     async login(email, password) {
       try {
         const response = await api.post('/users/login', { email, password });
-        if (response.data && response.data.token) {
-          this.setAuthData(response.data);
+        if (response.data && response.data.user) {
+          this.setUser(response.data.user);
           return true;
         } else {
           console.error('Invalid response from server:', response.data);
@@ -39,8 +33,8 @@ export const useAuthStore = defineStore('auth', {
     async signup(userData) {
       try {
         const response = await api.post('/users/register', userData);
-        if (response.data && response.data.token) {
-          this.setAuthData(response.data);
+        if (response.data && response.data.user) {
+          this.setUser(response.data.user);
           return true;
         } else {
           console.error('Invalid response from server:', response.data);
@@ -55,64 +49,35 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    setAuthData(data) {
-      this.token = data.token
-      this.user = data.user || data.data?.user || null
-      this.tokenExpirationTime = Date.now() + 3600000 // 1 hour from now
-      if (process.client) {
-        const authCookie = useCookie('auth_token', { maxAge: 3600 })
-        authCookie.value = this.token
-        const expirationCookie = useCookie('tokenExpirationTime', { maxAge: 3600 })
-        expirationCookie.value = this.tokenExpirationTime.toString()
-        api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
-        this.setupTokenExpirationCheck()
-      }
-      console.log('Auth data set:', { token: this.token, user: this.user, expiration: this.tokenExpirationTime })
-    },
-
-    setupTokenExpirationCheck() {
-      if (process.client) {
-        const timeUntilExpiration = this.tokenExpirationTime - Date.now()
-        setTimeout(() => {
-          if (!this.isAuthenticated) {
-            this.logout()
-          }
-        }, timeUntilExpiration)
-      }
+    setUser(user) {
+      this.user = user;
+      console.log('User data set:', { user: this.user });
     },
 
     async fetchUser() {
       try {
-        const response = await api.get('/users/me')
-        this.user = response.data.data.user
-        return this.user
+        const response = await api.get('/users/me');
+        this.setUser(response.data.data.user);
+        return this.user;
       } catch (error) {
-        console.error('Error fetching user:', error)
+        console.error('Error fetching user:', error);
         if (error.response && error.response.status === 401) {
           // Token is invalid or expired
-          this.logout()
+          this.logout();
         }
-        throw error
+        throw error;
       }
     },
 
     async logout() {
-      // Remove the token from the API headers
-      delete api.defaults.headers.common['Authorization']
-
-      // Clear the user data and token
-      this.user = null
-      this.token = null
-      this.tokenExpirationTime = null
-
-      if (process.client) {
-        const authCookie = useCookie('auth_token')
-        const expirationCookie = useCookie('tokenExpirationTime')
-        authCookie.value = null
-        expirationCookie.value = null
+      try {
+        await api.post('/users/logout');
+      } catch (error) {
+        console.error('Error during logout:', error);
+      } finally {
+        this.user = null;
+        console.log('Logout successful');
       }
-
-      console.log('Logout successful')
     },
 
     async initializeAuth() {
