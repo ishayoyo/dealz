@@ -33,8 +33,8 @@ export const useAuthStore = defineStore('auth', {
     async signup(userData) {
       try {
         const response = await api.post('/users/register', userData);
-        if (response.data && response.data.user) {
-          this.setUser(response.data.user);
+        if (response.data && response.data.status === 'success' && response.data.data.user) {
+          this.setUser(response.data.data.user);
           return true;
         } else {
           console.error('Invalid response from server:', response.data);
