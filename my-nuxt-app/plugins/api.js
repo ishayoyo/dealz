@@ -8,21 +8,10 @@ export default defineNuxtPlugin((nuxtApp) => {
     headers: {
       'Content-Type': 'application/json',
     },
+    withCredentials: true // This is crucial for sending cookies with requests
   })
 
-  // Add a request interceptor to add the token to every request
-  api.interceptors.request.use(
-    (config) => {
-      const token = useCookie('auth_token').value
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`
-      }
-      return config
-    },
-    (error) => {
-      return Promise.reject(error)
-    }
-  )
+  // Remove the request interceptor as it's not needed for cookie-based auth
 
   // Inject the api instance into the Nuxt app
   nuxtApp.provide('api', api)

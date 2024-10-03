@@ -24,6 +24,7 @@
 
 <script setup>
 import { useDealsStore } from '~/stores/deals'
+import { useAuthStore } from '~/stores/auth'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref, computed, onUnmounted, watch } from 'vue'
 import DealCard from '~/components/DealCard.vue'
@@ -31,30 +32,40 @@ import DealModal from '~/components/DealModal.vue'
 import AuthModal from '~/components/AuthModal.vue'
 import { useToastification } from '~/composables/useToastification'
 
-const dealsStore = computed(() => useDealsStore())
+const dealsStore = useDealsStore()
+const authStore = useAuthStore()
 const { deals, loading, error } = storeToRefs(dealsStore)
+const { isAuthenticated } = storeToRefs(authStore)
 const toast = useToastification()
 
 const { $socket } = useNuxtApp()
 
 onMounted(async () => {
   try {
-    // Fetch deals only if the store is empty
-    if (dealsStore.value.deals.length === 0) {
-      await dealsStore.value.fetchDeals()
+    // Fetch deals regardless of authentication status
+    if (dealsStore.deals.length === 0) {
+      await dealsStore.fetchDeals()
     }
 
-    $socket.on('newDeal', (data) => {
-      console.log('Received new deal:', data)
-      dealsStore.value.handleNewDeal(data.deal)
-      toast.success(`New deal added: ${data.deal.title}`)
-    })
+    // Check authentication status silently
+    if (!isAuthenticated.value) {
+      await authStore.checkAuth()
+    }
 
-    $socket.on('updateDeal', (data) => {
-      console.log('Received deal update:', data)
-      dealsStore.value.handleNewDeal(data.deal) // We can use the same method for updates
-      toast.info(`Deal updated: ${data.deal.title}`)
-    })
+    // Set up socket listeners only if authenticated
+    if (isAuthenticated.value) {
+      $socket.on('newDeal', (data) => {
+        console.log('Received new deal:', data)
+        dealsStore.handleNewDeal(data.deal)
+        toast.success(`New deal added: ${data.deal.title}`)
+      })
+
+      $socket.on('updateDeal', (data) => {
+        console.log('Received deal update:', data)
+        dealsStore.handleNewDeal(data.deal)
+        toast.info(`Deal updated: ${data.deal.title}`)
+      })
+    }
   } catch (error) {
     console.error('Error in onMounted hook:', error)
     toast.error('An error occurred while loading deals. Please try again.')
@@ -62,15 +73,17 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  $socket.off('newDeal')
-  $socket.off('updateDeal')
+  if (isAuthenticated.value) {
+    $socket.off('newDeal')
+    $socket.off('updateDeal')
+  }
 })
 
 const selectedDeal = ref(null)
 const showAuthModal = ref(false)
 
 const openModal = (deal) => {
-  selectedDeal.value = dealsStore.value.getDealById(deal._id) // Updated to fetch deal by ID
+  selectedDeal.value = dealsStore.getDealById(deal._id)
 }
 
 const closeModal = () => {
@@ -85,14 +98,14 @@ const closeAuthModal = () => {
   showAuthModal.value = false
 }
 
-// Computed property to ensure deals are always an array and sorted
+// Computed property with a null check
 const safeDeals = computed(() => {
-  console.log('Computing safeDeals:', dealsStore.value.getSortedDeals)
-  return dealsStore.value.getSortedDeals
+  console.log('Computing safeDeals:', dealsStore.getSortedDeals)
+  return dealsStore.getSortedDeals
 })
 
 // Watch for changes in the deals store
-watch(() => dealsStore.value.deals, (newDeals) => {
+watch(() => dealsStore.deals, (newDeals) => {
   console.log('Deals updated:', newDeals)
 }, { deep: true })
 </script>

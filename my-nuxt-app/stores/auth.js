@@ -60,12 +60,12 @@ export const useAuthStore = defineStore('auth', {
         this.setUser(response.data.data.user);
         return this.user;
       } catch (error) {
-        console.error('Error fetching user:', error);
-        if (error.response && error.response.status === 401) {
-          // Token is invalid or expired
-          this.logout();
+        const handled = await this.handleAuthError(error);
+        if (!handled) {
+          console.error('Error fetching user:', error);
+          this.user = null;
+          throw error;
         }
-        throw error;
       }
     },
 
@@ -76,57 +76,78 @@ export const useAuthStore = defineStore('auth', {
         console.error('Error during logout:', error);
       } finally {
         this.user = null;
-        // Remove token-related operations since we're using HTTP-only cookies
         console.log('Logout successful');
       }
     },
 
     async initializeAuth() {
+      console.log('Auth store: Starting initializeAuth')
       if (process.client) {
-        const token = useCookie('auth_token').value
-        const tokenExpirationTime = useCookie('tokenExpirationTime').value
-        
-        console.log('Initializing auth with stored data:', { token, tokenExpirationTime })
-        
-        if (token && tokenExpirationTime) {
-          this.token = token
-          this.tokenExpirationTime = parseInt(tokenExpirationTime)
-          
-          if (this.isAuthenticated) {
-            api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
-            await this.fetchUser()
-            this.setupTokenExpirationCheck()
-          } else {
-            console.log('Token expired, logging out')
-            this.logout()
-          }
-        } else {
-          console.log('No stored auth data found')
+        console.log('Auth store: Running on client')
+        try {
+          const isAuthenticated = await this.checkAuth()
+          console.log('Auth store: Auth initialized:', { isAuthenticated })
+        } catch (error) {
+          console.error('Auth store: Error initializing auth:', error)
+          this.user = null
         }
-        console.log('Auth initialized:', { token: this.token, expiration: this.tokenExpirationTime, isAuthenticated: this.isAuthenticated })
+      } else {
+        console.log('Auth store: Running on server, skipping initializeAuth')
       }
     },
 
     async checkAuth() {
       try {
         const response = await api.get('/users/me');
-        this.setUser(response.data.data.user);
-        return true;
+        if (response.data && response.data.data.user) {
+          this.setUser(response.data.data.user);
+          return true;
+        }
       } catch (error) {
+        if (error.response && error.response.status === 401) {
+          console.log('User not authenticated');
+          this.user = null;
+          return false;
+        }
         console.error('Error checking auth:', error);
-        this.user = null;
-        return false;
       }
+      this.user = null;
+      return false;
+    },
+
+    async handleAuthError(error) {
+      if (error.response && error.response.status === 401) {
+        // Token might be expired, try to refresh
+        const refreshed = await this.refreshToken()
+        if (refreshed) {
+          // If refresh was successful, retry the original request
+          return true
+        } else {
+          // If refresh failed, log out the user
+          await this.logout()
+          return false
+        }
+      }
+      // For other errors, just log them
+      console.error('Authentication error:', error)
+      return false
     },
     
     async refreshToken() {
+      // Only attempt to refresh if we think we're authenticated
+      if (!this.isAuthenticated) {
+        console.log('Not authenticated, skipping token refresh');
+        return false;
+      }
+
       try {
         const response = await api.post('/users/refresh-token');
-        // Remove the token update since we're using HTTP-only cookies now
+        // The cookie will be automatically handled by the browser
         return true;
       } catch (error) {
         console.error('Error refreshing token:', error);
-        this.logout();
+        // If refresh fails, log the user out
+        await this.logout();
         return false;
       }
     },
