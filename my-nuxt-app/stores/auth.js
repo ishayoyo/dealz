@@ -76,8 +76,7 @@ export const useAuthStore = defineStore('auth', {
         console.error('Error during logout:', error);
       } finally {
         this.user = null;
-        this.token = null;
-        useCookie('auth_token').value = null;
+        // Remove token-related operations since we're using HTTP-only cookies
         console.log('Logout successful');
       }
     },
@@ -108,15 +107,23 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async checkAuth() {
+      try {
+        const response = await api.get('/users/me');
+        this.setUser(response.data.data.user);
+        return true;
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        this.user = null;
+        return false;
+      }
+    },
+    
     async refreshToken() {
       try {
         const response = await api.post('/users/refresh-token');
-        if (response.data && response.data.token) {
-          // Update the token in your store and cookie
-          this.setToken(response.data.token);
-          return true;
-        }
-        return false;
+        // Remove the token update since we're using HTTP-only cookies now
+        return true;
       } catch (error) {
         console.error('Error refreshing token:', error);
         this.logout();

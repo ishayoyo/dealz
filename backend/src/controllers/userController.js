@@ -602,4 +602,12 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
   }
 });
 
+exports.checkAuth = catchAsync(async (req, res, next) => {
+  // If this middleware is reached, it means the user is authenticated
+  res.status(200).json({
+    status: 'success',
+    data: { user: req.user }
+  });
+});
+
 module.exports = exports;

@@ -16,6 +16,7 @@ router.post('/register', userController.register);
 router.post('/login', userController.login);
 router.post('/logout', auth, userController.logout);
 router.post('/refresh-token', userController.refreshToken);
+router.get('/check-auth', auth, userController.checkAuth);
 
 // Token validation route (place this before ID routes)
 router.get('/validate-token', auth, userController.validateToken);

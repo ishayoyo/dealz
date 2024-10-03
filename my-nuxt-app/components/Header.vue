@@ -226,9 +226,7 @@ watch(isAuthenticated, (newValue) => {
 // Update the authStatus computed property
 const authStatus = computed(() => ({
   isAuthenticated: isAuthenticated.value,
-  user: user.value,
-  token: authStore.token,
-  tokenExpirationTime: authStore.tokenExpirationTime
+  user: user.value
 }))
 
 // Log authentication status changes
