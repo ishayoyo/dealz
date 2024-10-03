@@ -30,35 +30,37 @@
           <h2 class="text-2xl font-bold mb-2 text-text">{{ deal.title }}</h2>
           <p class="text-gray-600 mb-4">{{ deal.description }}</p>
           
-          <div class="flex items-center justify-between mb-4">
-            <span class="font-bold text-accent text-2xl">${{ formattedPrice }}</span>
-            <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
-              Go to Deal
+          <div class="flex items-center justify-between mb-6">
+            <span class="font-bold text-accent text-3xl">${{ formattedPrice }}</span>
+            <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary text-lg px-6 py-3 transform hover:scale-105 transition duration-300 shadow-lg">
+              GET THIS DEAL
             </a>
           </div>
           
-          <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
-            <button @click="handleFollowDeal" class="btn btn-primary w-full sm:w-auto">
-              {{ isFollowing ? 'Unfollow' : 'Follow' }} Deal
+          <div class="flex items-center justify-between mb-6">
+            <button @click="handleFollowDeal" class="btn btn-outline-secondary text-sm px-4 py-2">
+              {{ isFollowing ? 'Unfollow Deal' : 'Follow Deal' }}
             </button>
-            <span class="text-sm text-gray-500 whitespace-nowrap">
+            <span class="text-sm text-gray-500">
               {{ formattedFollowCount }} {{ formattedFollowCount === 1 ? 'follower' : 'followers' }}
             </span>
           </div>
           
-          <div v-if="deal.user" class="mb-6 flex items-center">
-            <UserAvatar :name="dealUserName" :size="40" class="mr-3" />
-            <div class="flex-grow">
-              <span class="text-sm text-gray-500">Posted by:</span>
-              <span class="font-semibold ml-1 text-text">{{ dealUserName }}</span>
+          <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 rounded-lg">
+            <div class="flex items-center">
+              <UserAvatar :name="dealUserName" :size="40" class="mr-3" />
+              <div>
+                <span class="text-sm text-gray-500">Posted by:</span>
+                <span class="font-semibold ml-1 text-text">{{ dealUserName }}</span>
+              </div>
             </div>
             <button 
               @click="handleFollowUser" 
-              class="btn btn-secondary text-sm"
+              class="btn btn-outline-secondary text-sm px-4 py-2"
               :disabled="isCurrentUser"
               :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
             >
-              {{ isFollowingUser ? 'Unfollow' : 'Follow' }}
+              {{ isFollowingUser ? 'Unfollow User' : 'Follow User' }}
             </button>
           </div>
           
@@ -67,10 +69,10 @@
             <div v-if="isAuthenticated">
               <div v-if="loading" class="text-gray-500">Loading comments...</div>
               <div v-else-if="error" class="text-red-500">{{ error }}</div>
-              <div v-else class="comments-container space-y-4 mb-6 max-h-64 overflow-y-auto">
+              <div v-else class="comments-container space-y-4 mb-6 max-h-64 overflow-y-auto bg-gray-50 p-4 rounded-lg">
                 <div v-if="comments.length === 0" class="text-gray-500">No comments yet. Be the first to comment!</div>
                 <div v-else>
-                  <Comment v-for="comment in comments" :key="comment._id" :comment="comment" />
+                  <Comment v-for="comment in comments" :key="comment._id" :comment="comment" class="bg-white p-3 rounded shadow-sm" />
                 </div>
               </div>
               <div class="mt-4 relative">
@@ -92,9 +94,9 @@
                 Add Comment
               </button>
             </div>
-            <div v-else class="text-center py-4">
-              <p>Login to view comments</p>
-              <button @click="openAuthModal" class="mt-2 btn btn-primary w-full">Login</button>
+            <div v-else class="text-center py-4 bg-gray-100 rounded-lg">
+              <p class="mb-2">Login to view and post comments</p>
+              <button @click="openAuthModal" class="btn btn-primary w-full max-w-xs mx-auto">Login</button>
             </div>
           </div>
         </div>
@@ -428,5 +430,32 @@ watch(() => {
   .overflow-y-auto {
     -webkit-overflow-scrolling: touch;
   }
+}
+
+.btn-primary {
+  @apply bg-primary-600 text-white hover:bg-primary-700 transition duration-300;
+}
+
+.btn-outline-secondary {
+  @apply border border-secondary-500 text-secondary-500 hover:bg-secondary-500 hover:text-white transition duration-300;
+}
+
+.comments-container {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E0 #EDF2F7;
+}
+
+.comments-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.comments-container::-webkit-scrollbar-track {
+  background: #EDF2F7;
+}
+
+.comments-container::-webkit-scrollbar-thumb {
+  background-color: #CBD5E0;
+  border-radius: 4px;
+  border: 2px solid #EDF2F7;
 }
 </style>

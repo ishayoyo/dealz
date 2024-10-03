@@ -1,19 +1,18 @@
 <template>
-  <div v-if="deal" class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col" @click="openModal">
+  <div v-if="deal" class="deal-card group" @click="openModal">
     <div class="relative w-full" style="padding-bottom: 66.67%;">
-      <!-- 2:3 aspect ratio -->
       <img 
         :src="fullImageUrl" 
         :alt="deal.title" 
-        class="absolute inset-0 w-full h-full object-cover"
+        class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         @error="handleImageError"
       >
-      <div class="absolute top-0 right-0 bg-accent text-white px-3 py-1 m-2 rounded-full text-sm font-semibold">
+      <div class="absolute top-0 right-0 bg-accent-500 text-white px-3 py-1 m-2 rounded-full text-sm font-semibold shadow-md">
         ${{ formattedPrice }}
       </div>
     </div>
     <div class="p-4 flex flex-col flex-grow">
-      <h3 class="font-bold text-lg mb-2 text-text line-clamp-2">{{ deal.title || 'Untitled Deal' }}</h3>
+      <h3 class="font-heading font-bold text-lg mb-2 text-primary-800 line-clamp-2 group-hover:text-primary-600 transition-colors duration-300">{{ deal.title || 'Untitled Deal' }}</h3>
       <p class="text-gray-600 text-sm mb-3 line-clamp-2 flex-grow">{{ deal.description || 'No description available' }}</p>
       <div class="flex items-center justify-between mt-2">
         <div class="flex items-center space-x-2">
@@ -24,7 +23,7 @@
           <i class="far fa-clock mr-1"></i>{{ formattedDate }}
         </span>
       </div>
-      <button class="btn btn-primary w-full mt-3">
+      <button class="btn btn-primary w-full mt-3 group-hover:shadow-lg transition-shadow duration-300">
         View Deal
       </button>
     </div>

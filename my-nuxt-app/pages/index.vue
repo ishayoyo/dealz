@@ -16,9 +16,8 @@
       v-if="selectedDeal" 
       :deal="selectedDeal" 
       @close-modal="closeModal" 
-      @open-auth-modal="openAuthModal" 
+      @open-auth-modal="$emit('open-auth-modal', 'login')" 
     />
-    <AuthModal v-if="showAuthModal" @close="closeAuthModal" />
   </div>
 </template>
 
@@ -29,7 +28,6 @@ import { storeToRefs } from 'pinia'
 import { onMounted, ref, computed, onUnmounted, watch } from 'vue'
 import DealCard from '~/components/DealCard.vue'
 import DealModal from '~/components/DealModal.vue'
-import AuthModal from '~/components/AuthModal.vue'
 import { useToastification } from '~/composables/useToastification'
 
 const dealsStore = useDealsStore()
@@ -80,7 +78,6 @@ onUnmounted(() => {
 })
 
 const selectedDeal = ref(null)
-const showAuthModal = ref(false)
 
 const openModal = (deal) => {
   selectedDeal.value = dealsStore.getDealById(deal._id)
@@ -88,14 +85,6 @@ const openModal = (deal) => {
 
 const closeModal = () => {
   selectedDeal.value = null
-}
-
-const openAuthModal = () => {
-  showAuthModal.value = true
-}
-
-const closeAuthModal = () => {
-  showAuthModal.value = false
 }
 
 // Computed property with a null check

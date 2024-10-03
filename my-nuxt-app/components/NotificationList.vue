@@ -20,7 +20,7 @@
               </p>
             </div>
             <div class="ml-4 flex-shrink-0" v-if="!notification.read">
-              <button @click.stop="markAsRead(notification._id)" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+              <button @click.stop="markAsRead(notification._id)" class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors duration-300">
                 Mark as read
               </button>
             </div>
@@ -29,10 +29,10 @@
       </ul>
     </div>
     <div class="bg-gray-50 px-4 py-3 sm:px-6 flex justify-between items-center">
-      <NuxtLink to="/notifications" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+      <NuxtLink to="/notifications" class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors duration-300">
         View all notifications
       </NuxtLink>
-      <button @click="markAllAsRead" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+      <button @click="markAllAsRead" class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors duration-300">
         Mark all as read
       </button>
     </div>

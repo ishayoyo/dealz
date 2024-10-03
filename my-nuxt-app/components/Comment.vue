@@ -1,16 +1,13 @@
 <template>
-  <div class="comment">
-    <div class="bg-gray-50 rounded-lg p-4">
-      <div class="flex items-center mb-2">
-        <UserAvatar :name="commentUsername" :size="32" class="mr-3" />
+  <div class="comment bg-white rounded-lg shadow-sm p-4 mb-4">
+    <div class="flex items-center mb-3">
+      <UserAvatar :name="commentUsername" :size="40" class="mr-3" />
+      <div>
         <span class="font-semibold text-text">{{ commentUsername }}</span>
-        <span class="text-sm text-gray-500 ml-2">{{ formatCommentDate(comment.createdAt) }}</span>
-      </div>
-      <p class="text-gray-600" v-html="formattedContent"></p>
-      <div v-if="comment.replies && comment.replies.length > 0" class="mt-4 ml-4 space-y-2">
-        <Comment v-for="reply in comment.replies" :key="reply._id" :comment="reply" :disable-voting="disableVoting" />
+        <span class="text-xs text-gray-500 ml-2">{{ formatCommentDate(comment.createdAt) }}</span>
       </div>
     </div>
+    <p class="text-gray-700" v-html="formattedContent"></p>
   </div>
 </template>
 
@@ -22,10 +19,6 @@ const props = defineProps({
   comment: {
     type: Object,
     required: true
-  },
-  disableVoting: {
-    type: Boolean,
-    default: false
   }
 })
 
@@ -39,7 +32,8 @@ const commentUsername = computed(() => {
 })
 
 const formatCommentDate = (date) => {
-  return new Date(date).toLocaleString()
+  const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+  return new Date(date).toLocaleDateString(undefined, options)
 }
 
 const formattedContent = computed(() => {

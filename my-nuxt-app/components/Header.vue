@@ -1,12 +1,12 @@
 <template>
-  <header class="fixed top-0 left-0 right-0 bg-white bg-opacity-90 shadow-sm z-40 transition-all duration-300" :class="{ 'shadow-md': scrolled }">
+  <header class="fixed top-0 left-0 right-0 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg shadow-md z-40 transition-all duration-300" :class="{ 'shadow-lg': scrolled }">
     <div class="container mx-auto px-4 flex items-center justify-between h-16 md:h-20">
       <div class="flex items-center">
         <NuxtLink to="/" class="flex items-center">
           <img 
             src="/images/logo.png"
             alt="Dealz Logo" 
-            class="h-8 md:h-10 w-auto"
+            class="h-8 md:h-10 w-auto animate-float"
           />
         </NuxtLink>
         <form @submit.prevent="handleSearch" class="relative hidden md:block ml-4">
@@ -14,36 +14,37 @@
             type="search" 
             v-model="searchQuery"
             placeholder="Search deals..." 
-            class="bg-background rounded-md px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-primary transition duration-300 h-8 md:h-10"
+            class="input-field pr-10 h-10 md:h-12 w-64 md:w-80"
           >
-          <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2">
-            <i class="fas fa-search text-gray-400"></i>
+          <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary-500 hover:text-primary-600 transition-colors duration-300">
+            <i class="fas fa-search"></i>
           </button>
         </form>
       </div>
-      <div class="flex items-center">
+      <div class="flex items-center space-x-4">
         <ClientOnly>
           <template v-if="!isAuthenticated">
-            <button @click="openAuthModal('login')" class="btn btn-secondary mr-2 sm:mr-4">Log In</button>
-            <button @click="openAuthModal('signup')" class="btn btn-primary">Sign Up</button>
+            <button @click="$emit('open-auth-modal', 'login')" class="btn btn-secondary">Log In</button>
+            <button @click="$emit('open-auth-modal', 'signup')" class="btn btn-primary">Sign Up</button>
           </template>
           <template v-else>
-            <!-- Post Deal button for desktop -->
-            <button @click="openPostDealModal" class="btn btn-secondary mr-4 hidden md:block">Post a Deal</button>
+            <button @click="$emit('open-post-deal-modal')" class="btn btn-secondary hidden md:block">Post a Deal</button>
             
-            <NuxtLink to="/profile" class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300">
-              <img v-if="profilePictureUrl" :src="profilePictureUrl" alt="Profile" class="w-8 h-8 rounded-full object-cover">
-              <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+            <NuxtLink to="/profile" class="relative group">
+              <img v-if="profilePictureUrl" :src="profilePictureUrl" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-primary-300 group-hover:border-primary-500 transition-colors duration-300">
+              <div v-else class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-500 group-hover:bg-primary-200 transition-colors duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
             </NuxtLink>
-                      <NuxtLink 
-            v-if="user && user.role === 'admin'" 
-            to="/admin/dashboard" 
-            class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300"
-          >
-            Admin Dashboard
-          </NuxtLink>
+            <NuxtLink 
+              v-if="user && user.role === 'admin'" 
+              to="/admin/dashboard" 
+              class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300"
+            >
+              Admin Dashboard
+            </NuxtLink>
             <div class="relative">
               <button @click="handleNotificationClick" class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -60,10 +61,6 @@
         </ClientOnly>
       </div>
     </div>
-    <ClientOnly>
-      <AuthModal v-if="showAuthModal" :is-login="isLoginMode" @close="closeAuthModal" @login="handleLogin" @signup="handleSignup" />
-      <PostDealModal v-if="showPostDealModal" @close="closePostDealModal" @post-deal="handlePostDeal" />
-    </ClientOnly>
   </header>
 </template>
 
@@ -94,6 +91,8 @@ const showNotifications = ref(false)
 const mobileMenuOpen = ref(false)
 const isMobile = ref(false)
 
+const emit = defineEmits(['open-auth-modal', 'open-post-deal-modal'])
+
 const handleScroll = () => {
   scrolled.value = window.scrollY > 0
 }
@@ -119,86 +118,6 @@ const handleLogout = () => {
   router.push('/') // Redirect to home page after logout
   toast.success('Logged out successfully!')
 }
-
-const openAuthModal = (mode) => {
-  isLoginMode.value = mode === 'login'
-  showAuthModal.value = true
-}
-
-const closeAuthModal = () => {
-  showAuthModal.value = false
-}
-
-const openPostDealModal = () => {
-  showPostDealModal.value = true
-}
-
-const closePostDealModal = () => {
-  showPostDealModal.value = false
-}
-
-const handlePostDeal = async (dealData) => {
-  try {
-    await dealsStore.postDeal(dealData)
-    closePostDealModal()
-    toast.success('Deal posted successfully!')
-  } catch (error) {
-    console.error('Error posting deal:', error)
-    toast.error('Failed to post deal. Please try again.')
-  }
-}
-
-const handleLogin = async (credentials) => {
-  try {
-    const success = await authStore.login(credentials.email, credentials.password)
-    if (success) {
-      await notificationStore.fetchNotifications()
-      closeAuthModal()
-      toast.success('Successfully logged in!')
-    } else {
-      toast.error('Login failed. Please check your credentials and try again.')
-    }
-  } catch (error) {
-    console.error('Login error:', error)
-    toast.error(error.response?.data?.message || 'An error occurred during login')
-  }
-}
-
-const handleSignup = async (userData) => {
-  try {
-    const success = await authStore.signup(userData)
-    if (success) {
-      await notificationStore.fetchNotifications()
-      closeAuthModal()
-      toast.success('Successfully signed up!')
-    } else {
-      toast.error('Signup failed. Please check your information and try again.')
-    }
-  } catch (error) {
-    console.error('Signup error:', error)
-    toast.error(error.response?.data?.message || 'An error occurred during signup')
-  }
-}
-
-const toggleNotifications = () => {
-  showNotifications.value = !showNotifications.value
-  if (showNotifications.value && isAuthenticated.value) {
-    notificationStore.fetchNotifications()
-  }
-}
-
-const closeNotifications = () => {
-  showNotifications.value = false
-}
-
-const profilePictureUrl = computed(() => {
-  if (user.value?.profilePicture) {
-    return user.value.profilePicture.startsWith('http')
-      ? user.value.profilePicture
-      : `http://localhost:5000${user.value.profilePicture}`
-  }
-  return null
-})
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
@@ -259,6 +178,26 @@ const handleNotificationClick = () => {
     toggleNotifications()
   }
 }
+
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value
+  if (showNotifications.value && isAuthenticated.value) {
+    notificationStore.fetchNotifications()
+  }
+}
+
+const closeNotifications = () => {
+  showNotifications.value = false
+}
+
+const profilePictureUrl = computed(() => {
+  if (user.value?.profilePicture) {
+    return user.value.profilePicture.startsWith('http')
+      ? user.value.profilePicture
+      : `http://localhost:5000${user.value.profilePicture}`
+  }
+  return null
+})
 </script>
 
 <style scoped>

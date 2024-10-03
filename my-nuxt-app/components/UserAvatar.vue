@@ -1,7 +1,7 @@
 <!-- components/UserAvatar.vue -->
 <template>
   <div :class="avatarClasses" :style="avatarStyle">
-    <span v-if="!imageLoaded">{{ initials }}</span>
+    <span v-if="!imageLoaded" class="text-white">{{ initials }}</span>
     <img v-if="src" :src="src" @load="onImageLoad" @error="onImageError" class="w-full h-full object-cover" :alt="name">
   </div>
 </template>
@@ -37,7 +37,7 @@ const initials = computed(() => {
 
 const avatarClasses = computed(() => {
   return [
-    'flex items-center justify-center rounded-full overflow-hidden bg-gray-300 text-gray-600',
+    'flex items-center justify-center rounded-full overflow-hidden bg-primary-500 text-white',
     `w-${props.size / 4} h-${props.size / 4}`
   ];
 });

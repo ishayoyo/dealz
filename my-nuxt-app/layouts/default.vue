@@ -4,25 +4,40 @@
       An error occurred: {{ error.message }}
     </div>
     <template v-else>
-      <Header @open-post-deal-modal="openPostDealModal" />
-      <main class="pt-16 md:pt-20"> <!-- Adjusted padding-top to match new header height -->
+      <Header @open-post-deal-modal="openPostDealModal" @open-auth-modal="openAuthModal" />
+      <main class="pt-16 md:pt-20">
         <slot />
       </main>
       <ClientOnly>
         <FloatingActionButton v-if="isAuthenticated" @click="openPostDealModal" />
-        <PostDealModal v-if="showPostDealModal" @close="closePostDealModal" @post-deal="handlePostDeal" />
+        <PostDealModal 
+          v-if="showPostDealModal" 
+          :show="showPostDealModal"
+          @close="closePostDealModal" 
+          @post-deal="handlePostDeal" 
+        />
+        <AuthModal 
+          v-if="showAuthModal" 
+          :show="showAuthModal"
+          @close="closeAuthModal" 
+          @login="handleLogin" 
+          @signup="handleSignup" 
+          :is-login="isLoginMode" 
+        />
       </ClientOnly>
     </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
 import { storeToRefs } from 'pinia'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter, useRoute } from 'vue-router'
+import PostDealModal from '~/components/PostDealModal.vue'
+import AuthModal from '~/components/AuthModal.vue'
 
 const authStore = useAuthStore()
 const dealsStore = useDealsStore()
@@ -32,18 +47,29 @@ const router = useRouter()
 const route = useRoute()
 
 const showPostDealModal = ref(false)
+const showAuthModal = ref(false)
+const isLoginMode = ref(true)
 
 const openPostDealModal = () => {
   if (isAuthenticated.value) {
     showPostDealModal.value = true
   } else {
     toast.info('Please log in to post a deal.')
-    router.push('/login')
+    openAuthModal('login')
   }
 }
 
 const closePostDealModal = () => {
   showPostDealModal.value = false
+}
+
+const openAuthModal = (mode) => {
+  isLoginMode.value = mode === 'login'
+  showAuthModal.value = true
+}
+
+const closeAuthModal = () => {
+  showAuthModal.value = false
 }
 
 const handlePostDeal = async (dealData) => {
@@ -54,6 +80,36 @@ const handlePostDeal = async (dealData) => {
   } catch (error) {
     console.error('Error posting deal:', error)
     toast.error('Failed to post deal. Please try again.')
+  }
+}
+
+const handleLogin = async (credentials) => {
+  try {
+    const success = await authStore.login(credentials.email, credentials.password)
+    if (success) {
+      closeAuthModal()
+      toast.success('Successfully logged in!')
+    } else {
+      toast.error('Login failed. Please check your credentials and try again.')
+    }
+  } catch (error) {
+    console.error('Login error:', error)
+    toast.error(error.response?.data?.message || 'An error occurred during login')
+  }
+}
+
+const handleSignup = async (userData) => {
+  try {
+    const success = await authStore.signup(userData)
+    if (success) {
+      closeAuthModal()
+      toast.success('Successfully signed up!')
+    } else {
+      toast.error('Signup failed. Please check your information and try again.')
+    }
+  } catch (error) {
+    console.error('Signup error:', error)
+    toast.error(error.response?.data?.message || 'An error occurred during signup')
   }
 }
 

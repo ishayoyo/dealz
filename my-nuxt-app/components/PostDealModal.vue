@@ -1,13 +1,13 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto">
-    <div class="bg-white rounded-lg w-full max-w-2xl p-4 sm:p-8 relative">
-      <button @click="$emit('close')" class="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700">
+  <div v-if="show" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg w-full max-w-2xl p-6 sm:p-8 relative shadow-lg">
+      <button @click="$emit('close')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-300">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
       
-      <h2 class="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center text-blue-600">
+      <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-center text-primary-600">
         {{ step === 1 ? 'Post a New Deal' : 'Complete Deal Details' }}
       </h2>
 
@@ -21,8 +21,8 @@
             <label for="dealLink" class="block text-gray-700 text-sm font-bold mb-2">Deal Link</label>
             <input type="url" id="dealLink" v-model="dealLink" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
-          <button type="submit" :disabled="isLoading" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">
-            {{ isLoading ? 'Fetching...' : 'Next' }}
+          <button type="submit" :disabled="isLoading" class="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition duration-300">
+            {{ isLoading ? 'Posting...' : 'Next' }}
           </button>
         </form>
       </div>
@@ -62,8 +62,8 @@
             <input type="number" id="price" v-model="dealDetails.price" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
           
-          <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">
-            Post Deal
+          <button type="submit" class="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition duration-300">
+            {{ isLoading ? 'Posting...' : 'Post Deal' }}
           </button>
         </form>
       </div>
@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import api from '~/services/api'
 import { useToastification } from '~/composables/useToastification'
 import { useDealsStore } from '~/stores/deals'
@@ -170,6 +170,17 @@ const submitDeal = async () => {
     toast.error('Failed to submit deal. Please try again.')
   }
 }
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false
+  }
+})
+
+watch(() => props.show, (newValue) => {
+  console.log('PostDealModal show prop changed:', newValue)
+})
 </script>
 
 <style scoped>
@@ -178,5 +189,8 @@ const submitDeal = async () => {
 }
 .max-h-full {
   max-height: 100%;
+}
+.fixed {
+  z-index: 1000;
 }
 </style>
