@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '~/services/api'
+import { useCookie } from 'nuxt/app'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -97,6 +98,12 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async checkAuth() {
+      const token = useCookie('accessToken').value;
+      if (!token) {
+        this.user = null;
+        return false;
+      }
+
       try {
         const response = await api.get('/users/me');
         if (response.data && response.data.data.user) {
