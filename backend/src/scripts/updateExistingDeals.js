@@ -11,6 +11,7 @@ async function updateExistingDeals() {
 
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
+    console.log('Connected to database:', mongoose.connection.name);
 
     // Check existing status values
     const statusCounts = await Deal.aggregate([
@@ -23,8 +24,14 @@ async function updateExistingDeals() {
     const dealsToUpdate = await Deal.countDocuments({ $or: [{ status: { $exists: false } }, { status: "" }] });
     console.log(`Deals matching update criteria: ${dealsToUpdate}`);
 
+    const allDeals = await Deal.find({}).lean();
+    console.log('Total number of deals:', allDeals.length);
+    console.log('Sample deal:', allDeals[0]);
+
+    console.log('Indexes:', Object.keys(Deal.collection.indexes()));
+
     const result = await Deal.updateMany(
-      { $or: [{ status: { $exists: false } }, { status: "" }] },
+      {},  // This will match all documents
       { $set: { status: 'approved' } }
     );
 
