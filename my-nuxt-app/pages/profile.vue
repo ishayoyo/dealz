@@ -23,6 +23,7 @@
           <div class="text-center sm:text-left">
             <h3 class="text-xl font-semibold">{{ getUserName }}</h3>
             <p class="text-gray-600">{{ user.email }}</p>
+            <p class="text-sm text-gray-500 mt-1">{{ followersCount }} followers</p>
           </div>
         </div>
 
@@ -108,13 +109,18 @@ const tabs = [
   { id: 'followedDeals', name: 'Followed Deals' }
 ]
 
+const followersCount = ref(0)
+
 onMounted(async () => {
   try {
     loading.value = true
     const response = await api.get('/users/me')
     user.value = response.data.data.user
-    await fetchFollowedDeals()
-    await fetchUserDeals()
+    await Promise.all([
+      fetchFollowedDeals(),
+      fetchUserDeals(),
+      fetchFollowersCount()
+    ])
   } catch (err) {
     error.value = 'Failed to load user data'
     console.error(err)
@@ -181,6 +187,22 @@ const fetchFollowers = async () => {
   } catch (error) {
     console.error('Error fetching followers:', error)
     throw error
+  }
+}
+
+const fetchFollowersCount = async () => {
+  try {
+    console.log('Fetching followers...')
+    const response = await api.get('/users/me/followers')
+    console.log('Followers response:', response.data)
+    if (response.data && Array.isArray(response.data.data.followers)) {
+      followersCount.value = response.data.data.followers.length
+      console.log('Followers count:', followersCount.value)
+    } else {
+      console.error('Unexpected response structure:', response.data)
+    }
+  } catch (error) {
+    console.error('Error fetching followers:', error)
   }
 }
 

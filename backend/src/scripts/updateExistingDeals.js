@@ -12,12 +12,24 @@ async function updateExistingDeals() {
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
 
+    // Add this section to check existing status values
+    const statusCounts = await Deal.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    console.log("Status distribution:", statusCounts);
+
     const result = await Deal.updateMany(
-      { status: { $exists: false } },
+      { $or: [{ status: { $exists: false } }, { status: "" }] },
       { $set: { status: 'approved' } }
     );
 
     console.log(`Updated ${result.modifiedCount} deals`);
+
+    // Add a check for remaining deals without a status
+    const remainingDeals = await Deal.countDocuments({ $or: [{ status: { $exists: false } }, { status: "" }] });
+    console.log(`Remaining deals without a status: ${remainingDeals}`);
+
   } catch (error) {
     console.error('Error updating deals:', error);
   } finally {
