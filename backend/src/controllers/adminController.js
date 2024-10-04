@@ -24,10 +24,22 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
 });
 
 exports.getDeals = catchAsync(async (req, res, next) => {
-  const deals = await Deal.find().populate('user', 'username');
+  const deals = await Deal.find()
+    .populate('user', 'username')
+    .sort('-createdAt');
+
+  // Add the full image URL to each deal
+  const dealsWithImageUrls = deals.map(deal => {
+    const dealObj = deal.toObject();
+    if (dealObj.image) {
+      dealObj.image = `${process.env.BASE_URL}/images/${dealObj.image}`;
+    }
+    return dealObj;
+  });
+
   res.status(200).json({
     status: 'success',
-    data: { deals }
+    data: { deals: dealsWithImageUrls }
   });
 });
 
@@ -39,5 +51,25 @@ exports.deleteDeal = catchAsync(async (req, res, next) => {
   res.status(204).json({
     status: 'success',
     data: null
+  });
+});
+
+exports.moderateDeal = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['approved', 'rejected'].includes(status)) {
+    return next(new AppError('Invalid status', 400));
+  }
+
+  const deal = await Deal.findByIdAndUpdate(id, { status }, { new: true });
+
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: { deal }
   });
 });

@@ -63,8 +63,9 @@
           </div>
           
           <button type="submit" class="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition duration-300">
-            {{ isLoading ? 'Posting...' : 'Post Deal' }}
+            {{ isLoading ? 'Posting...' : 'Submit for Review' }}
           </button>
+          <p class="text-sm text-gray-500 mt-2">Your deal will be reviewed by an admin before it's published.</p>
         </form>
       </div>
     </div>
@@ -164,7 +165,7 @@ const submitDeal = async () => {
     console.log('New deal from API:', newDeal)
     dealsStore.handleNewDeal(newDeal)
     emit('close')
-    toast.success('Deal posted successfully!')
+    toast.success('Deal submitted for review!')
   } catch (error) {
     console.error('Error submitting deal:', error)
     toast.error('Failed to submit deal. Please try again.')

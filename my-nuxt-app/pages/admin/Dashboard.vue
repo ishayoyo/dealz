@@ -27,26 +27,59 @@
           <h2 class="text-2xl font-semibold mb-4">Deals</h2>
           <div v-if="loadingDeals" class="text-center py-4">Loading deals...</div>
           <div v-else-if="deals.length === 0" class="text-center py-4">No deals found</div>
-          <ul v-else class="divide-y divide-gray-200">
-            <li v-for="deal in deals" :key="deal._id" class="py-4 flex justify-between items-center">
-              <div>
-                <p class="font-medium">{{ deal.title }}</p>
-                <p class="text-sm text-gray-500">${{ deal.price }}</p>
-              </div>
-              <button @click="deleteDeal(deal._id)" class="text-red-600 hover:text-red-800">
-                Delete
-              </button>
-            </li>
-          </ul>
+          <div v-else class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-for="deal in deals" :key="deal._id">
+                  <td class="px-6 py-4 whitespace-nowrap">{{ deal.title }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">${{ deal.price }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">{{ deal.status }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <img 
+                      v-if="deal.imageUrl" 
+                      :src="getImageUrl(deal.imageUrl)" 
+                      alt="Deal image" 
+                      class="h-20 w-20 object-cover rounded" 
+                      @click="openImageModal(getImageUrl(deal.imageUrl))"
+                    >
+                    <span v-else>No image</span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div v-if="deal.status === 'pending'">
+                      <button @click="moderateDeal(deal._id, 'approved')" class="bg-green-500 text-white px-2 py-1 rounded mr-2">
+                        Approve
+                      </button>
+                      <button @click="moderateDeal(deal._id, 'rejected')" class="bg-red-500 text-white px-2 py-1 rounded">
+                        Reject
+                      </button>
+                    </div>
+                    <button v-else @click="deleteDeal(deal._id)" class="text-red-600 hover:text-red-800">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
   </template>
   
   <script setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, computed } from 'vue';
   import { useAuthStore } from '~/stores/auth';
   import { useToastification } from '~/composables/useToastification';
+  import { useRuntimeConfig } from '#app';
   import api from '~/services/api';
   
   const authStore = useAuthStore();
@@ -57,6 +90,21 @@
   const loadingUsers = ref(true);
   const loadingDeals = ref(true);
   
+  const config = useRuntimeConfig();
+
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return '/default-deal-image.jpg';
+    return imageUrl.startsWith('http') 
+      ? imageUrl 
+      : `${getImageBaseUrl()}${imageUrl}`;
+  };
+
+  const getImageBaseUrl = () => {
+    return config.public.apiBase.includes('localhost') 
+      ? 'http://localhost:5000' 
+      : 'https://deals.ishay.me';
+  };
+
   onMounted(async () => {
     if (!authStore.isAuthenticated || authStore.user.role !== 'admin') {
       // Redirect non-admin users
@@ -117,4 +165,27 @@
       toast.error('Failed to delete deal');
     }
   }
+  
+  const moderateDeal = async (dealId, status) => {
+    try {
+      await api.patch(`/admin/deals/${dealId}/moderate`, { status });
+      await fetchDeals();
+      toast.success(`Deal ${status} successfully`);
+    } catch (error) {
+      console.error('Error moderating deal:', error);
+      toast.error('Failed to moderate deal');
+    }
+  };
+  
+  const openImageModal = (image) => {
+    selectedImage.value = image;
+    showImageModal.value = true;
+  };
+  
+  const closeImageModal = () => {
+    showImageModal.value = false;
+  };
+  
+  const selectedImage = ref('');
+  const showImageModal = ref(false);
   </script>

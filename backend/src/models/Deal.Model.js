@@ -12,7 +12,11 @@ const dealSchema = new mongoose.Schema({
   store: { type: String, index: true },
   category: { type: String, index: true },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  status: { type: String, enum: ['active', 'expired', 'deleted'], default: 'active', index: true },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
   expiresAt: Date,
   tags: [{ type: String, index: true }],
   metadata: {

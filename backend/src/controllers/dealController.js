@@ -49,7 +49,11 @@ exports.getDeals = catchAsync(async (req, res, next) => {
   query = query.skip(skip).limit(limit);
 
   // Execute query
-  const deals = await query.populate('user', 'username profilePicture');
+  const deals = await Deal.find({ status: 'approved' })
+    .sort('-createdAt')
+    .skip(skip)
+    .limit(limit)
+    .populate('user', 'username profilePicture');
 
   // Send response
   res.status(200).json({
@@ -81,6 +85,7 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     price,
     imageUrl,
     url: link,
+    status: 'pending', // Set initial status to pending
     user: req.user.id
   });
 
@@ -498,6 +503,27 @@ exports.getMentionableUsers = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: { users }
+  });
+});
+
+// Add a new method for admins to approve or reject deals
+exports.moderateDeal = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['approved', 'rejected'].includes(status)) {
+    return next(new AppError('Invalid status', 400));
+  }
+
+  const deal = await Deal.findByIdAndUpdate(id, { status }, { new: true });
+
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: { deal }
   });
 });
 

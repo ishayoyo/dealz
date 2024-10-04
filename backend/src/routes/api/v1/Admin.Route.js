@@ -10,5 +10,6 @@ router.get('/users', adminController.getUsers);
 router.delete('/users/:id', adminController.deleteUser);
 router.get('/deals', adminController.getDeals);
 router.delete('/deals/:id', adminController.deleteDeal);
+router.patch('/deals/:id/moderate', adminController.moderateDeal);
 
 module.exports = router;
