@@ -14,7 +14,7 @@ const dealSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'approved', 'rejected', 'active'], // Add 'active' to the enum
     default: 'pending'
   },
   expiresAt: Date,
