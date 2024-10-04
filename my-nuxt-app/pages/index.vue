@@ -16,7 +16,15 @@
       v-if="selectedDeal" 
       :deal="selectedDeal" 
       @close-modal="closeModal" 
-      @open-auth-modal="$emit('open-auth-modal', 'login')" 
+      @open-auth-modal="openAuthModal" 
+    />
+    <AuthModal 
+      v-if="showAuthModal" 
+      :show="showAuthModal"
+      @close="closeAuthModal" 
+      @login="handleLogin" 
+      @signup="handleSignup" 
+      :is-login="isLoginMode" 
     />
   </div>
 </template>
@@ -29,6 +37,7 @@ import { onMounted, ref, computed, onUnmounted, watch } from 'vue'
 import DealCard from '~/components/DealCard.vue'
 import DealModal from '~/components/DealModal.vue'
 import { useToastification } from '~/composables/useToastification'
+import AuthModal from '~/components/AuthModal.vue'
 
 const dealsStore = useDealsStore()
 const authStore = useAuthStore()
@@ -78,6 +87,8 @@ onUnmounted(() => {
 })
 
 const selectedDeal = ref(null)
+const showAuthModal = ref(false)
+const isLoginMode = ref(true)
 
 const openModal = (deal) => {
   selectedDeal.value = dealsStore.getDealById(deal._id)
@@ -85,6 +96,45 @@ const openModal = (deal) => {
 
 const closeModal = () => {
   selectedDeal.value = null
+}
+
+const openAuthModal = (mode) => {
+  isLoginMode.value = mode === 'login'
+  showAuthModal.value = true
+}
+
+const closeAuthModal = () => {
+  showAuthModal.value = false
+}
+
+const handleLogin = async (credentials) => {
+  try {
+    const success = await authStore.login(credentials.email, credentials.password)
+    if (success) {
+      closeAuthModal()
+      toast.success('Successfully logged in!')
+    } else {
+      toast.error('Login failed. Please check your credentials and try again.')
+    }
+  } catch (error) {
+    console.error('Login error:', error)
+    toast.error(error.response?.data?.message || 'An error occurred during login')
+  }
+}
+
+const handleSignup = async (userData) => {
+  try {
+    const success = await authStore.signup(userData)
+    if (success) {
+      closeAuthModal()
+      toast.success('Successfully signed up!')
+    } else {
+      toast.error('Signup failed. Please check your information and try again.')
+    }
+  } catch (error) {
+    console.error('Signup error:', error)
+    toast.error(error.response?.data?.message || 'An error occurred during signup')
+  }
 }
 
 // Computed property with a null check
