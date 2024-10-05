@@ -35,5 +35,10 @@ export default defineNuxtConfig({
   ssr: true,
   build: {
     transpile: ['vue-toastification']
+  },
+
+  // Add this new section for error handling
+  app: {
+    pageTransition: { name: 'page', mode: 'out-in' }
   }
 })

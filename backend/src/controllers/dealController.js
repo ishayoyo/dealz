@@ -78,12 +78,13 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.createDeal = catchAsync(async (req, res, next) => {
-  let { title, description, price, imageUrl, link } = req.body;
+  let { title, description, price, imageUrl, link, category } = req.body;
 
   // Sanitize inputs
   title = validator.trim(title);
   description = validator.trim(description);
   link = validator.trim(link);
+  category = validator.trim(category);
 
   // Validate inputs
   if (!validator.isLength(title, { min: 1, max: 100 })) {
@@ -102,6 +103,19 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     return next(new AppError('Invalid deal link', 400));
   }
 
+  // Validate category
+  const validCategories = [
+    "Electronics", "Home & Kitchen", "Fashion", "Beauty & Personal Care",
+    "Sports & Outdoors", "Toys & Games", "Books & Media", "Automotive",
+    "Health & Wellness", "Travel", "Food & Groceries", "Pet Supplies",
+    "Baby & Kids", "Office & School Supplies", "Home Improvement",
+    "Furniture", "Jewelry & Watches", "Garden & Outdoor",
+    "Computers & Accessories", "Cell Phones & Accessories"
+  ];
+  if (!validCategories.includes(category)) {
+    return next(new AppError('Invalid category', 400));
+  }
+
   // Handle image URL
   if (imageUrl) {
     imageUrl = validator.trim(imageUrl);
@@ -118,6 +132,7 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     price,
     imageUrl,
     url: link,
+    category,
     status: 'pending',
     user: req.user.id
   });
@@ -370,7 +385,25 @@ exports.searchDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.getCategories = catchAsync(async (req, res, next) => {
-  const categories = await Deal.distinct('category');
+  let categories = await Deal.distinct('category');
+  
+  // Filter out null or empty categories
+  categories = categories.filter(category => category != null && category !== '');
+
+  // If no categories are found in the database, provide a default list
+  if (categories.length === 0) {
+    categories = [
+      "Electronics", "Home & Kitchen", "Fashion", "Beauty & Personal Care",
+      "Sports & Outdoors", "Toys & Games", "Books & Media", "Automotive",
+      "Health & Wellness", "Travel", "Food & Groceries", "Pet Supplies",
+      "Baby & Kids", "Office & School Supplies", "Home Improvement",
+      "Furniture", "Jewelry & Watches", "Garden & Outdoor",
+      "Computers & Accessories", "Cell Phones & Accessories"
+    ];
+  }
+
+  console.log('Categories being sent:', categories);
+
   res.status(200).json({
     status: 'success',
     data: { categories }

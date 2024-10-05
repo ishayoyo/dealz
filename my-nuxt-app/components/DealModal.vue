@@ -30,6 +30,12 @@
           <h2 class="text-2xl md:text-3xl font-bold mb-4 text-text">{{ deal.title }}</h2>
           <p class="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">{{ deal.description }}</p>
           
+          <!-- Add this section to display the category -->
+          <div class="mb-4">
+            <span class="font-semibold text-gray-700">Category:</span>
+            <span class="ml-2 text-primary-600">{{ deal.category }}</span>
+          </div>
+          
           <div class="flex items-center justify-between mb-6">
             <span class="font-bold text-accent text-3xl md:text-4xl">${{ formattedPrice }}</span>
             <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary">

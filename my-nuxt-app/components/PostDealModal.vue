@@ -87,6 +87,21 @@
             <input type="number" id="price" v-model="dealDetails.price" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" required>
           </div>
           
+          <div>
+            <label for="category" class="block text-gray-700 text-sm font-bold mb-2">Category</label>
+            <select 
+              id="category" 
+              v-model="dealDetails.category" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
+            >
+              <option value="" disabled>Select a category</option>
+              <option v-for="category in categories" :key="category" :value="category">
+                {{ category }}
+              </option>
+            </select>
+          </div>
+          
           <button type="submit" class="w-full btn btn-primary">
             {{ isLoading ? 'Submitting...' : 'Submit for Review' }}
           </button>
@@ -98,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive, watch, computed, onMounted } from 'vue'
 import api from '~/services/api'
 import { useToastification } from '~/composables/useToastification'
 import { useDealsStore } from '~/stores/deals'
@@ -115,7 +130,8 @@ const isLoading = ref(false)
 const dealDetails = reactive({
   title: '',
   description: '',
-  price: ''
+  price: '',
+  category: ''
 })
 
 const toast = useToastification()
@@ -235,13 +251,32 @@ watch(() => props.show, (newValue) => {
     step.value = 1
     dealLink.value = ''
     dealImage.value = ''
-    Object.assign(dealDetails, { title: '', description: '', price: '' })
+    Object.assign(dealDetails, { title: '', description: '', price: '', category: '' })
   }
 })
 
 // Add computed properties for character count validation
 const isTitleValid = computed(() => dealDetails.title.length > 0 && dealDetails.title.length <= 100)
 const isDescriptionValid = computed(() => dealDetails.description.length > 0 && dealDetails.description.length <= 1000)
+
+const categories = ref([])
+const fetchCategories = async () => {
+  try {
+    const response = await api.get('/deals/categories')
+    console.log('Categories response:', response.data) // Add this line
+    categories.value = response.data.data.categories
+    console.log('Categories after assignment:', categories.value) // Add this line
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    toast.error('Failed to load categories')
+  }
+}
+
+onMounted(async () => {
+  console.log('Component mounted') // Add this line
+  await fetchCategories()
+  console.log('Categories after fetching:', categories.value) // Add this line
+})
 </script>
 
 <style scoped>
