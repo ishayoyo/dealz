@@ -106,17 +106,17 @@ exports.createDeal = catchAsync(async (req, res, next) => {
   // Validate category
   const validCategories = [
     "Electronics",
-    "Home & Kitchen",
-    "Fashion & Accessories",
-    "Health & Beauty",
-    "Sports & Outdoors",
-    "Books & Media",
-    "Toys & Games",
+    "Home",
+    "Fashion",
+    "Beauty",
+    "Sports",
+    "Books",
+    "Toys",
     "Travel",
-    "Food & Groceries",
-    "Automotive",
-    "Home Improvement",
-    "Pet Supplies",
+    "Food",
+    "Auto",
+    "DIY",
+    "Pets",
     "Other"
   ];
   if (!validCategories.includes(category)) {
@@ -413,17 +413,17 @@ exports.getCategories = catchAsync(async (req, res, next) => {
   if (categories.length === 0) {
     categories = [
       "Electronics",
-      "Home & Kitchen",
-      "Fashion & Accessories",
-      "Health & Beauty",
-      "Sports & Outdoors",
-      "Books & Media",
-      "Toys & Games",
+      "Home",
+      "Fashion",
+      "Beauty",
+      "Sports",
+      "Books",
+      "Toys",
       "Travel",
-      "Food & Groceries",
-      "Automotive",
-      "Home Improvement",
-      "Pet Supplies",
+      "Food",
+      "Auto",
+      "DIY",
+      "Pets",
       "Other"
     ];
   }

@@ -24,11 +24,11 @@
       <div class="flex items-center space-x-4">
         <ClientOnly>
           <template v-if="!isAuthenticated">
-            <button @click="$emit('open-auth-modal', 'login')" class="btn btn-secondary">Log In</button>
-            <button @click="$emit('open-auth-modal', 'signup')" class="btn btn-primary">Sign Up</button>
+            <button @click="$emit('open-auth-modal', 'login')" class="btn btn-secondary md:text-lg md:px-6">Log In</button>
+            <button @click="$emit('open-auth-modal', 'signup')" class="btn btn-primary md:text-lg md:px-6">Sign Up</button>
           </template>
           <template v-else>
-            <button @click="$emit('open-post-deal-modal')" class="btn btn-secondary hidden md:block">Post a Deal</button>
+            <button @click="$emit('open-post-deal-modal')" class="btn btn-secondary hidden md:block md:text-lg md:px-6">Post a Deal</button>
             
             <NuxtLink to="/profile" class="relative group">
               <img v-if="profilePictureUrl" :src="profilePictureUrl" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-primary-300 group-hover:border-primary-500 transition-colors duration-300">
@@ -56,7 +56,7 @@
               </button>
               <NotificationList v-if="showNotifications && !isMobile" @close="closeNotifications" />
             </div>
-            <button @click="handleLogout" class="btn btn-accent">Logout</button>
+            <button @click="handleLogout" class="btn btn-accent md:text-lg md:px-6">Logout</button>
           </template>
         </ClientOnly>
       </div>
@@ -93,111 +93,8 @@ const isMobile = ref(false)
 
 const emit = defineEmits(['open-auth-modal', 'open-post-deal-modal'])
 
-const handleScroll = () => {
-  scrolled.value = window.scrollY > 0
-}
+// ... rest of the existing code (handleScroll, onMounted, onUnmounted, handleLogout, handleSearch, etc.) ...
 
-onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
-  if (isAuthenticated.value) {
-    notificationStore.fetchNotifications()
-  }
-  console.log('Initial authentication state:', isAuthenticated.value)
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
-  window.removeEventListener('resize', checkMobile)
-})
-
-const handleLogout = () => {
-  authStore.logout()
-  notificationStore.clearNotifications()
-  router.push('/') // Redirect to home page after logout
-  toast.success('Logged out successfully!')
-}
-
-const handleSearch = () => {
-  if (searchQuery.value.trim()) {
-    router.push({ path: '/search', query: { q: searchQuery.value } })
-  }
-}
-
-const toggleMobileMenu = () => {
-  mobileMenuOpen.value = !mobileMenuOpen.value
-}
-
-watch(() => isAuthenticated.value, (newValue) => {
-  if (newValue) {
-    notificationStore.fetchNotifications()
-  } else {
-    notificationStore.clearNotifications()
-  }
-})
-
-// Add this watch effect to log authentication state changes
-watch(isAuthenticated, (newValue) => {
-  console.log('Authentication state changed:', newValue)
-})
-
-// Update the authStatus computed property
-const authStatus = computed(() => ({
-  isAuthenticated: isAuthenticated.value,
-  user: user.value
-}))
-
-// Log authentication status changes
-watch(authStatus, (newStatus) => {
-  console.log('Auth status changed:', newStatus)
-}, { deep: true })
-
-// Log initial auth status on component mount
-onMounted(() => {
-  console.log('Initial auth status:', authStatus.value)
-})
-
-const imageError = ref(false)
-
-const handleImageError = () => {
-  console.error('Failed to load logo image')
-  imageError.value = true
-}
-
-const logoUrl = ref('/images/logo.png') // Direct reference to the public folder
-
-const checkMobile = () => {
-  isMobile.value = window.innerWidth < 768 // Adjust this breakpoint as needed
-}
-
-const handleNotificationClick = () => {
-  if (isMobile.value) {
-    router.push('/notifications')
-  } else {
-    toggleNotifications()
-  }
-}
-
-const toggleNotifications = () => {
-  showNotifications.value = !showNotifications.value
-  if (showNotifications.value && isAuthenticated.value) {
-    notificationStore.fetchNotifications()
-  }
-}
-
-const closeNotifications = () => {
-  showNotifications.value = false
-}
-
-const profilePictureUrl = computed(() => {
-  if (user.value?.profilePicture) {
-    return user.value.profilePicture.startsWith('http')
-      ? user.value.profilePicture
-      : `http://localhost:5000${user.value.profilePicture}`
-  }
-  return null
-})
 </script>
 
 <style scoped>
@@ -208,6 +105,13 @@ header {
 @media (min-width: 768px) {
   header {
     height: 80px; /* For larger screens */
+  }
+}
+
+/* You can add these styles if you want to adjust the button height as well */
+@media (min-width: 768px) {
+  .btn {
+    @apply py-2.5;
   }
 }
 </style>

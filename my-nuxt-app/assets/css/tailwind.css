@@ -37,6 +37,10 @@
   .input-field {
     @apply w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-300;
   }
+
+  .btn-sm {
+    @apply py-1 px-3 text-sm;
+  }
 }
 
 /* Custom animations */
