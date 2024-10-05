@@ -82,15 +82,17 @@
                   rows="3"
                   placeholder="Add a comment..."
                   @input="handleInput"
+                  :maxlength="MAX_COMMENT_LENGTH"
                 ></textarea>
-                <UserMentionAutocomplete
-                  v-if="showMentions"
-                  :users="mentionableUsers"
-                  :query="mentionQuery"
-                  @select="handleUserSelect"
-                />
+                <div class="text-sm text-gray-500 mt-1">
+                  {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
+                </div>
               </div>
-              <button @click="handleAddComment" class="btn btn-primary mt-3 w-full text-sm md:text-base">
+              <button 
+                @click="handleAddComment" 
+                class="btn btn-primary mt-3 w-full text-sm md:text-base"
+                :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
+              >
                 Add Comment
               </button>
             </div>
@@ -140,6 +142,8 @@ const mentionQuery = ref('')
 const showMentions = ref(false)
 const imageContainer = ref(null)
 const imageStyle = ref({})
+
+const MAX_COMMENT_LENGTH = 500
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
@@ -265,7 +269,7 @@ const handleAddComment = () => {
 }
 
 const addComment = async () => {
-  if (!newComment.value.trim()) return
+  if (!newComment.value.trim() || newComment.value.length > MAX_COMMENT_LENGTH) return
   
   try {
     const response = await api.post(`/deals/${props.deal._id}/comments`, { content: newComment.value })
@@ -280,7 +284,13 @@ const addComment = async () => {
     toast.success('Comment added successfully')
   } catch (err) {
     console.error('Error adding comment:', err)
-    error.value = 'Failed to add comment. Please try again.'
+    if (err.response && err.response.status === 429) {
+      error.value = 'Too many comments. Please try again after 5 minutes.'
+    } else if (err.response && err.response.data && err.response.data.errors) {
+      error.value = err.response.data.errors[0].msg
+    } else {
+      error.value = 'Failed to add comment. Please try again.'
+    }
     toast.error(error.value)
   }
 }
