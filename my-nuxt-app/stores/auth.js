@@ -5,27 +5,29 @@ import { useCookie } from 'nuxt/app'
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
-    countdown: 0,
-    countdownEndTime: null,
-    attemptsLeft: 5, // Add this line
+    loginCountdown: 0,
+    signupCountdown: 0,
+    loginAttemptsLeft: 5,
+    signupAttemptsLeft: 5,
   }),
 
   getters: {
     isAuthenticated: (state) => !!state.user,
-    isRateLimited: (state) => state.countdown > 0,
+    isLoginRateLimited: (state) => state.loginCountdown > 0,
+    isSignupRateLimited: (state) => state.signupCountdown > 0,
   },
 
   actions: {
     async login(email, password) {
-      if (this.isRateLimited) {
-        throw new Error(`Rate limited. Please try again in ${Math.ceil(this.countdown / 60)} minutes.`);
+      if (this.isLoginRateLimited) {
+        throw new Error(`Rate limited. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.`);
       }
 
       try {
         const response = await api.post('/users/login', { email, password });
         if (response.data && response.data.status === 'success' && response.data.data.user) {
           this.setUser(response.data.data.user);
-          this.attemptsLeft = 5; // Reset attempts on successful login
+          this.loginAttemptsLeft = 5; // Reset attempts on successful login
           return { success: true };
         } else {
           console.error('Invalid response from server:', response.data);
@@ -36,16 +38,16 @@ export const useAuthStore = defineStore('auth', {
         if (error.response) {
           console.error('Error response:', error.response.data);
           if (error.response.status === 429) {
-            this.handleRateLimiting(error);
-            return { success: false, error: `Too many attempts. Please try again in ${Math.ceil(this.countdown / 60)} minutes.` };
+            this.handleLoginRateLimiting(error);
+            return { success: false, error: `Too many attempts. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.` };
           } else if (error.response.status === 401) {
-            this.attemptsLeft = Math.max(this.attemptsLeft - 1, 0); // Decrease attempts left
-            if (this.attemptsLeft > 0) {
-              return { success: false, error: 'Incorrect email or password', attemptsLeft: this.attemptsLeft };
+            this.loginAttemptsLeft = Math.max(this.loginAttemptsLeft - 1, 0); // Decrease attempts left
+            if (this.loginAttemptsLeft > 0) {
+              return { success: false, error: 'Incorrect email or password', attemptsLeft: this.loginAttemptsLeft };
             } else {
               // If no attempts left, trigger rate limiting
-              this.handleRateLimiting({ response: { headers: { 'retry-after': '180' } } });
-              return { success: false, error: `Too many failed attempts. Please try again in ${Math.ceil(this.countdown / 60)} minutes.` };
+              this.handleLoginRateLimiting({ response: { headers: { 'retry-after': '180' } } });
+              return { success: false, error: `Too many failed attempts. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.` };
             }
           }
         }
@@ -54,8 +56,8 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async signup(userData) {
-      if (this.isRateLimited) {
-        throw new Error(`Rate limited. Please try again in ${Math.ceil(this.countdown / 60)} minutes.`);
+      if (this.isSignupRateLimited) {
+        throw new Error(`Rate limited. Please try again in ${Math.ceil(this.signupCountdown / 60)} minutes.`);
       }
 
       try {
@@ -72,7 +74,7 @@ export const useAuthStore = defineStore('auth', {
         if (error.response) {
           console.error('Error response:', error.response.data);
           if (error.response.status === 429) {
-            this.handleRateLimiting(error);
+            this.handleSignupRateLimiting(error);
           }
           if (error.response.status === 400) {
             return { success: false, error: error.response.data.message || 'Invalid signup data' };
@@ -232,6 +234,36 @@ export const useAuthStore = defineStore('auth', {
       }
       this.attemptsLeft = 0 // Set attempts to 0 when rate limited
       throw error
+    },
+
+    startLoginCountdown(seconds) {
+      this.loginCountdown = seconds;
+      // ... implement countdown logic similar to the existing startCountdown method
+    },
+
+    startSignupCountdown(seconds) {
+      this.signupCountdown = seconds;
+      // ... implement countdown logic similar to the existing startCountdown method
+    },
+
+    handleLoginRateLimiting(error) {
+      const retryAfter = error.response.headers['retry-after'];
+      if (retryAfter) {
+        this.startLoginCountdown(parseInt(retryAfter));
+      } else {
+        this.startLoginCountdown(180); // 3 minutes
+      }
+      this.loginAttemptsLeft = 0;
+    },
+
+    handleSignupRateLimiting(error) {
+      const retryAfter = error.response.headers['retry-after'];
+      if (retryAfter) {
+        this.startSignupCountdown(parseInt(retryAfter));
+      } else {
+        this.startSignupCountdown(180); // 3 minutes
+      }
+      this.signupAttemptsLeft = 0;
     },
   },
 })

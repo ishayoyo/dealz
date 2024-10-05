@@ -74,11 +74,14 @@
         </div>
         
         <!-- Error messages -->
-        <div v-if="authStore.isRateLimited" class="mt-4 text-red-500 text-center">
-          Too many attempts. Please try again in {{ formatCountdown(authStore.countdown) }}.
+        <div v-if="isLogin && authStore.isLoginRateLimited" class="mt-4 text-red-500 text-center">
+          Too many login attempts. Please try again in {{ formatCountdown(authStore.loginCountdown) }}.
         </div>
-        <div v-else-if="isLogin && authStore.attemptsLeft > 0 && authStore.attemptsLeft < 5" class="mt-4 text-yellow-500 text-center">
-          You have {{ authStore.attemptsLeft }} login {{ authStore.attemptsLeft === 1 ? 'attempt' : 'attempts' }} left.
+        <div v-else-if="!isLogin && authStore.isSignupRateLimited" class="mt-4 text-red-500 text-center">
+          Too many signup attempts. Please try again in {{ formatCountdown(authStore.signupCountdown) }}.
+        </div>
+        <div v-else-if="isLogin && authStore.loginAttemptsLeft > 0 && authStore.loginAttemptsLeft < 5" class="mt-4 text-yellow-500 text-center">
+          You have {{ authStore.loginAttemptsLeft }} login {{ authStore.loginAttemptsLeft === 1 ? 'attempt' : 'attempts' }} left.
         </div>
         <div v-else-if="error" class="mt-4 text-red-500 text-center">
           {{ error }}
@@ -88,7 +91,7 @@
         <button 
           type="submit" 
           class="w-full btn btn-primary"
-          :disabled="!isPasswordValid || !isEmailValid || isSubmitting || authStore.isRateLimited"
+          :disabled="!isPasswordValid || !isEmailValid || isSubmitting || (isLogin ? authStore.isLoginRateLimited : authStore.isSignupRateLimited)"
         >
           {{ isSubmitting ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up') }}
         </button>
@@ -190,8 +193,14 @@ const validateUsername = () => {
 
 // Handle form submission
 const handleSubmit = async () => {
-  if (authStore.isRateLimited) {
-    error.value = `Too many attempts. Please try again in ${formatCountdown(authStore.countdown)}.`
+  if (isLogin.value && authStore.isLoginRateLimited) {
+    error.value = `Too many login attempts. Please try again in ${formatCountdown(authStore.loginCountdown)}.`
+    toast.error(error.value)
+    return
+  }
+
+  if (!isLogin.value && authStore.isSignupRateLimited) {
+    error.value = `Too many signup attempts. Please try again in ${formatCountdown(authStore.signupCountdown)}.`
     toast.error(error.value)
     return
   }
