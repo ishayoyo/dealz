@@ -105,12 +105,19 @@ exports.createDeal = catchAsync(async (req, res, next) => {
 
   // Validate category
   const validCategories = [
-    "Electronics", "Home & Kitchen", "Fashion", "Beauty & Personal Care",
-    "Sports & Outdoors", "Toys & Games", "Books & Media", "Automotive",
-    "Health & Wellness", "Travel", "Food & Groceries", "Pet Supplies",
-    "Baby & Kids", "Office & School Supplies", "Home Improvement",
-    "Furniture", "Jewelry & Watches", "Garden & Outdoor",
-    "Computers & Accessories", "Cell Phones & Accessories"
+    "Electronics",
+    "Home & Kitchen",
+    "Fashion & Accessories",
+    "Health & Beauty",
+    "Sports & Outdoors",
+    "Books & Media",
+    "Toys & Games",
+    "Travel",
+    "Food & Groceries",
+    "Automotive",
+    "Home Improvement",
+    "Pet Supplies",
+    "Other"
   ];
   if (!validCategories.includes(category)) {
     return next(new AppError('Invalid category', 400));
@@ -405,12 +412,19 @@ exports.getCategories = catchAsync(async (req, res, next) => {
   // If no categories are found in the database, provide a default list
   if (categories.length === 0) {
     categories = [
-      "Electronics", "Home & Kitchen", "Fashion", "Beauty & Personal Care",
-      "Sports & Outdoors", "Toys & Games", "Books & Media", "Automotive",
-      "Health & Wellness", "Travel", "Food & Groceries", "Pet Supplies",
-      "Baby & Kids", "Office & School Supplies", "Home Improvement",
-      "Furniture", "Jewelry & Watches", "Garden & Outdoor",
-      "Computers & Accessories", "Cell Phones & Accessories"
+      "Electronics",
+      "Home & Kitchen",
+      "Fashion & Accessories",
+      "Health & Beauty",
+      "Sports & Outdoors",
+      "Books & Media",
+      "Toys & Games",
+      "Travel",
+      "Food & Groceries",
+      "Automotive",
+      "Home Improvement",
+      "Pet Supplies",
+      "Other"
     ];
   }
 
