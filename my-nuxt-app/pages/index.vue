@@ -140,7 +140,11 @@ const handleSignup = async (userData) => {
 // Computed property with a null check
 const safeDeals = computed(() => {
   console.log('Computing safeDeals:', dealsStore.getSortedDeals)
-  return dealsStore.getSortedDeals
+  if (authStore.user && authStore.user.role === 'admin') {
+    return dealsStore.getSortedDeals
+  } else {
+    return dealsStore.getSortedDeals.filter(deal => deal.status === 'approved')
+  }
 })
 
 // Watch for changes in the deals store

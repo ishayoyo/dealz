@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onBeforeMount, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
 import { storeToRefs } from 'pinia'
@@ -121,21 +121,23 @@ onErrorCaptured((err, instance, info) => {
   return false // prevent error from propagating further
 })
 
-// Check authentication status on mount
-onMounted(async () => {
-  if (!isAuthenticated.value) {
-    try {
-      await authStore.checkAuth()
-    } catch (error) {
-      console.error('Error checking auth:', error)
-    }
+// Check authentication status before mounting
+onBeforeMount(async () => {
+  console.log('Layout: Checking authentication status')
+  try {
+    await authStore.initializeAuth()
+    console.log('Layout: Authentication status checked, isAuthenticated:', isAuthenticated.value)
+  } catch (error) {
+    console.error('Layout: Error checking auth:', error)
   }
 })
 
 // Watch for route changes to protect certain routes
 watch(() => route.path, async (newPath) => {
+  console.log('Layout: Route changed to', newPath)
   const protectedRoutes = ['/profile', '/post-deal'] // Add your protected routes here
   if (protectedRoutes.includes(newPath) && !isAuthenticated.value) {
+    console.log('Layout: Attempting to access protected route while not authenticated')
     toast.info('Please log in to access this page.')
     await router.push('/login')
   }

@@ -68,6 +68,11 @@ exports.moderateDeal = catchAsync(async (req, res, next) => {
     return next(new AppError('No deal found with that ID', 404));
   }
 
+  const io = req.app.get('io');
+  if (status === 'approved') {
+    io.emit('newDeal', { deal, status: 'approved' });
+  }
+
   res.status(200).json({
     status: 'success',
     data: { deal }

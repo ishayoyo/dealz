@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '~/services/api'
-import { useCookie } from 'nuxt/app'
+import { useCookie } from '#app'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -9,6 +9,8 @@ export const useAuthStore = defineStore('auth', {
     signupCountdown: 0,
     loginAttemptsLeft: 5,
     signupAttemptsLeft: 5,
+    loginCountdownTimer: null,
+    signupCountdownTimer: null,
   }),
 
   getters: {
@@ -20,7 +22,7 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(email, password) {
       if (this.isLoginRateLimited) {
-        throw new Error(`Rate limited. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.`);
+        return { success: false, error: `Rate limited. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.` };
       }
 
       try {
@@ -57,7 +59,7 @@ export const useAuthStore = defineStore('auth', {
 
     async signup(userData) {
       if (this.isSignupRateLimited) {
-        throw new Error(`Rate limited. Please try again in ${Math.ceil(this.signupCountdown / 60)} minutes.`);
+        return { success: false, error: `Rate limited. Please try again in ${Math.ceil(this.signupCountdown / 60)} minutes.` };
       }
 
       try {
@@ -75,6 +77,7 @@ export const useAuthStore = defineStore('auth', {
           console.error('Error response:', error.response.data);
           if (error.response.status === 429) {
             this.handleSignupRateLimiting(error);
+            return { success: false, error: `Too many attempts. Please try again in ${Math.ceil(this.signupCountdown / 60)} minutes.` };
           }
           if (error.response.status === 400) {
             return { success: false, error: error.response.data.message || 'Invalid signup data' };
@@ -117,14 +120,20 @@ export const useAuthStore = defineStore('auth', {
 
     async initializeAuth() {
       console.log('Auth store: Starting initializeAuth')
-      if (process.client) {
+      const nuxtApp = useNuxtApp()
+      
+      if (!nuxtApp.ssrContext) {
         console.log('Auth store: Running on client')
         try {
-          const isAuthenticated = await this.checkAuth()
-          console.log('Auth store: Auth initialized:', { isAuthenticated })
+          const response = await api.get('/users/me')
+          if (response.data && response.data.data.user) {
+            this.setUser(response.data.data.user)
+            console.log('Auth store: User data fetched and set')
+          }
         } catch (error) {
-          console.error('Auth store: Error initializing auth:', error)
+          console.error('Auth store: Error fetching user data:', error)
           this.user = null
+          // Don't clear the cookie here, let the server handle it
         }
       } else {
         console.log('Auth store: Running on server, skipping initializeAuth')
@@ -238,12 +247,28 @@ export const useAuthStore = defineStore('auth', {
 
     startLoginCountdown(seconds) {
       this.loginCountdown = seconds;
-      // ... implement countdown logic similar to the existing startCountdown method
+      clearInterval(this.loginCountdownTimer);
+      this.loginCountdownTimer = setInterval(() => {
+        if (this.loginCountdown > 0) {
+          this.loginCountdown--;
+        } else {
+          clearInterval(this.loginCountdownTimer);
+          this.loginAttemptsLeft = 5; // Reset attempts when countdown ends
+        }
+      }, 1000);
     },
 
     startSignupCountdown(seconds) {
       this.signupCountdown = seconds;
-      // ... implement countdown logic similar to the existing startCountdown method
+      clearInterval(this.signupCountdownTimer);
+      this.signupCountdownTimer = setInterval(() => {
+        if (this.signupCountdown > 0) {
+          this.signupCountdown--;
+        } else {
+          clearInterval(this.signupCountdownTimer);
+          this.signupAttemptsLeft = 5; // Reset attempts when countdown ends
+        }
+      }, 1000);
     },
 
     handleLoginRateLimiting(error) {
@@ -264,6 +289,12 @@ export const useAuthStore = defineStore('auth', {
         this.startSignupCountdown(180); // 3 minutes
       }
       this.signupAttemptsLeft = 0;
+    },
+
+    // Add a cleanup method to clear timers
+    clearTimers() {
+      clearInterval(this.loginCountdownTimer);
+      clearInterval(this.signupCountdownTimer);
     },
   },
 })

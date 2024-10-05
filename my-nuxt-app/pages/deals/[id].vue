@@ -14,12 +14,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useDealsStore } from '~/stores/deals'
+import api from '~/services/api'
 import DealModal from '~/components/DealModal.vue'
 
 const route = useRoute()
 const router = useRouter()
-const dealsStore = useDealsStore()
 
 const deal = ref(null)
 const loading = ref(true)
@@ -33,17 +32,15 @@ async function fetchDeal() {
   loading.value = true
   error.value = null
   try {
-    deal.value = dealsStore.getDealById(route.params.id)
-    if (!deal.value) {
-      await dealsStore.fetchDeals()
-      deal.value = dealsStore.getDealById(route.params.id)
-    }
-    if (!deal.value) {
-      throw new Error('Deal not found')
-    }
+    const response = await api.get(`/deals/${route.params.id}`)
+    deal.value = response.data.data.deal
   } catch (err) {
     console.error('Error fetching deal:', err)
-    error.value = 'Failed to load deal'
+    if (err.response && err.response.status === 403) {
+      error.value = 'This deal is not available or pending approval.'
+    } else {
+      error.value = 'Failed to load deal'
+    }
   } finally {
     loading.value = false
   }

@@ -16,7 +16,7 @@ const validator = require('validator');
 
 exports.getDeals = catchAsync(async (req, res, next) => {
   // Build query
-  const queryObj = { ...req.query };
+  const queryObj = { ...req.query, status: 'approved' };
   const excludedFields = ['page', 'sort', 'limit', 'fields'];
   excludedFields.forEach(el => delete queryObj[el]);
 
@@ -148,7 +148,10 @@ exports.createDeal = catchAsync(async (req, res, next) => {
 
   // Emit socket event for new deal
   const io = req.app.get('io');
-  io.emit('newDeal', { deal });
+  // Emit to admin room
+  io.to('admin').emit('newDeal', { deal, isAdmin: true });
+  // Emit to the deal creator
+  io.to(req.user.id.toString()).emit('newDeal', { deal, isCreator: true });
 
   res.status(201).json({
     status: 'success',
@@ -166,6 +169,12 @@ exports.getDeal = catchAsync(async (req, res, next) => {
 
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
+  }
+
+  // Check if the deal is approved or if the user is an admin or the deal creator
+  if (deal.status !== 'approved' && 
+      (!req.user || (req.user.role !== 'admin' && req.user.id !== deal.user.id.toString()))) {
+    return next(new AppError('This deal is not available', 403));
   }
 
   let isFollowing = false;

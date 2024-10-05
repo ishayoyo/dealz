@@ -25,9 +25,9 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-09-22',
   plugins: [
     '~/plugins/api.js',
+    '~/plugins/auth.js',
     '~/plugins/userAvatar.js',
     '~/plugins/fontawesome.js',
-    '~/plugins/auth.js',
     '~/plugins/socket.js',
     { src: '~/plugins/vue-toastification.js', mode: 'client' }
   ],

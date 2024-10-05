@@ -74,10 +74,10 @@
         </div>
         
         <!-- Error messages -->
-        <div v-if="isLogin && authStore.isLoginRateLimited" class="mt-4 text-red-500 text-center">
+        <div v-if="isLogin && authStore.loginCountdown > 0" class="mt-4 text-red-500 text-center">
           Too many login attempts. Please try again in {{ formatCountdown(authStore.loginCountdown) }}.
         </div>
-        <div v-else-if="!isLogin && authStore.isSignupRateLimited" class="mt-4 text-red-500 text-center">
+        <div v-else-if="!isLogin && authStore.signupCountdown > 0" class="mt-4 text-red-500 text-center">
           Too many signup attempts. Please try again in {{ formatCountdown(authStore.signupCountdown) }}.
         </div>
         <div v-else-if="isLogin && authStore.loginAttemptsLeft > 0 && authStore.loginAttemptsLeft < 5" class="mt-4 text-yellow-500 text-center">
@@ -91,7 +91,7 @@
         <button 
           type="submit" 
           class="w-full btn btn-primary"
-          :disabled="!isPasswordValid || !isEmailValid || isSubmitting || (isLogin ? authStore.isLoginRateLimited : authStore.isSignupRateLimited)"
+          :disabled="!isPasswordValid || !isEmailValid || isSubmitting || (isLogin ? authStore.loginCountdown > 0 : authStore.signupCountdown > 0)"
         >
           {{ isSubmitting ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up') }}
         </button>
@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
@@ -135,50 +135,30 @@ const form = reactive({
   password: ''
 })
 
-// Component state
+// Form validation
+const isUsernameValid = computed(() => /^[a-zA-Z0-9_]{3,20}$/.test(form.username))
+const isEmailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+const isPasswordValid = computed(() => form.password.length >= 8)
+
+const usernameFeedback = computed(() => isUsernameValid.value ? 'Valid username' : 'Username must be 3-20 characters long and contain only letters, numbers, and underscores')
+const emailFeedback = computed(() => isEmailValid.value ? 'Valid email' : 'Please enter a valid email address')
+const passwordFeedback = computed(() => isPasswordValid.value ? 'Valid password' : 'Password must be at least 8 characters long')
+
+const usernameError = ref('')
+const emailError = ref('')
+const passwordError = ref('')
+
 const isLogin = ref(props.isLogin)
 const error = ref(null)
 const isSubmitting = ref(false)
 
-// Password validation
-const passwordError = ref('')
-const isPasswordValid = computed(() => form.password.length >= 8)
-const passwordFeedback = computed(() => {
-  if (form.password.length === 0) return ''
-  return form.password.length < 8 ? 'Password must be at least 8 characters long' : 'Password meets the requirements'
-})
-
-// Email validation
-const emailError = ref('')
-const isEmailValid = computed(() => {
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-  return emailRegex.test(form.email)
-})
-const emailFeedback = computed(() => {
-  if (form.email.length === 0) return ''
-  return isEmailValid.value ? 'Email is valid' : 'Please enter a valid email address'
-})
-
-// Username validation
-const usernameError = ref('')
-const isUsernameValid = computed(() => {
-  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
-  return usernameRegex.test(form.username)
-})
-const usernameFeedback = computed(() => {
-  if (form.username.length === 0) return ''
-  if (form.username.length < 3) return 'Username must be at least 3 characters long'
-  if (form.username.length > 20) return 'Username must be no more than 20 characters long'
-  return isUsernameValid.value ? 'Username is valid' : 'Username can only contain letters, numbers, and underscores'
-})
-
-// Toggle between login and signup modes
+// Toggle between login and signup
 const toggleAuthMode = () => {
   isLogin.value = !isLogin.value
   error.value = null
 }
 
-// Validation methods
+// Validation functions
 const validatePassword = () => {
   passwordError.value = isPasswordValid.value ? '' : 'Invalid password'
 }
@@ -193,13 +173,13 @@ const validateUsername = () => {
 
 // Handle form submission
 const handleSubmit = async () => {
-  if (isLogin.value && authStore.isLoginRateLimited) {
+  if (isLogin.value && authStore.loginCountdown > 0) {
     error.value = `Too many login attempts. Please try again in ${formatCountdown(authStore.loginCountdown)}.`
     toast.error(error.value)
     return
   }
 
-  if (!isLogin.value && authStore.isSignupRateLimited) {
+  if (!isLogin.value && authStore.signupCountdown > 0) {
     error.value = `Too many signup attempts. Please try again in ${formatCountdown(authStore.signupCountdown)}.`
     toast.error(error.value)
     return
@@ -262,12 +242,12 @@ const handleSignup = async () => {
 const handleError = (err) => {
   console.error('Auth error:', err)
   if (err.response && err.response.status === 429) {
-    error.value = `Too many attempts. Please try again in ${formatCountdown(authStore.countdown)}.`
+    error.value = `Too many attempts. Please try again in ${formatCountdown(authStore.loginCountdown)}.`
   } else {
     error.value = err.message || 'An unexpected error occurred. Please try again.'
   }
-  if (isLogin.value && authStore.attemptsLeft > 0 && authStore.attemptsLeft < 5) {
-    error.value += ` You have ${authStore.attemptsLeft} ${authStore.attemptsLeft === 1 ? 'attempt' : 'attempts'} left.`
+  if (isLogin.value && authStore.loginAttemptsLeft > 0 && authStore.loginAttemptsLeft < 5) {
+    error.value += ` You have ${authStore.loginAttemptsLeft} ${authStore.loginAttemptsLeft === 1 ? 'attempt' : 'attempts'} left.`
   }
   toast.error(error.value)
 }
@@ -296,6 +276,11 @@ onMounted(() => {
       router.push('/')
     }
   }
+})
+
+// Clean up timers when component is unmounted
+onUnmounted(() => {
+  authStore.clearTimers()
 })
 </script>
 

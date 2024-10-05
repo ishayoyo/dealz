@@ -69,7 +69,11 @@ export default defineNuxtPlugin((nuxtApp) => {
         console.error('Invalid deal payload received:', payload)
         return
       }
-      dealsStore.handleNewDeal(payload)
+      if (authStore.user.role === 'admin' || payload.status === 'approved') {
+        dealsStore.handleNewDeal(payload)
+      } else {
+        console.log('Ignoring unapproved deal for non-admin user')
+      }
     })
   }
 })
