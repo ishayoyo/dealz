@@ -1,5 +1,5 @@
 <template>
-  <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 overflow-y-auto">
+  <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
     <div 
       class="bg-white w-full overflow-hidden flex flex-col relative"
       :class="modalSizeClass"
@@ -20,43 +20,43 @@
             :src="imageUrl" 
             :alt="deal.title" 
             @load="onImageLoad" 
-            class="max-w-full max-h-full object-contain rounded-lg"
+            class="max-w-full max-h-full object-contain rounded-lg shadow-lg transition-transform duration-300 hover:scale-105"
             :style="imageStyle"
           >
         </div>
         
         <!-- Content container -->
-        <div class="w-full md:w-1/2 p-4 md:p-6 flex flex-col">
-          <h2 class="text-xl md:text-2xl font-bold mb-2 text-text">{{ deal.title }}</h2>
-          <p class="text-gray-600 mb-4 text-sm md:text-base">{{ deal.description }}</p>
+        <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col">
+          <h2 class="text-2xl md:text-3xl font-bold mb-4 text-text">{{ deal.title }}</h2>
+          <p class="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">{{ deal.description }}</p>
           
-          <div class="flex items-center justify-between mb-4 md:mb-6">
-            <span class="font-bold text-accent text-2xl md:text-3xl">${{ formattedPrice }}</span>
-            <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary text-base md:text-lg px-4 md:px-6 py-2 md:py-3 transform hover:scale-105 transition duration-300 shadow-lg">
+          <div class="flex items-center justify-between mb-6">
+            <span class="font-bold text-accent text-3xl md:text-4xl">${{ formattedPrice }}</span>
+            <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary text-base md:text-lg px-6 md:px-8 py-3 md:py-4 transform hover:scale-105 transition duration-300 shadow-lg">
               GET THIS DEAL
             </a>
           </div>
           
-          <div class="flex items-center justify-between mb-4 md:mb-6">
-            <button @click="handleFollowDeal" class="btn btn-outline-secondary text-xs md:text-sm px-3 md:px-4 py-1 md:py-2">
+          <div class="flex items-center justify-between mb-6">
+            <button @click="handleFollowDeal" class="btn btn-outline-secondary text-sm md:text-base px-4 md:px-6 py-2 md:py-3">
               {{ isFollowing ? 'Unfollow Deal' : 'Follow Deal' }}
             </button>
-            <span class="text-xs md:text-sm text-gray-500">
+            <span class="text-sm md:text-base text-gray-500">
               {{ formattedFollowCount }} {{ formattedFollowCount === 1 ? 'follower' : 'followers' }}
             </span>
           </div>
           
-          <div v-if="deal.user" class="mb-4 md:mb-6 flex items-center justify-between bg-gray-100 p-3 md:p-4 rounded-lg">
+          <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 md:p-6 rounded-lg shadow-sm">
             <div class="flex items-center">
-              <UserAvatar :name="dealUserName" :size="32" class="mr-2 md:mr-3" />
+              <UserAvatar :name="dealUserName" :size="40" class="mr-3 md:mr-4" />
               <div>
-                <span class="text-xs md:text-sm text-gray-500">Posted by:</span>
-                <span class="font-semibold ml-1 text-text text-sm md:text-base">{{ dealUserName }}</span>
+                <span class="text-sm text-gray-500">Posted by:</span>
+                <span class="font-semibold ml-1 text-text text-base md:text-lg">{{ dealUserName }}</span>
               </div>
             </div>
             <button 
               @click="handleFollowUser" 
-              class="btn btn-outline-secondary text-xs md:text-sm px-3 md:px-4 py-1 md:py-2"
+              class="btn btn-outline-secondary text-sm md:text-base px-4 md:px-6 py-2 md:py-3"
               :disabled="isCurrentUser"
               :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
             >
@@ -64,21 +64,21 @@
             </button>
           </div>
           
-          <div class="border-t border-gray-200 pt-4 flex-grow">
-            <h3 class="font-bold text-lg md:text-xl mb-3 md:mb-4 text-text">Comments</h3>
+          <div class="border-t border-gray-200 pt-6 flex-grow">
+            <h3 class="font-bold text-xl md:text-2xl mb-4 text-text">Comments</h3>
             <div v-if="isAuthenticated">
               <div v-if="loading" class="text-gray-500">Loading comments...</div>
               <div v-else-if="error" class="text-red-500">{{ error }}</div>
-              <div v-else class="comments-container space-y-3 md:space-y-4 mb-4 md:mb-6 max-h-48 md:max-h-64 overflow-y-auto bg-gray-50 p-3 md:p-4 rounded-lg">
+              <div v-else class="comments-container space-y-4 mb-6 max-h-64 md:max-h-96 overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
                 <div v-if="comments.length === 0" class="text-gray-500 text-sm md:text-base">No comments yet. Be the first to comment!</div>
                 <div v-else>
-                  <Comment v-for="comment in comments" :key="comment._id" :comment="comment" class="bg-white p-2 md:p-3 rounded shadow-sm" />
+                  <Comment v-for="comment in comments" :key="comment._id" :comment="comment" class="bg-white p-3 md:p-4 rounded shadow-sm" />
                 </div>
               </div>
-              <div class="mt-3 md:mt-4 relative">
+              <div class="mt-4 relative">
                 <textarea
                   v-model="newComment"
-                  class="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
                   rows="3"
                   placeholder="Add a comment..."
                   @input="handleInput"
@@ -90,12 +90,12 @@
                   @select="handleUserSelect"
                 />
               </div>
-              <button @click="handleAddComment" class="btn btn-primary mt-2 w-full text-sm md:text-base">
+              <button @click="handleAddComment" class="btn btn-primary mt-3 w-full text-sm md:text-base">
                 Add Comment
               </button>
             </div>
-            <div v-else class="text-center py-4 bg-gray-100 rounded-lg">
-              <p class="mb-2 text-sm md:text-base">Login to view and post comments</p>
+            <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner">
+              <p class="mb-3 text-sm md:text-base">Login to view and post comments</p>
               <button @click="openAuthModal" class="btn btn-primary w-full max-w-xs mx-auto text-sm md:text-base">Login</button>
             </div>
           </div>
@@ -430,22 +430,14 @@ watch(() => {
   .overflow-y-auto {
     -webkit-overflow-scrolling: touch;
   }
-  
-  .btn-primary, .btn-outline-secondary {
-    @apply text-sm py-2 px-3;
-  }
-  
-  .comments-container {
-    max-height: 40vh;
-  }
 }
 
 .btn-primary {
-  @apply bg-primary-600 text-white hover:bg-primary-700 transition duration-300;
+  @apply bg-primary-600 text-white hover:bg-primary-700 transition duration-300 shadow-md hover:shadow-lg;
 }
 
 .btn-outline-secondary {
-  @apply border border-secondary-500 text-secondary-500 hover:bg-secondary-500 hover:text-white transition duration-300;
+  @apply border border-secondary-500 text-secondary-500 hover:bg-secondary-500 hover:text-white transition duration-300 shadow-sm hover:shadow-md;
 }
 
 .comments-container {
@@ -454,7 +446,7 @@ watch(() => {
 }
 
 .comments-container::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .comments-container::-webkit-scrollbar-track {
@@ -463,7 +455,7 @@ watch(() => {
 
 .comments-container::-webkit-scrollbar-thumb {
   background-color: #CBD5E0;
-  border-radius: 4px;
+  border-radius: 3px;
   border: 2px solid #EDF2F7;
 }
 </style>

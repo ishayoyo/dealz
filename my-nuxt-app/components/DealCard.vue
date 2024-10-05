@@ -1,23 +1,25 @@
 <template>
   <div v-if="deal" class="deal-card group" @click="openModal">
-    <div class="relative w-full aspect-[4/3]">
+    <div class="relative w-full aspect-[4/3] overflow-hidden rounded-t-lg">
       <img 
         :src="fullImageUrl" 
         :alt="deal.title" 
         class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         @error="handleImageError"
+        loading="lazy"
       >
-      <div class="absolute top-0 left-0 bg-accent-500 text-white px-3 py-1 m-2 rounded-full text-sm font-semibold shadow-md">
+      <div class="absolute top-0 left-0 bg-accent-500 text-white px-3 py-1 m-3 rounded-full text-sm font-semibold shadow-md">
         ${{ formattedPrice }}
       </div>
-      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-        <h3 class="font-heading font-bold text-lg text-white line-clamp-2 group-hover:text-accent-300 transition-colors duration-300">
-          {{ deal.title || 'Untitled Deal' }}
-        </h3>
+      <div v-if="isNew" class="absolute top-0 right-0 bg-primary-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
+        NEW
       </div>
     </div>
-    <div class="p-4 flex flex-col flex-grow">
-      <p class="text-gray-600 text-sm mb-3 line-clamp-3 flex-grow">{{ deal.description || 'No description available' }}</p>
+    <div class="p-4 flex flex-col flex-grow bg-white rounded-b-lg transition-shadow duration-300 group-hover:shadow-lg">
+      <h3 class="font-heading font-bold text-lg text-gray-800 line-clamp-2 group-hover:text-primary-600 transition-colors duration-300">
+        {{ deal.title || 'Untitled Deal' }}
+      </h3>
+      <p class="text-gray-600 text-sm mt-2 mb-3 line-clamp-3 flex-grow">{{ deal.description || 'No description available' }}</p>
       <div class="flex items-center justify-between mt-2">
         <div class="flex items-center space-x-2">
           <UserAvatar :name="dealUsername" :size="24" />
@@ -27,7 +29,7 @@
           <i class="far fa-clock mr-1"></i>{{ formattedDate }}
         </span>
       </div>
-      <button class="btn btn-primary w-full mt-3 group-hover:shadow-lg transition-shadow duration-300">
+      <button class="btn btn-primary w-full mt-3 group-hover:shadow-md transition-all duration-300 transform group-hover:-translate-y-0.5">
         View Deal
       </button>
     </div>
@@ -87,4 +89,20 @@ const getImageBaseUrl = () => {
     ? 'http://localhost:5000' 
     : 'https://deals.ishay.me'
 }
+
+const isNew = computed(() => {
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  return new Date(props.deal?.createdAt) > oneWeekAgo;
+})
 </script>
+
+<style scoped>
+.deal-card {
+  @apply bg-white rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl;
+}
+
+.btn-primary {
+  @apply bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50 transition-all duration-300;
+}
+</style>

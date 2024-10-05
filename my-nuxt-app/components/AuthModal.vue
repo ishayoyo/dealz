@@ -1,13 +1,13 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg w-full max-w-md p-8 relative shadow-lg">
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg w-full max-w-md p-6 sm:p-8 relative shadow-lg">
       <button @click="$emit('close')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-300">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
       
-      <h2 class="text-3xl font-bold mb-6 text-center text-primary-600">
+      <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-center text-primary-600">
         {{ isLogin ? 'Welcome Back!' : 'Join the Savings Squad!' }}
       </h2>
       
@@ -15,13 +15,19 @@
         {{ isLogin ? 'Your fellow shoppers are waiting for your amazing deals!' : 'Unlock a world of incredible deals and start saving today!' }}
       </p>
 
-      <form @submit.prevent="handleSubmit">
-        <div class="mb-4" v-if="!isLogin">
+      <form @submit.prevent="handleSubmit" class="space-y-4">
+        <div v-if="!isLogin">
           <label for="username" class="block text-gray-700 text-sm font-bold mb-2">Username</label>
-          <input type="text" id="username" v-model="form.username" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          <input 
+            type="text" 
+            id="username" 
+            v-model="form.username" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
+            required
+          >
         </div>
         
-        <div class="mb-4">
+        <div>
           <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
           <input 
             type="email" 
@@ -29,7 +35,7 @@
             v-model="form.email" 
             @input="validateEmail"
             autocomplete="username"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
             :class="{'border-red-500': emailError, 'border-green-500': isEmailValid && form.email.length > 0}" 
             required
           >
@@ -38,7 +44,7 @@
           </p>
         </div>
         
-        <div class="mb-6">
+        <div>
           <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
           <input 
             type="password" 
@@ -46,7 +52,7 @@
             v-model="form.password" 
             @input="validatePassword"
             autocomplete="current-password" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
             :class="{'border-red-500': passwordError, 'border-green-500': isPasswordValid && form.password.length > 0}" 
             required
           >
@@ -57,7 +63,7 @@
         
         <button 
           type="submit" 
-          class="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition duration-300"
+          class="w-full btn btn-primary"
           :disabled="!isPasswordValid || !isEmailValid"
         >
           {{ isLogin ? 'Log In' : 'Sign Up' }}
@@ -66,7 +72,7 @@
       
       <p class="mt-4 text-center text-gray-600">
         {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
-        <a href="#" @click.prevent="toggleAuthMode" class="text-blue-600 hover:underline">
+        <a href="#" @click.prevent="toggleAuthMode" class="text-primary-600 hover:underline">
           {{ isLogin ? 'Sign Up' : 'Log In' }}
         </a>
       </p>
@@ -79,7 +85,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
@@ -205,5 +211,13 @@ onMounted(() => {
 <style scoped>
 .fixed {
   z-index: 1000;
+}
+
+.btn-primary {
+  @apply bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50 transition-all duration-300 shadow-md hover:shadow-lg;
+}
+
+.btn-primary:disabled {
+  @apply opacity-50 cursor-not-allowed;
 }
 </style>
