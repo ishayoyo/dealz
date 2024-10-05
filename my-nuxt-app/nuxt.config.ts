@@ -6,7 +6,8 @@ export default defineNuxtConfig({
   css: [
     '@/assets/css/tailwind.css',
     'vue-toastification/dist/index.css',
-    '@fortawesome/fontawesome-svg-core/styles.css'
+    '@fortawesome/fontawesome-svg-core/styles.css',
+    '@/assets/css/toast.css' // Add this line
   ],
 
   runtimeConfig: {
