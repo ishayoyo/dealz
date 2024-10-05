@@ -173,6 +173,19 @@ export const useDealsStore = defineStore('deals', {
 
     setFilterStatus(status) {
       this.filterStatus = status
+    },
+
+    updateDealFollowStatus(dealId, isFollowing, followCount) {
+      const deal = this.deals.find(d => d._id === dealId);
+      if (deal) {
+        deal.isFollowing = isFollowing;
+        deal.followCount = followCount;
+      }
+      const userDeal = this.userDeals.find(d => d._id === dealId);
+      if (userDeal) {
+        userDeal.isFollowing = isFollowing;
+        userDeal.followCount = followCount;
+      }
     }
   }
 })

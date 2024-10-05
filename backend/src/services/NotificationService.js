@@ -32,13 +32,16 @@ class NotificationService {
     this.io.to(notification.recipient.toString()).emit('newNotification', notification);
   }
 
-  async createFollowNotification(followerId, followedId) {
-    return this.createNotification({
+  async createFollowNotification(followerId, followedId, customMessage) {
+    const notification = new Notification({
       recipient: followedId,
-      type: 'USER_FOLLOW', // Change this from 'FOLLOW' to 'USER_FOLLOW'
-      content: 'You have a new follower!',
+      type: 'USER_FOLLOW', // Change this from 'NEW_FOLLOWER' to 'USER_FOLLOW'
+      content: customMessage,
       relatedUser: followerId
     });
+
+    await notification.save();
+    this.io.to(followedId.toString()).emit('notification', notification);
   }
 
   async createCommentNotification(commenterId, dealOwnerId, dealId) {
@@ -51,14 +54,17 @@ class NotificationService {
     });
   }
 
-  async createDealFollowNotification(followerId, dealOwnerId, dealId) {
-    return this.createNotification({
+  async createDealFollowNotification(followerId, dealOwnerId, dealId, customMessage) {
+    const notification = new Notification({
       recipient: dealOwnerId,
       type: 'DEAL_FOLLOW',
-      content: 'Someone followed your deal!',
+      content: customMessage, // Use the custom message
       relatedUser: followerId,
       relatedDeal: dealId
     });
+
+    await notification.save();
+    this.io.to(dealOwnerId.toString()).emit('notification', notification);
   }
 
   async getUnreadNotifications(userId) {

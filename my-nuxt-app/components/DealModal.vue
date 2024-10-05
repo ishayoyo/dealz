@@ -32,18 +32,18 @@
           
           <div class="flex items-center justify-between mb-6">
             <span class="font-bold text-accent text-3xl md:text-4xl">${{ formattedPrice }}</span>
-            <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary text-base md:text-lg px-6 md:px-8 py-3 md:py-4 transform hover:scale-105 transition duration-300 shadow-lg">
+            <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary text-base md:text-lg px-4 md:px-8 py-2 md:py-4 w-full md:w-auto text-center transform hover:scale-105 transition duration-300 shadow-lg">
               GET THIS DEAL
             </a>
           </div>
           
           <div class="flex items-center justify-between mb-6">
-            <button @click="handleFollowDeal" class="btn btn-outline-secondary text-sm md:text-base px-4 md:px-6 py-2 md:py-3">
-              {{ isFollowing ? 'Unfollow Deal' : 'Follow Deal' }}
+            <button @click="handleFollowDeal" class="btn btn-outline-secondary text-sm md:text-base px-4 md:px-6 py-2 md:py-3 w-full md:w-auto mb-2 md:mb-0 flex justify-between items-center">
+              <span>{{ isFollowing ? 'Unfollow Deal' : 'Follow Deal' }}</span>
+              <span class="ml-2 bg-gray-200 text-gray-700 rounded-full px-2 py-1 text-xs">
+                {{ formattedFollowCount }}
+              </span>
             </button>
-            <span class="text-sm md:text-base text-gray-500">
-              {{ formattedFollowCount }} {{ formattedFollowCount === 1 ? 'follower' : 'followers' }}
-            </span>
           </div>
           
           <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 md:p-6 rounded-lg shadow-sm">
@@ -56,7 +56,7 @@
             </div>
             <button 
               @click="handleFollowUser" 
-              class="btn btn-outline-secondary text-sm md:text-base px-4 md:px-6 py-2 md:py-3"
+              class="btn btn-outline-secondary text-sm md:text-base px-4 md:px-6 py-2 md:py-3 w-full md:w-auto mt-2 md:mt-0"
               :disabled="isCurrentUser"
               :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
             >
@@ -90,7 +90,7 @@
               </div>
               <button 
                 @click="handleAddComment" 
-                class="btn btn-primary mt-3 w-full text-sm md:text-base"
+                class="btn btn-primary mt-3 w-full text-sm md:text-base px-4 md:px-6 py-2 md:py-3"
                 :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
               >
                 Add Comment
@@ -98,7 +98,7 @@
             </div>
             <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner">
               <p class="mb-3 text-sm md:text-base">Login to view and post comments</p>
-              <button @click="openAuthModal" class="btn btn-primary w-full max-w-xs mx-auto text-sm md:text-base">Login</button>
+              <button @click="openAuthModal" class="btn btn-primary w-full max-w-xs mx-auto text-sm md:text-base px-4 md:px-6 py-2 md:py-3">Login</button>
             </div>
           </div>
         </div>
@@ -251,8 +251,8 @@ const followDeal = async () => {
   try {
     const response = await api[isFollowing.value ? 'delete' : 'post'](`/deals/${props.deal._id}/follow`)
     isFollowing.value = response.data.data.isFollowing
-    props.deal.followCount = response.data.data.followCount
-    dealsStore.updateDealFollowStatus(props.deal._id, isFollowing.value, props.deal.followCount)
+    const newFollowCount = response.data.data.followCount
+    dealsStore.updateDealFollowStatus(props.deal._id, isFollowing.value, newFollowCount)
     toast.success(isFollowing.value ? 'Deal followed successfully' : 'Deal unfollowed successfully')
   } catch (error) {
     console.error('Error following/unfollowing deal:', error)
@@ -439,6 +439,22 @@ watch(() => {
 @media (max-width: 767px) {
   .overflow-y-auto {
     -webkit-overflow-scrolling: touch;
+  }
+
+  .btn-primary,
+  .btn-outline-secondary {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .flex.items-center.justify-between {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .flex.items-center.justify-between > * {
+    margin-bottom: 0.5rem;
   }
 }
 

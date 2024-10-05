@@ -428,10 +428,15 @@ exports.followDeal = catchAsync(async (req, res, next) => {
     deal.followCount += 1;
     await deal.save();
 
-    // Add this code to create a notification
+    // Add this code to create a notification with the user's name
     if (deal.user.toString() !== req.user.id) {
       const notificationService = new NotificationService(req.app.get('io'));
-      await notificationService.createDealFollowNotification(req.user.id, deal.user, deal._id);
+      await notificationService.createDealFollowNotification(
+        req.user.id, 
+        deal.user, 
+        deal._id,
+        `${user.username} followed your deal: ${deal.title}` // Include user's name and deal title
+      );
     }
   }
 

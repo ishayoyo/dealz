@@ -243,7 +243,11 @@ exports.followUser = catchAsync(async (req, res, next) => {
 
   // Create notification for new follower
   const notificationService = new NotificationService(req.app.get('io'));
-  await notificationService.createFollowNotification(currentUser._id, userToFollow._id);
+  await notificationService.createFollowNotification(
+    req.user.id,
+    userToFollow._id,
+    `${currentUser.username} started following you`
+  );
 
   res.status(200).json({
     status: 'success',
