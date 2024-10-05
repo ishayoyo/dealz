@@ -17,17 +17,23 @@ export const useAuthStore = defineStore('auth', {
         const response = await api.post('/users/login', { email, password });
         if (response.data && response.data.status === 'success') {
           this.setUser(response.data.data.user);
-          return true;
+          return { success: true };
         } else {
           console.error('Invalid response from server:', response.data);
-          return false;
+          return { success: false, error: 'Invalid response from server' };
         }
       } catch (error) {
         console.error('Login error:', error);
         if (error.response) {
           console.error('Error response:', error.response.data);
+          if (error.response.status === 429) {
+            throw error; // Rethrow rate limit errors to be handled in the component
+          }
+          if (error.response.status === 401) {
+            return { success: false, error: 'Incorrect email or password' };
+          }
         }
-        throw error;
+        return { success: false, error: error.message || 'An error occurred during login' };
       }
     },
 
@@ -36,17 +42,23 @@ export const useAuthStore = defineStore('auth', {
         const response = await api.post('/users/register', userData);
         if (response.data && response.data.status === 'success' && response.data.data.user) {
           this.setUser(response.data.data.user);
-          return true;
+          return { success: true };
         } else {
           console.error('Invalid response from server:', response.data);
-          return false;
+          return { success: false, error: 'Invalid response from server' };
         }
       } catch (error) {
         console.error('Signup error:', error);
         if (error.response) {
           console.error('Error response:', error.response.data);
+          if (error.response.status === 429) {
+            throw error; // Rethrow rate limit errors to be handled in the component
+          }
+          if (error.response.status === 400) {
+            return { success: false, error: error.response.data.message || 'Invalid signup data' };
+          }
         }
-        throw error;
+        return { success: false, error: error.response?.data?.message || error.message || 'An error occurred during signup' };
       }
     },
 

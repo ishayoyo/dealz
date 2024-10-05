@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../../../controllers/userController');
 const auth = require('../../../middleware/auth');
+const rateLimit = require('../../../middleware/rateLimit');
 const multer = require('multer');
 
 const upload = multer({ 
@@ -12,8 +13,8 @@ const upload = multer({
 });
 
 // Auth routes
-router.post('/register', userController.register);
-router.post('/login', userController.login);
+router.post('/register', rateLimit.register, userController.register);
+router.post('/login', rateLimit.login, userController.login);
 router.post('/logout', auth, userController.logout);
 router.post('/refresh-token', userController.refreshToken);
 router.get('/check-auth', auth, userController.checkAuth);

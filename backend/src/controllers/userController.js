@@ -32,6 +32,23 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new AppError('Please provide username, email and password', 400));
   }
 
+  // Validate username
+  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+  if (!usernameRegex.test(username)) {
+    return next(new AppError('Invalid username. It must be 3-20 characters long and can only contain letters, numbers, and underscores.', 400));
+  }
+
+  // Validate email
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) {
+    return next(new AppError('Invalid email address.', 400));
+  }
+
+  // Validate password
+  if (password.length < 8) {
+    return next(new AppError('Password must be at least 8 characters long.', 400));
+  }
+
   try {
     // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });

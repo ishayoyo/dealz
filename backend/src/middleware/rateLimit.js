@@ -1,12 +1,37 @@
-const rateLimit = {
-  register: (req, res, next) => {
-    console.log('Rate limit middleware for registration');
-    next();
-  },
-  login: (req, res, next) => {
-    console.log('Rate limit middleware for login');
-    next();
-  },
+const rateLimit = require('express-rate-limit');
+
+const rateLimitMiddleware = {
+  register: rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 attempts per IP
+    message: 'Too many signup attempts. Please try again after 15 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      res.setHeader('Retry-After', 900); // 15 minutes in seconds
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many signup attempts. Please try again after 15 minutes.',
+      });
+    },
+  }),
+
+  login: rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 attempts per IP
+    message: 'Too many login attempts. Please try again after 15 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      res.setHeader('Retry-After', 900); // 15 minutes in seconds
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many login attempts. Please try again after 15 minutes.',
+      });
+    },
+  }),
+
+  // Keep other rate limiters as they are
   forgotPassword: (req, res, next) => {
     console.log('Rate limit middleware for forgot password');
     next();
@@ -25,4 +50,4 @@ const rateLimit = {
   }
 };
 
-module.exports = rateLimit;
+module.exports = rateLimitMiddleware;
