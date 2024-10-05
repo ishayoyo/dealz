@@ -83,18 +83,78 @@ const toast = useToastification()
 const router = useRouter()
 const searchQuery = ref('')
 
-const showAuthModal = ref(false)
-const showPostDealModal = ref(false)
-const isLoginMode = ref(true)
-const scrolled = ref(false)
 const showNotifications = ref(false)
 const mobileMenuOpen = ref(false)
 const isMobile = ref(false)
+const scrolled = ref(false)
 
 const emit = defineEmits(['open-auth-modal', 'open-post-deal-modal'])
 
-// ... rest of the existing code (handleScroll, onMounted, onUnmounted, handleLogout, handleSearch, etc.) ...
+const handleScroll = () => {
+  scrolled.value = window.scrollY > 0
+}
 
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+  handleScroll()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+    toast.success('Logged out successfully')
+    router.push('/')
+  } catch (error) {
+    console.error('Logout error:', error)
+    toast.error('Failed to logout. Please try again.')
+  }
+}
+
+const handleSearch = () => {
+  if (searchQuery.value.trim()) {
+    router.push({ path: '/search', query: { q: searchQuery.value } })
+    searchQuery.value = ''
+  }
+}
+
+const handleNotificationClick = () => {
+  if (isMobile.value) {
+    router.push('/notifications')
+  } else {
+    toggleNotifications()
+  }
+}
+
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value
+  if (showNotifications.value && isAuthenticated.value) {
+    notificationStore.fetchNotifications()
+  }
+}
+
+const closeNotifications = () => {
+  showNotifications.value = false
+}
+
+const profilePictureUrl = computed(() => {
+  if (user.value?.profilePicture) {
+    return user.value.profilePicture.startsWith('http')
+      ? user.value.profilePicture
+      : `http://localhost:5000${user.value.profilePicture}`
+  }
+  return null
+})
+
+// Watch for changes in authentication status
+watch(isAuthenticated, (newValue) => {
+  if (newValue) {
+    notificationStore.fetchNotifications()
+  }
+})
 </script>
 
 <style scoped>
