@@ -5,32 +5,48 @@ import { useCookie } from 'nuxt/app'
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
+    countdown: 0,
+    countdownEndTime: null,
+    attemptsLeft: 5, // Add this line
   }),
 
   getters: {
     isAuthenticated: (state) => !!state.user,
+    isRateLimited: (state) => state.countdown > 0,
   },
 
   actions: {
     async login(email, password) {
+      if (this.isRateLimited) {
+        throw new Error(`Rate limited. Please try again in ${Math.ceil(this.countdown / 60)} minutes.`);
+      }
+
       try {
         const response = await api.post('/users/login', { email, password });
-        if (response.data && response.data.status === 'success') {
+        if (response.data && response.data.status === 'success' && response.data.data.user) {
           this.setUser(response.data.data.user);
+          this.attemptsLeft = 5; // Reset attempts on successful login
           return { success: true };
         } else {
           console.error('Invalid response from server:', response.data);
-          return { success: false, error: 'Invalid response from server' };
+          return { success: false, error: 'Invalid credentials or server error' };
         }
       } catch (error) {
         console.error('Login error:', error);
         if (error.response) {
           console.error('Error response:', error.response.data);
           if (error.response.status === 429) {
-            throw error; // Rethrow rate limit errors to be handled in the component
-          }
-          if (error.response.status === 401) {
-            return { success: false, error: 'Incorrect email or password' };
+            this.handleRateLimiting(error);
+            return { success: false, error: `Too many attempts. Please try again in ${Math.ceil(this.countdown / 60)} minutes.` };
+          } else if (error.response.status === 401) {
+            this.attemptsLeft = Math.max(this.attemptsLeft - 1, 0); // Decrease attempts left
+            if (this.attemptsLeft > 0) {
+              return { success: false, error: 'Incorrect email or password', attemptsLeft: this.attemptsLeft };
+            } else {
+              // If no attempts left, trigger rate limiting
+              this.handleRateLimiting({ response: { headers: { 'retry-after': '180' } } });
+              return { success: false, error: `Too many failed attempts. Please try again in ${Math.ceil(this.countdown / 60)} minutes.` };
+            }
           }
         }
         return { success: false, error: error.message || 'An error occurred during login' };
@@ -38,6 +54,10 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async signup(userData) {
+      if (this.isRateLimited) {
+        throw new Error(`Rate limited. Please try again in ${Math.ceil(this.countdown / 60)} minutes.`);
+      }
+
       try {
         const response = await api.post('/users/register', userData);
         if (response.data && response.data.status === 'success' && response.data.data.user) {
@@ -52,7 +72,7 @@ export const useAuthStore = defineStore('auth', {
         if (error.response) {
           console.error('Error response:', error.response.data);
           if (error.response.status === 429) {
-            throw error; // Rethrow rate limit errors to be handled in the component
+            this.handleRateLimiting(error);
           }
           if (error.response.status === 400) {
             return { success: false, error: error.response.data.message || 'Invalid signup data' };
@@ -169,6 +189,49 @@ export const useAuthStore = defineStore('auth', {
         await this.logout();
         return false;
       }
+    },
+
+    startCountdown(seconds) {
+      this.countdown = seconds
+      const endTime = Date.now() + seconds * 1000
+      this.countdownEndTime = endTime
+      localStorage.setItem('countdownEndTime', endTime.toString())
+      
+      const countdownInterval = setInterval(() => {
+        const now = Date.now()
+        const remaining = Math.max(0, Math.ceil((this.countdownEndTime - now) / 1000))
+        this.countdown = remaining
+        
+        if (this.countdown <= 0) {
+          clearInterval(countdownInterval)
+          localStorage.removeItem('countdownEndTime')
+        }
+      }, 1000)
+    },
+
+    initializeCountdown() {
+      const storedEndTime = localStorage.getItem('countdownEndTime')
+      if (storedEndTime) {
+        const endTime = parseInt(storedEndTime)
+        const now = Date.now()
+        const remaining = Math.max(0, Math.ceil((endTime - now) / 1000))
+        if (remaining > 0) {
+          this.startCountdown(remaining)
+        } else {
+          localStorage.removeItem('countdownEndTime')
+        }
+      }
+    },
+
+    handleRateLimiting(error) {
+      const retryAfter = error.response.headers['retry-after']
+      if (retryAfter) {
+        this.startCountdown(parseInt(retryAfter))
+      } else {
+        this.startCountdown(180) // 3 minutes
+      }
+      this.attemptsLeft = 0 // Set attempts to 0 when rate limited
+      throw error
     },
   },
 })

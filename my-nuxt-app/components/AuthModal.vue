@@ -1,21 +1,26 @@
 <template>
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
     <div class="bg-white rounded-lg w-full max-w-md p-6 sm:p-8 relative shadow-lg">
+      <!-- Close button -->
       <button @click="$emit('close')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-300">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
       
+      <!-- Modal title -->
       <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-center text-primary-600">
         {{ isLogin ? 'Welcome Back!' : 'Join the Savings Squad!' }}
       </h2>
       
+      <!-- Modal subtitle -->
       <p class="text-center text-gray-600 mb-6">
         {{ isLogin ? 'Your fellow shoppers are waiting for your amazing deals!' : 'Unlock a world of incredible deals and start saving today!' }}
       </p>
 
+      <!-- Auth form -->
       <form @submit.prevent="handleSubmit" class="space-y-4">
+        <!-- Username input (only for signup) -->
         <div v-if="!isLogin">
           <label for="username" class="block text-gray-700 text-sm font-bold mb-2">Username</label>
           <input 
@@ -32,6 +37,7 @@
           </p>
         </div>
         
+        <!-- Email input -->
         <div>
           <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
           <input 
@@ -49,6 +55,7 @@
           </p>
         </div>
         
+        <!-- Password input -->
         <div>
           <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
           <input 
@@ -66,73 +73,79 @@
           </p>
         </div>
         
-        <div v-if="error" class="mt-4 text-red-500 text-center">
-          {{ error }}
-          <div v-if="countdown > 0" class="mt-2 text-sm">
-            You can try again in {{ Math.floor(countdown / 60) }}:{{ (countdown % 60).toString().padStart(2, '0') }} minutes.
-          </div>
+        <!-- Error messages -->
+        <div v-if="authStore.isRateLimited" class="mt-4 text-red-500 text-center">
+          Too many attempts. Please try again in {{ formatCountdown(authStore.countdown) }}.
         </div>
+        <div v-else-if="isLogin && authStore.attemptsLeft > 0 && authStore.attemptsLeft < 5" class="mt-4 text-yellow-500 text-center">
+          You have {{ authStore.attemptsLeft }} login {{ authStore.attemptsLeft === 1 ? 'attempt' : 'attempts' }} left.
+        </div>
+        <div v-else-if="error" class="mt-4 text-red-500 text-center">
+          {{ error }}
+        </div>
+
+        <!-- Submit button -->
         <button 
           type="submit" 
           class="w-full btn btn-primary"
-          :disabled="!isPasswordValid || !isEmailValid || isSubmitting || countdown > 0"
+          :disabled="!isPasswordValid || !isEmailValid || isSubmitting || authStore.isRateLimited"
         >
           {{ isSubmitting ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up') }}
         </button>
       </form>
       
+      <!-- Toggle between login and signup -->
       <p class="mt-4 text-center text-gray-600">
         {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
         <a href="#" @click.prevent="toggleAuthMode" class="text-primary-600 hover:underline">
           {{ isLogin ? 'Sign Up' : 'Log In' }}
         </a>
       </p>
-      
-      <!-- Remove this duplicate error display -->
-      <!-- <div v-if="error" class="mt-4 text-red-500 text-center">
-        {{ error }}
-      </div> -->
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
 
+// Initialize composables
 const authStore = useAuthStore()
 const toast = useToastification()
 const router = useRouter()
 
+// Props and emits
 const props = defineProps({
   isLogin: {
     type: Boolean,
     default: true
   }
 })
-
 const emit = defineEmits(['close'])
 
+// Form data
 const form = reactive({
   username: '',
   email: '',
   password: ''
 })
 
+// Component state
 const isLogin = ref(props.isLogin)
 const error = ref(null)
+const isSubmitting = ref(false)
+
+// Password validation
 const passwordError = ref('')
-const isPasswordValid = computed(() => {
-  return form.password.length >= 8
-})
+const isPasswordValid = computed(() => form.password.length >= 8)
 const passwordFeedback = computed(() => {
   if (form.password.length === 0) return ''
-  if (form.password.length < 8) return 'Password must be at least 8 characters long'
-  return 'Password meets the requirements'
+  return form.password.length < 8 ? 'Password must be at least 8 characters long' : 'Password meets the requirements'
 })
 
+// Email validation
 const emailError = ref('')
 const isEmailValid = computed(() => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
@@ -140,10 +153,10 @@ const isEmailValid = computed(() => {
 })
 const emailFeedback = computed(() => {
   if (form.email.length === 0) return ''
-  if (!isEmailValid.value) return 'Please enter a valid email address'
-  return 'Email is valid'
+  return isEmailValid.value ? 'Email is valid' : 'Please enter a valid email address'
 })
 
+// Username validation
 const usernameError = ref('')
 const isUsernameValid = computed(() => {
   const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
@@ -153,15 +166,16 @@ const usernameFeedback = computed(() => {
   if (form.username.length === 0) return ''
   if (form.username.length < 3) return 'Username must be at least 3 characters long'
   if (form.username.length > 20) return 'Username must be no more than 20 characters long'
-  if (!isUsernameValid.value) return 'Username can only contain letters, numbers, and underscores'
-  return 'Username is valid'
+  return isUsernameValid.value ? 'Username is valid' : 'Username can only contain letters, numbers, and underscores'
 })
 
+// Toggle between login and signup modes
 const toggleAuthMode = () => {
   isLogin.value = !isLogin.value
   error.value = null
 }
 
+// Validation methods
 const validatePassword = () => {
   passwordError.value = isPasswordValid.value ? '' : 'Invalid password'
 }
@@ -174,94 +188,93 @@ const validateUsername = () => {
   usernameError.value = isUsernameValid.value ? '' : 'Invalid username'
 }
 
-const isSubmitting = ref(false)
-
-const countdown = ref(0)
-const countdownTimer = ref(null)
-
-const startCountdown = (seconds) => {
-  countdown.value = seconds
-  countdownTimer.value = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) {
-      clearInterval(countdownTimer.value)
-    }
-  }, 1000)
-}
-
+// Handle form submission
 const handleSubmit = async () => {
+  if (authStore.isRateLimited) {
+    error.value = `Too many attempts. Please try again in ${formatCountdown(authStore.countdown)}.`
+    toast.error(error.value)
+    return
+  }
+
   try {
     error.value = null
     isSubmitting.value = true
-    if (!isLogin.value) {
-      if (!isUsernameValid.value) {
-        error.value = 'Please enter a valid username'
-        return
-      }
-      if (!isEmailValid.value) {
-        error.value = 'Please enter a valid email address'
-        return
-      }
-      if (!isPasswordValid.value) {
-        error.value = 'Please enter a valid password'
-        return
-      }
-    }
+
     if (isLogin.value) {
-      const response = await authStore.login(form.email, form.password)
-      if (response.success) {
-        toast.success('Logged in successfully!')
-        emit('close')
-      } else {
-        error.value = response.error || 'Login failed. Please check your credentials and try again.'
-        toast.error(error.value)
-      }
+      await handleLogin()
     } else {
-      const response = await authStore.signup({
-        username: form.username,
-        email: form.email,
-        password: form.password
-      })
-      if (response.success) {
-        toast.success('Signed up successfully!')
-        emit('close')
-      } else {
-        error.value = response.error || 'Signup failed. Please try again.'
-        toast.error(error.value)
-      }
+      await handleSignup()
     }
   } catch (err) {
-    console.error('Auth error:', err)
-    if (err.response && err.response.status === 429) {
-      error.value = err.response.data.message || (isLogin.value
-        ? 'Too many login attempts. Please try again later.'
-        : 'Too many signup attempts. Please try again later.')
-      const retryAfter = err.response.headers['retry-after']
-      if (retryAfter) {
-        startCountdown(parseInt(retryAfter))
-      } else {
-        // Parse the time from the error message
-        const minutes = parseInt(error.value.match(/\d+/)[0])
-        if (!isNaN(minutes)) {
-          startCountdown(minutes * 60)
-        } else {
-          startCountdown(180) // Default to 3 minutes if parsing fails
-        }
-      }
-    } else {
-      error.value = 'An unexpected error occurred. Please try again.'
-    }
-    toast.error(error.value)
+    handleError(err)
   } finally {
     isSubmitting.value = false
   }
+}
+
+// Handle login
+const handleLogin = async () => {
+  const result = await authStore.login(form.email, form.password)
+  if (result.success) {
+    toast.success('Logged in successfully!')
+    emit('close')
+  } else {
+    error.value = result.error
+    if (result.attemptsLeft !== undefined) {
+      error.value += ` You have ${result.attemptsLeft} attempts left.`
+    }
+    toast.error(error.value)
+  }
+}
+
+// Handle signup
+const handleSignup = async () => {
+  if (!isUsernameValid.value || !isEmailValid.value || !isPasswordValid.value) {
+    error.value = 'Please enter valid username, email, and password'
+    return
+  }
+
+  const result = await authStore.signup({
+    username: form.username,
+    email: form.email,
+    password: form.password
+  })
+
+  if (result.success) {
+    toast.success('Signed up successfully!')
+    emit('close')
+  } else {
+    error.value = result.error || 'An error occurred during signup'
+    toast.error(error.value)
+  }
+}
+
+// Handle errors
+const handleError = (err) => {
+  console.error('Auth error:', err)
+  if (err.response && err.response.status === 429) {
+    error.value = `Too many attempts. Please try again in ${formatCountdown(authStore.countdown)}.`
+  } else {
+    error.value = err.message || 'An unexpected error occurred. Please try again.'
+  }
+  if (isLogin.value && authStore.attemptsLeft > 0 && authStore.attemptsLeft < 5) {
+    error.value += ` You have ${authStore.attemptsLeft} ${authStore.attemptsLeft === 1 ? 'attempt' : 'attempts'} left.`
+  }
+  toast.error(error.value)
+}
+
+// Format countdown time
+const formatCountdown = (seconds) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
 // Watch for authentication state changes
 watch(() => authStore.isAuthenticated, (newValue) => {
   if (newValue) {
     emit('close')
-    // You might want to redirect here if needed
+    // Uncomment the following line if you want to redirect after login
     // router.push('/dashboard')
   }
 })
@@ -273,12 +286,6 @@ onMounted(() => {
     if (currentRoute.meta.requiresAuth) {
       router.push('/')
     }
-  }
-})
-
-onUnmounted(() => {
-  if (countdownTimer.value) {
-    clearInterval(countdownTimer.value)
   }
 })
 </script>

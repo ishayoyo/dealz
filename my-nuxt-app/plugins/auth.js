@@ -8,6 +8,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   if (process.client) {
     try {
       await authStore.initializeAuth()
+      authStore.initializeCountdown() // Add this line
       console.log('Auth plugin: initializeAuth completed')
 
       // Set up interceptor only on the client side
