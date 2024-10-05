@@ -14,6 +14,9 @@
       <div v-if="isNew" class="absolute top-0 right-0 bg-primary-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
         NEW
       </div>
+      <div v-if="isHot" class="absolute bottom-0 right-0 bg-red-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
+        HOT
+      </div>
     </div>
     <div class="p-4 flex flex-col flex-grow bg-white rounded-b-lg transition-shadow duration-300 group-hover:shadow-lg">
       <h3 class="font-heading font-bold text-lg text-gray-800 line-clamp-2 group-hover:text-primary-600 transition-colors duration-300">
@@ -91,9 +94,21 @@ const getImageBaseUrl = () => {
 }
 
 const isNew = computed(() => {
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  return new Date(props.deal?.createdAt) > oneWeekAgo;
+  const oneDayAgo = new Date();
+  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+  return new Date(props.deal?.createdAt) > oneDayAgo;
+})
+
+const isHot = computed(() => {
+  const viewThreshold = 5;
+  const commentThreshold = 5;
+  const oneDayAgo = new Date();
+  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+  const recentViews = props.deal?.views?.filter(view => new Date(view.createdAt) > oneDayAgo).length || 0;
+  const recentComments = props.deal?.comments?.filter(comment => new Date(comment.createdAt) > oneDayAgo).length || 0;
+
+  return recentViews >= viewThreshold && recentComments >= commentThreshold;
 })
 </script>
 
