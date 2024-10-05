@@ -9,6 +9,7 @@ const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
 const NotificationService = require('../services/NotificationService');
+const validator = require('validator');
 
 const signToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -23,7 +24,12 @@ const signRefreshToken = id => {
 };
 
 exports.register = catchAsync(async (req, res, next) => {
-  const { username, email, password } = req.body;
+  let { username, email, password } = req.body;
+
+  // Sanitize inputs
+  username = validator.trim(username);
+  email = validator.normalizeEmail(email);
+  // Note: We don't typically sanitize passwords, as it might interfere with the user's chosen password
 
   console.log('Registration attempt:', { username, email, password: password ? '[REDACTED]' : undefined });
 
@@ -32,21 +38,17 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new AppError('Please provide username, email and password', 400));
   }
 
-  // Validate username
-  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-  if (!usernameRegex.test(username)) {
-    return next(new AppError('Invalid username. It must be 3-20 characters long and can only contain letters, numbers, and underscores.', 400));
+  // Validate inputs
+  if (!validator.isAlphanumeric(username)) {
+    return next(new AppError('Username must contain only letters and numbers', 400));
   }
 
-  // Validate email
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!emailRegex.test(email)) {
-    return next(new AppError('Invalid email address.', 400));
+  if (!validator.isEmail(email)) {
+    return next(new AppError('Invalid email address', 400));
   }
 
-  // Validate password
-  if (password.length < 8) {
-    return next(new AppError('Password must be at least 8 characters long.', 400));
+  if (!validator.isLength(password, { min: 8 })) {
+    return next(new AppError('Password must be at least 8 characters long', 400));
   }
 
   try {
@@ -97,13 +99,21 @@ exports.register = catchAsync(async (req, res, next) => {
 });
 
 exports.login = catchAsync(async (req, res, next) => {
-  const { email, password } = req.body;
+  let { email, password } = req.body;
+
+  // Sanitize inputs
+  email = validator.normalizeEmail(email);
 
   console.log('Login attempt:', { email, password: password ? '[REDACTED]' : undefined });
 
   if (!email || !password) {
     console.log('Missing email or password');
     return next(new AppError('Please provide email and password', 400));
+  }
+
+  // Validate inputs
+  if (!validator.isEmail(email)) {
+    return next(new AppError('Invalid email address', 400));
   }
 
   try {

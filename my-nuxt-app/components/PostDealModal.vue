@@ -22,9 +22,12 @@
             <input type="url" id="dealLink" v-model="dealLink" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" required>
           </div>
           <button type="submit" :disabled="isLoading" class="w-full btn btn-primary">
-            {{ isLoading ? 'Processing...' : 'Next' }}
+            {{ isLoading ? 'Fetching image...' : 'Next' }}
           </button>
         </form>
+        <p v-if="isLoading" class="text-center text-gray-600 mt-4">
+          Please wait while we fetch the image. This may take a few moments...
+        </p>
       </div>
 
       <!-- Step 2: Complete deal details -->
@@ -46,13 +49,37 @@
 
         <form @submit.prevent="submitDeal" class="space-y-4">
           <div>
-            <label for="title" class="block text-gray-700 text-sm font-bold mb-2">Deal Title</label>
-            <input type="text" id="title" v-model="dealDetails.title" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" required>
+            <label for="title" class="block text-gray-700 text-sm font-bold mb-2">
+              Deal Title
+              <span class="text-gray-500 font-normal">
+                ({{ dealDetails.title.length }}/100)
+              </span>
+            </label>
+            <input 
+              type="text" 
+              id="title" 
+              v-model="dealDetails.title" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
+              required
+              maxlength="100"
+            >
           </div>
           
           <div>
-            <label for="description" class="block text-gray-700 text-sm font-bold mb-2">Description</label>
-            <textarea id="description" v-model="dealDetails.description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" required></textarea>
+            <label for="description" class="block text-gray-700 text-sm font-bold mb-2">
+              Description
+              <span class="text-gray-500 font-normal">
+                ({{ dealDetails.description.length }}/1000)
+              </span>
+            </label>
+            <textarea 
+              id="description" 
+              v-model="dealDetails.description" 
+              rows="3" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
+              required
+              maxlength="1000"
+            ></textarea>
           </div>
           
           <div>
@@ -71,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import api from '~/services/api'
 import { useToastification } from '~/composables/useToastification'
 import { useDealsStore } from '~/stores/deals'
@@ -107,11 +134,13 @@ const fetchDealInfo = async () => {
     const response = await api.post('/deals/fetch-image', { url: dealLink.value })
     const imageBaseUrl = getImageBaseUrl()
     dealImage.value = `${imageBaseUrl}${response.data.data.imageUrl}`
-    step.value = 2
     toast.success('Deal information fetched successfully')
+    step.value = 2 // Advance to the next step
   } catch (error) {
     console.error('Error fetching deal image:', error)
     toast.error('Failed to fetch deal image. You can upload an image manually.')
+    dealImage.value = '' // Reset the dealImage if fetch fails
+    step.value = 2 // Still advance to the next step even if image fetch fails
   } finally {
     isLoading.value = false
   }
@@ -151,15 +180,27 @@ const removeImage = () => {
 }
 
 const submitDeal = async () => {
+  if (!isTitleValid.value || !isDescriptionValid.value) {
+    toast.error('Please check the title and description length')
+    return
+  }
+
   isLoading.value = true
   try {
     const imageBaseUrl = getImageBaseUrl()
     const dealData = {
       ...dealDetails,
       price: parseFloat(dealDetails.price).toFixed(2),
-      imageUrl: dealImage.value.replace(imageBaseUrl, ''),
+      imageUrl: dealImage.value ? dealImage.value.replace(imageBaseUrl, '') : '',
       link: dealLink.value
     }
+
+    console.log('Submitting deal data:', dealData)
+
+    if (!dealData.imageUrl) {
+      throw new Error('No image URL provided')
+    }
+
     const response = await api.post('/deals', dealData)
     const newDeal = response.data.data.deal
     console.log('New deal from API:', newDeal)
@@ -168,7 +209,14 @@ const submitDeal = async () => {
     toast.success('Deal submitted for review!')
   } catch (error) {
     console.error('Error submitting deal:', error)
-    toast.error('Failed to submit deal. Please try again.')
+    if (error.response) {
+      console.error('Error response:', error.response.data)
+    }
+    let errorMessage = 'Failed to submit deal. Please try again.'
+    if (error.response && error.response.data && error.response.data.message) {
+      errorMessage = error.response.data.message
+    }
+    toast.error(errorMessage)
   } finally {
     isLoading.value = false
   }
@@ -190,6 +238,10 @@ watch(() => props.show, (newValue) => {
     Object.assign(dealDetails, { title: '', description: '', price: '' })
   }
 })
+
+// Add computed properties for character count validation
+const isTitleValid = computed(() => dealDetails.title.length > 0 && dealDetails.title.length <= 100)
+const isDescriptionValid = computed(() => dealDetails.description.length > 0 && dealDetails.description.length <= 1000)
 </script>
 
 <style scoped>

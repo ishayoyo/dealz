@@ -12,12 +12,21 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs').promises;
 const NotificationService = require('../services/NotificationService');
+const validator = require('validator');
 
 exports.getDeals = catchAsync(async (req, res, next) => {
   // Build query
   const queryObj = { ...req.query };
   const excludedFields = ['page', 'sort', 'limit', 'fields'];
   excludedFields.forEach(el => delete queryObj[el]);
+
+  // Validate query parameters
+  const allowedFields = ['title', 'price', 'category', 'store']; // Add all allowed fields
+  Object.keys(queryObj).forEach(key => {
+    if (!allowedFields.includes(key)) {
+      delete queryObj[key]; // Remove any fields that aren't in the allowed list
+    }
+  });
 
   // Advanced filtering
   let queryStr = JSON.stringify(queryObj);
@@ -28,7 +37,9 @@ exports.getDeals = catchAsync(async (req, res, next) => {
   // Sorting
   if (req.query.sort) {
     const sortBy = req.query.sort.split(',').join(' ');
-    query = query.sort(sortBy);
+    const allowedSortFields = ['createdAt', 'price', 'title']; // Add all allowed sort fields
+    const sanitizedSortBy = sortBy.split(' ').filter(field => allowedSortFields.includes(field.replace('-', ''))).join(' ');
+    query = query.sort(sanitizedSortBy || '-createdAt');
   } else {
     query = query.sort('-createdAt');
   }
@@ -36,24 +47,22 @@ exports.getDeals = catchAsync(async (req, res, next) => {
   // Field limiting
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
-    query = query.select(fields);
+    const allowedFields = ['title', 'description', 'price', 'imageUrl', 'store', 'category', 'createdAt']; // Add all allowed fields
+    const sanitizedFields = fields.split(' ').filter(field => allowedFields.includes(field)).join(' ');
+    query = query.select(sanitizedFields);
   } else {
     query = query.select('-__v');
   }
 
   // Pagination
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 100;
+  const page = Math.max(1, parseInt(req.query.page, 10)) || 1;
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10))) || 100;
   const skip = (page - 1) * limit;
 
   query = query.skip(skip).limit(limit);
 
   // Execute query
-  const deals = await Deal.find({ status: 'approved' })
-    .sort('-createdAt')
-    .skip(skip)
-    .limit(limit)
-    .populate('user', 'username profilePicture');
+  const deals = await query.populate('user', 'username profilePicture');
 
   // Send response
   res.status(200).json({
@@ -69,14 +78,38 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.createDeal = catchAsync(async (req, res, next) => {
-  const { title, description, price, imageUrl, link } = req.body;
+  let { title, description, price, imageUrl, link } = req.body;
 
-  if (!imageUrl) {
-    return next(new AppError('Image URL is required', 400));
+  // Sanitize inputs
+  title = validator.trim(title);
+  description = validator.trim(description);
+  link = validator.trim(link);
+
+  // Validate inputs
+  if (!validator.isLength(title, { min: 1, max: 100 })) {
+    return next(new AppError('Title must be between 1 and 100 characters', 400));
   }
 
-  if (!link) {
-    return next(new AppError('Deal link is required', 400));
+  if (!validator.isLength(description, { min: 1, max: 1000 })) {
+    return next(new AppError('Description must be between 1 and 1000 characters', 400));
+  }
+
+  if (!validator.isNumeric(price.toString())) {
+    return next(new AppError('Price must be a number', 400));
+  }
+
+  if (!validator.isURL(link)) {
+    return next(new AppError('Invalid deal link', 400));
+  }
+
+  // Handle image URL
+  if (imageUrl) {
+    imageUrl = validator.trim(imageUrl);
+    if (!validator.isURL(imageUrl) && !imageUrl.startsWith('/images/deals/')) {
+      return next(new AppError('Invalid image URL. It should be a valid URL or start with /images/deals/', 400));
+    }
+  } else {
+    return next(new AppError('Image URL is required', 400));
   }
 
   const deal = await Deal.create({
@@ -85,7 +118,7 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     price,
     imageUrl,
     url: link,
-    status: 'pending', // Set initial status to pending
+    status: 'pending',
     user: req.user.id
   });
 
