@@ -340,19 +340,27 @@ exports.markAsBought = catchAsync(async (req, res, next) => {
 });
 
 exports.searchDeals = catchAsync(async (req, res, next) => {
-  const { query, category, store, minPrice, maxPrice, sortBy } = req.query;
+  console.log('Search query received:', req.query);
+  
+  const { q: query, category, store, minPrice, maxPrice, sortBy } = req.query;
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
   const skip = (page - 1) * limit;
 
-  let filter = { status: 'active' };
-  if (query) {
-    filter.$or = [
-      { title: { $regex: query, $options: 'i' } },
-      { description: { $regex: query, $options: 'i' } },
-      { 'user.username': { $regex: query, $options: 'i' } }
+  let filter = { status: { $in: ['active', 'approved'] } };
+  
+  if (query && query.trim() !== '') {
+    filter.$and = [
+      {
+        $or: [
+          { title: { $regex: query, $options: 'i' } },
+          { description: { $regex: query, $options: 'i' } },
+          { 'user.username': { $regex: query, $options: 'i' } }
+        ]
+      }
     ];
   }
+
   if (category) filter.category = category;
   if (store) filter.store = store;
   if (minPrice || maxPrice) {
@@ -360,6 +368,8 @@ exports.searchDeals = catchAsync(async (req, res, next) => {
     if (minPrice) filter.price.$gte = parseFloat(minPrice);
     if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
   }
+
+  console.log('Final filter:', JSON.stringify(filter, null, 2));
 
   let sort = {};
   if (sortBy === 'price_asc') sort.price = 1;
@@ -371,6 +381,8 @@ exports.searchDeals = catchAsync(async (req, res, next) => {
     .skip(skip)
     .limit(limit)
     .populate('user', 'username profilePicture');
+
+  console.log(`Deals found: ${deals.length}`);
 
   const total = await Deal.countDocuments(filter);
 

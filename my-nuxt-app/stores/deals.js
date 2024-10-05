@@ -186,6 +186,37 @@ export const useDealsStore = defineStore('deals', {
         userDeal.isFollowing = isFollowing;
         userDeal.followCount = followCount;
       }
+    },
+
+    async searchDeals(query, options = {}) {
+      this.loading = true
+      try {
+        console.log('Sending search request with query:', query, 'and options:', options);
+        const params = { 
+          q: query, // Make sure it's 'q' here
+          category: options.category,
+          store: options.store,
+          minPrice: options.minPrice,
+          maxPrice: options.maxPrice,
+          sortBy: options.sortBy,
+          page: options.page,
+          limit: options.limit
+        };
+        // Remove undefined parameters
+        Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+        
+        console.log('Final params:', params);
+        
+        const response = await api.get('/deals/search', { params });
+        console.log('Search response:', response.data);
+        this.loading = false
+        return response.data.data.deals
+      } catch (error) {
+        console.error('Error searching deals:', error)
+        this.error = 'Failed to search deals'
+        this.loading = false
+        throw error
+      }
     }
   }
 })

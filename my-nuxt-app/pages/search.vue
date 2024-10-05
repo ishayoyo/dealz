@@ -1,8 +1,8 @@
 <template>
     <div class="container mx-auto px-4 py-8 pt-24">
       <h1 class="text-2xl font-bold mb-4">Search Results</h1>
-      <div v-if="loading" class="text-center py-8">Loading...</div>
-      <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
+      <div v-if="dealsStore.loading" class="text-center py-8">Loading...</div>
+      <div v-else-if="dealsStore.error" class="text-center py-8 text-red-500">{{ dealsStore.error }}</div>
       <div v-else-if="deals.length === 0" class="text-center py-8">No results found</div>
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <DealCard 
@@ -32,24 +32,23 @@
   const dealsStore = useDealsStore()
   
   const deals = ref([])
-  const loading = ref(false)
-  const error = ref(null)
   const selectedDeal = ref(null)
   
   const fetchDeals = async () => {
-  loading.value = true
-  error.value = null
-  try {
-    const searchQuery = route.query.q
-    const response = await dealsStore.searchDeals(searchQuery)
-    deals.value = response // Assuming the response is already the array of deals
-  } catch (err) {
-    console.error('Error fetching deals:', err)
-    error.value = err.message || 'An error occurred while fetching deals'
-  } finally {
-    loading.value = false
+    try {
+      const searchQuery = route.query.q
+      const category = route.query.category
+      const store = route.query.store
+      const minPrice = route.query.minPrice
+      const maxPrice = route.query.maxPrice
+      const sortBy = route.query.sortBy
+      console.log('Searching with query:', searchQuery, 'and options:', { category, store, minPrice, maxPrice, sortBy });
+      deals.value = await dealsStore.searchDeals(searchQuery, { category, store, minPrice, maxPrice, sortBy })
+      console.log('Deals received:', deals.value.length);
+    } catch (err) {
+      console.error('Error fetching deals:', err)
+    }
   }
-}
   
   const openModal = (deal) => {
     selectedDeal.value = deal
