@@ -94,13 +94,22 @@ const handleScroll = () => {
   scrolled.value = window.scrollY > 0
 }
 
+// Add this method to check if the screen is mobile
+const checkIfMobile = () => {
+  isMobile.value = window.innerWidth < 768; // Adjust the breakpoint as needed
+}
+
+// Call checkIfMobile on window resize
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
-  handleScroll()
+  window.addEventListener('resize', checkIfMobile);
+  checkIfMobile(); // Initial check
+  window.addEventListener('scroll', handleScroll);
+  handleScroll();
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('resize', checkIfMobile);
+  window.removeEventListener('scroll', handleScroll);
 })
 
 const handleLogout = async () => {
@@ -121,11 +130,13 @@ const handleSearch = () => {
   }
 }
 
+// Update handleNotificationClick
 const handleNotificationClick = () => {
   if (isMobile.value) {
+    // Directly navigate to the notifications page
     router.push('/notifications')
   } else {
-    toggleNotifications()
+    toggleNotifications() // Open the notification dropdown on larger screens
   }
 }
 
