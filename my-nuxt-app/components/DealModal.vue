@@ -57,7 +57,9 @@
               <UserAvatar :name="dealUserName" :size="40" class="mr-3 md:mr-4" />
               <div>
                 <span class="text-sm text-gray-500">Posted by:</span>
-                <span class="font-semibold ml-1 text-text text-base md:text-lg">{{ dealUserName }}</span>
+                <NuxtLink :to="`/user/${deal.user._id}`" class="font-semibold ml-1 text-text text-base md:text-lg hover:text-primary-600 hover:underline">
+                  {{ dealUserName }}
+                </NuxtLink>
               </div>
             </div>
             <button 

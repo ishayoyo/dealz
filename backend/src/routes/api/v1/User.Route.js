@@ -32,6 +32,7 @@ router.post('/verify-email', userController.verifyEmail);
 router.post('/change-password', auth, userController.changePassword);
 
 // Move these routes before the /:id routes
+router.get('/profile/:id', userController.getUserProfile);
 router.get('/me/following', auth, userController.getCurrentUserFollowing);
 router.get('/me/followers', auth, userController.getCurrentUserFollowers);
 router.get('/me/deals', auth, userController.getCurrentUserDeals);

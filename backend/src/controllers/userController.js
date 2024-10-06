@@ -505,6 +505,50 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getUserProfile = catchAsync(async (req, res, next) => {
+  const userId = req.params.id;
+
+  // Fetch user details
+  const user = await User.findById(userId).select('username profilePicture');
+
+  if (!user) {
+    return next(new AppError('No user found with that ID', 404));
+  }
+
+  // Fetch user's deals
+  const deals = await Deal.find({ user: userId, status: 'approved' })
+    .sort('-createdAt')
+    .limit(10)  // Limit to the most recent 10 deals, adjust as needed
+    .select('title description price imageUrl createdAt');
+
+  // Fetch follower count
+  const followerCount = await Follow.countDocuments({ followed: userId });
+
+  // Fetch following count
+  const followingCount = await Follow.countDocuments({ follower: userId });
+
+  // Check if the current user is following this profile
+  let isFollowing = false;
+  if (req.user) {
+    isFollowing = await Follow.exists({ follower: req.user.id, followed: userId });
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: {
+        id: user._id,
+        username: user.username,
+        profilePicture: user.profilePicture,
+        followerCount,
+        followingCount,
+        isFollowing
+      },
+      deals
+    }
+  });
+});
+
 exports.getCurrentUserCollections = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id).populate('collections');
   if (!user) {

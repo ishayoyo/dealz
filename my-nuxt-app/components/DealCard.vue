@@ -23,15 +23,19 @@
         {{ deal.title || 'Untitled Deal' }}
       </h3>
       <p class="text-gray-600 text-sm mt-2 mb-3 line-clamp-3 flex-grow">{{ deal.description || 'No description available' }}</p>
-      <div class="flex items-center justify-between mt-2">
-        <div class="flex items-center space-x-2">
-          <UserAvatar :name="dealUsername" :size="24" />
-          <span class="text-sm text-gray-500">{{ dealUsername }}</span>
-        </div>
-        <span class="text-sm text-gray-500 flex items-center">
-          <i class="far fa-clock mr-1"></i>{{ formattedDate }}
-        </span>
+      <div class="flex items-center space-x-2">
+        <UserAvatar :name="dealUsername" :size="24" />
+        <NuxtLink 
+          v-if="deal.user && (deal.user['_id'] || deal.user.id)" 
+          :to="`/user/${deal.user['_id'] || deal.user.id}`" 
+          class="text-sm text-gray-500 hover:text-primary-600 hover:underline"
+        >
+          {{ dealUsername }}
+        </NuxtLink>
       </div>
+      <span class="text-sm text-gray-500 flex items-center">
+        <i class="far fa-clock mr-1"></i>{{ formattedDate }}
+      </span>
       <button class="btn btn-primary w-full mt-3 group-hover:shadow-md transition-all duration-300 transform group-hover:-translate-y-0.5">
         View Deal
       </button>
@@ -110,6 +114,9 @@ const isHot = computed(() => {
 
   return recentViews >= viewThreshold && recentComments >= commentThreshold;
 })
+
+// Use a computed property to safely access the deal ID
+const dealId = computed(() => props.deal['_id'] || props.deal.id || 'no-id')
 </script>
 
 <style scoped>
