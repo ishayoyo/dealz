@@ -9,21 +9,23 @@
         <slot />
       </main>
       <ClientOnly>
-        <FloatingActionButton v-if="isAuthenticated" @click="openPostDealModal" />
-        <PostDealModal 
-          v-if="showPostDealModal" 
-          :show="showPostDealModal"
-          @close="closePostDealModal" 
-          @post-deal="handlePostDeal" 
-        />
-        <AuthModal 
-          v-if="showAuthModal" 
-          :show="showAuthModal"
-          @close="closeAuthModal" 
-          @login="handleLogin" 
-          @signup="handleSignup" 
-          :is-login="isLoginMode" 
-        />
+        <div>
+          <FloatingActionButton v-if="isAuthenticated" @click="openPostDealModal" />
+          <PostDealModal 
+            v-if="showPostDealModal" 
+            :show="showPostDealModal"
+            @close="closePostDealModal" 
+            @post-deal="handlePostDeal" 
+          />
+          <AuthModal 
+            v-if="showAuthModal" 
+            :show="showAuthModal"
+            @close="closeAuthModal" 
+            @login="handleLogin" 
+            @signup="handleSignup" 
+            :is-login="isLoginMode" 
+          />
+        </div>
       </ClientOnly>
     </template>
   </div>

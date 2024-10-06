@@ -1,4 +1,4 @@
-<template>
+  <template>
   <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
     <div 
       class="bg-white w-full overflow-hidden flex flex-col relative"
@@ -342,12 +342,7 @@ const followUser = async () => {
     toast.success(isFollowingUser.value ? 'User followed successfully' : 'User unfollowed successfully')
   } catch (error) {
     console.error('Error following/unfollowing user:', error)
-    if (error.response && error.response.data) {
-      console.error('Error response:', error.response.data)
-      toast.error(error.response.data.message || 'An error occurred while following/unfollowing the user')
-    } else {
-      toast.error('An error occurred while following/unfollowing the user')
-    }
+    toast.error('An error occurred while following/unfollowing the user')
   }
 }
 

@@ -296,5 +296,57 @@ export const useAuthStore = defineStore('auth', {
       clearInterval(this.loginCountdownTimer);
       clearInterval(this.signupCountdownTimer);
     },
+
+    async followUser(userId) {
+      try {
+        const currentUser = this.user;
+        if (!currentUser || userId === currentUser._id) {
+          return { success: false, error: "Invalid operation" };
+        }
+
+        const isCurrentlyFollowing = currentUser.following && currentUser.following.includes(userId);
+        const method = isCurrentlyFollowing ? 'delete' : 'post';
+        
+        const response = await api[method](`/users/${userId}/follow`);
+        
+        if (response.data && response.data.status === 'success') {
+          // Update local user data
+          if (isCurrentlyFollowing) {
+            this.user.following = this.user.following.filter(id => id !== userId);
+          } else {
+            this.user.following = [...(this.user.following || []), userId];
+          }
+          return { 
+            success: true, 
+            isFollowing: !isCurrentlyFollowing,
+            followerCount: response.data.data.followerCount 
+          };
+        }
+        // Handle the case where the user is already following
+        if (response.data && response.data.status === 'error' && response.data.message === 'You are already following this user') {
+          return {
+            success: true,
+            isFollowing: true,
+            followerCount: this.user.followerCount,
+            message: 'You are already following this user'
+          };
+        }
+        return { success: false, error: 'Failed to update follow status' };
+      } catch (error) {
+        console.error('Error following/unfollowing user:', error);
+        if (error.response && error.response.data) {
+          // Handle specific error messages from the server
+          return { 
+            success: false, 
+            error: error.response.data.message || 'An error occurred',
+            isFollowing: error.response.data.message === 'You are already following this user'
+          };
+        }
+        return { 
+          success: false, 
+          error: 'An error occurred while updating follow status'
+        };
+      }
+    },
   },
 })
