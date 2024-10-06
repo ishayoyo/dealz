@@ -129,6 +129,7 @@ import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
 import Comment from '~/components/Comment.vue'
 import UserMentionAutocomplete from '~/components/UserMentionAutocomplete.vue'
+import { useUserFollow } from '~/composables/useUserFollow'
 
 const props = defineProps({
   deal: {
@@ -137,12 +138,13 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close-modal', 'open-auth-modal'])
+const emit = defineEmits(['close-modal', 'open-auth-modal', 'update-follow-status'])
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const dealsStore = useDealsStore()
 const toast = useToastification()
+const { followUser } = useUserFollow()
 
 const comments = ref([])
 const isFollowing = ref(false)
@@ -319,7 +321,7 @@ const closeModal = () => {
   emit('close-modal')
 }
 
-const handleFollowUser = () => {
+const handleFollowUser = async () => {
   if (!authStore.isAuthenticated) {
     openAuthModal()
     return
@@ -328,21 +330,16 @@ const handleFollowUser = () => {
     toast.info("You can't follow yourself!")
     return
   }
-  followUser()
-}
-
-const followUser = async () => {
-  try {
-    if (isFollowingUser.value) {
-      await api.delete(`/users/${props.deal.user._id}/follow`)
-    } else {
-      await api.post(`/users/${props.deal.user._id}/follow`)
+  const result = await authStore.followUser(props.deal.user._id)
+  if (result.success) {
+    isFollowingUser.value = result.isFollowing
+    emit('update-follow-status', result.isFollowing)
+    if (result.followerCount !== undefined) {
+      props.deal.user.followerCount = result.followerCount
     }
-    isFollowingUser.value = !isFollowingUser.value
-    toast.success(isFollowingUser.value ? 'User followed successfully' : 'User unfollowed successfully')
-  } catch (error) {
-    console.error('Error following/unfollowing user:', error)
-    toast.error('An error occurred while following/unfollowing the user')
+    toast.success(result.isFollowing ? 'User followed successfully' : 'User unfollowed successfully')
+  } else {
+    toast.error(result.error || 'An error occurred while following/unfollowing the user')
   }
 }
 

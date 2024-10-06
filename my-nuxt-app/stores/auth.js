@@ -319,15 +319,13 @@ export const useAuthStore = defineStore('auth', {
           return { 
             success: true, 
             isFollowing: !isCurrentlyFollowing,
-            followerCount: response.data.data.followerCount 
+            followerCount: response.data.data?.followerCount
           };
         }
-        // Handle the case where the user is already following
         if (response.data && response.data.status === 'error' && response.data.message === 'You are already following this user') {
           return {
             success: true,
             isFollowing: true,
-            followerCount: this.user.followerCount,
             message: 'You are already following this user'
           };
         }
@@ -335,7 +333,6 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Error following/unfollowing user:', error);
         if (error.response && error.response.data) {
-          // Handle specific error messages from the server
           return { 
             success: false, 
             error: error.response.data.message || 'An error occurred',

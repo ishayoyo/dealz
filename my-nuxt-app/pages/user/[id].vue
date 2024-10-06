@@ -60,7 +60,8 @@
 </template>
   
   <script setup>
-  import { ref, computed, onMounted } from 'vue'
+  import { ref, computed, onMounted, watch } from 'vue'
+  import { useUserFollow } from '~/composables/useUserFollow'
   import { useRoute, useRouter } from 'vue-router'
   import { useToastification } from '~/composables/useToastification'
   import { useAuthStore } from '~/stores/auth'
@@ -75,7 +76,11 @@
   const deals = ref([])
   const error = ref(null)
   const isLoading = ref(true)
-  const isFollowing = ref(false)
+  const isFollowing = computed(() => {
+    return authStore.user && profile.value && authStore.user.following && authStore.user.following.includes(profile.value.id)
+  })
+
+  const { followUser } = useUserFollow()
 
   const fetchProfile = async () => {
     isLoading.value = true
@@ -84,10 +89,8 @@
       console.log('Profile response:', response.data)
       if (response.data && response.data.data) {
         profile.value = response.data.data.user
-        // Ensure followerCount is initialized
         profile.value.followerCount = response.data.data.user.followerCount || 0
         deals.value = response.data.data.deals || []
-        isFollowing.value = response.data.data.isFollowing || false
         console.log('Profile set:', profile.value)
       } else {
         error.value = 'Unexpected data format received from server'
@@ -114,66 +117,17 @@
       toast.error("Unable to follow user at this time")
       return
     }
-    try {
-      await followUser()
-    } catch (error) {
-      console.error('Error following/unfollowing user:', error)
-      if (error.response && error.response.data) {
-        if (error.response.data.message === 'You are already following this user') {
-          isFollowing.value = true
-          toast.info('You are already following this user')
-        } else {
-          toast.error(`Error: ${error.response.data.message || 'An unexpected error occurred'}`)
-        }
+    const result = await authStore.followUser(profile.value.id)
+    if (result.success) {
+      if (result.followerCount !== undefined) {
+        profile.value.followerCount = result.followerCount
       } else {
-        toast.error('An error occurred while following/unfollowing the user')
+        // If followerCount is not returned, increment or decrement based on the action
+        profile.value.followerCount += result.isFollowing ? 1 : -1
       }
-    }
-  }
-
-  const followUser = async () => {
-    try {
-      console.log('Attempting to follow/unfollow user:', profile.value.id)
-      const method = isFollowing.value ? 'delete' : 'post'
-      const url = `/users/${profile.value.id}/follow`
-      console.log(`Sending ${method.toUpperCase()} request to ${url}`)
-      
-      const response = await api[method](url)
-      console.log('Follow/unfollow response:', response.data)
-      
-      if (response.data && response.data.status === 'success') {
-        isFollowing.value = !isFollowing.value
-        
-        // Update follower count based on the response or local calculation
-        if (response.data.data && response.data.data.followerCount !== undefined) {
-          profile.value.followerCount = response.data.data.followerCount
-        } else {
-          // If followerCount is not provided, update it locally
-          profile.value.followerCount += isFollowing.value ? 1 : -1
-        }
-        
-        toast.success(isFollowing.value ? 'User followed successfully' : 'User unfollowed successfully')
-      } else {
-        throw new Error(response.data.message || 'Unexpected response from server')
-      }
-    } catch (error) {
-      console.error('Error in followUser:', error)
-      if (error.response && error.response.data) {
-        if (error.response.data.message === 'You are already following this user') {
-          // Handle the case where the user is already being followed
-          isFollowing.value = true
-          toast.info('You are already following this user')
-          return // Exit the function without throwing an error
-        }
-        console.error('Error response:', error.response.data)
-        console.error('Error status:', error.response.status)
-        console.error('Error headers:', error.response.headers)
-      } else if (error.request) {
-        console.error('Error request:', error.request)
-      } else {
-        console.error('Error message:', error.message)
-      }
-      throw error
+      toast.success(result.isFollowing ? 'User followed successfully' : 'User unfollowed successfully')
+    } else {
+      toast.error(result.error || 'An error occurred while following/unfollowing the user')
     }
   }
 

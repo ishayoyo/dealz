@@ -5,6 +5,7 @@
       :deal="deal" 
       :isOpen="true"
       @close-modal="goBack"
+      @update-follow-status="updateFollowStatus"
     />
     <div v-else-if="loading" class="text-center py-8">Loading deal...</div>
     <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
@@ -14,11 +15,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '~/stores/auth'
 import api from '~/services/api'
 import DealModal from '~/components/DealModal.vue'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const deal = ref(null)
 const loading = ref(true)
@@ -34,6 +37,10 @@ async function fetchDeal() {
   try {
     const response = await api.get(`/deals/${route.params.id}`)
     deal.value = response.data.data.deal
+    // Check if the user is following this deal's user
+    if (authStore.isAuthenticated && deal.value.user) {
+      deal.value.isFollowingUser = authStore.user.following.includes(deal.value.user._id)
+    }
   } catch (err) {
     console.error('Error fetching deal:', err)
     if (err.response && err.response.status === 403) {
@@ -48,5 +55,11 @@ async function fetchDeal() {
 
 function goBack() {
   router.back()
+}
+
+function updateFollowStatus(isFollowing) {
+  if (deal.value && deal.value.user) {
+    deal.value.isFollowingUser = isFollowing
+  }
 }
 </script>
