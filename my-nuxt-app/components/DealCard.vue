@@ -17,7 +17,7 @@
       <div v-if="isHot" class="absolute bottom-0 right-0 bg-red-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
         HOT
       </div>
-      <div v-if="!isApproved" class="absolute bottom-0 left-0 bg-yellow-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
+      <div v-if="deal.status === 'pending'" class="absolute bottom-0 left-0 bg-yellow-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
         PENDING
       </div>
     </div>

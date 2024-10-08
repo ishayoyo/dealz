@@ -138,7 +138,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close-modal', 'open-auth-modal', 'update-follow-status'])
+const emit = defineEmits(['close-modal', 'open-auth-modal', 'update-follow-status', 'follow-deal'])
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
@@ -147,8 +147,6 @@ const toast = useToastification()
 const { followUser } = useUserFollow()
 
 const comments = ref([])
-const isFollowing = ref(false)
-const isFollowingUser = ref(false)
 const newComment = ref('')
 const loading = ref(false)
 const error = ref(null)
@@ -186,24 +184,28 @@ const dealUserName = computed(() => {
   return props.deal.user && props.deal.user.username ? props.deal.user.username : 'Anonymous'
 })
 
+const isFollowingUser = ref(false)
+const isFollowing = ref(false)
+
+watch(() => props.deal, (newDeal) => {
+  if (newDeal) {
+    isFollowingUser.value = newDeal.isFollowingUser || false
+    isFollowing.value = newDeal.isFollowing || false
+  }
+}, { immediate: true })
 const fetchDealData = async () => {
   loading.value = true
   error.value = null
   try {
     const [commentsResponse, statusResponse, userStatusResponse] = await Promise.all([
-      api.get(`/comments/deal/${props.deal._id}`),
-      isAuthenticated.value ? api.get(`/deals/${props.deal._id}/status`) : Promise.resolve({ data: { data: { isFollowing: false } } }),
-      isAuthenticated.value && props.deal.user ? api.get(`/users/${props.deal.user._id}/status`) : Promise.resolve({ data: { data: { isFollowing: false } } })
+      api.get(`/comments/deal/${dealId.value}`),
+      isAuthenticated.value ? api.get(`/deals/${dealId.value}/status`) : Promise.resolve({ data: { data: { isFollowing: false } } }),
+      isAuthenticated.value && props.deal.user ? api.get(`/users/${props.deal.user._id || props.deal.user.id}/status`) : Promise.resolve({ data: { data: { isFollowing: false } } })
     ])
     
     comments.value = commentsResponse.data.data.comments
-    if (isAuthenticated.value) {
-      isFollowing.value = statusResponse.data.data.isFollowing
-      isFollowingUser.value = userStatusResponse.data.data.isFollowing
-    } else {
-      isFollowing.value = false
-      isFollowingUser.value = false
-    }
+    isFollowing.value = statusResponse.data.data.isFollowing
+    isFollowingUser.value = userStatusResponse.data.data.isFollowing
   } catch (err) {
     console.error('Error fetching deal data:', err)
     error.value = 'Failed to load data. Please try again.'
@@ -261,20 +263,20 @@ const handleUserSelect = (user) => {
   showMentions.value = false
 }
 
-const handleFollowDeal = () => {
+const handleFollowDeal = async () => {
   if (!authStore.isAuthenticated) {
     openAuthModal()
     return
   }
-  followDeal()
-}
-
-const followDeal = async () => {
   try {
-    const response = await api[isFollowing.value ? 'delete' : 'post'](`/deals/${props.deal._id}/follow`)
+    const response = await api[isFollowing.value ? 'delete' : 'post'](`/deals/${dealId.value}/follow`)
     isFollowing.value = response.data.data.isFollowing
-    const newFollowCount = response.data.data.followCount
-    dealsStore.updateDealFollowStatus(props.deal._id, isFollowing.value, newFollowCount)
+    props.deal.followCount = response.data.data.followCount
+    emit('follow-deal', { 
+      dealId: dealId.value, 
+      isFollowing: isFollowing.value, 
+      followCount: props.deal.followCount 
+    })
     toast.success(isFollowing.value ? 'Deal followed successfully' : 'Deal unfollowed successfully')
   } catch (error) {
     console.error('Error following/unfollowing deal:', error)
@@ -410,6 +412,8 @@ const getImageBaseUrl = () => {
     ? 'http://localhost:5000' 
     : 'https://deals.ishay.me'
 }
+
+const dealId = computed(() => props.deal._id || props.deal.id)
 
 onMounted(async () => {
   console.log('DealModal: Mounted')
