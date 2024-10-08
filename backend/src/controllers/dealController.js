@@ -404,29 +404,30 @@ exports.searchDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.getCategories = catchAsync(async (req, res, next) => {
-  let categories = await Deal.distinct('category');
-  
-  // Filter out null or empty categories
-  categories = categories.filter(category => category != null && category !== '');
+  const allCategories = [
+    "Electronics",
+    "Home",
+    "Fashion",
+    "Beauty",
+    "Sports",
+    "Books",
+    "Toys",
+    "Travel",
+    "Food",
+    "Auto",
+    "DIY",
+    "Pets",
+    "Other"
+  ];
 
-  // If no categories are found in the database, provide a default list
-  if (categories.length === 0) {
-    categories = [
-      "Electronics",
-      "Home",
-      "Fashion",
-      "Beauty",
-      "Sports",
-      "Books",
-      "Toys",
-      "Travel",
-      "Food",
-      "Auto",
-      "DIY",
-      "Pets",
-      "Other"
-    ];
-  }
+  // Get categories that have been used in deals
+  let usedCategories = await Deal.distinct('category');
+  
+  // Filter out null or empty categories from used categories
+  usedCategories = usedCategories.filter(category => category != null && category !== '');
+
+  // Combine all categories with used categories, removing duplicates
+  const categories = [...new Set([...allCategories, ...usedCategories])];
 
   console.log('Categories being sent:', categories);
 
