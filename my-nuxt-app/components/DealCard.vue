@@ -9,13 +9,16 @@
         loading="lazy"
       >
       <div class="absolute top-0 left-0 bg-accent-500 text-white px-3 py-1 m-3 rounded-full text-sm font-semibold shadow-md">
-        ${{ formattedPrice }}
+        {{ formattedPrice }}
       </div>
       <div v-if="isNew" class="absolute top-0 right-0 bg-primary-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
         NEW
       </div>
       <div v-if="isHot" class="absolute bottom-0 right-0 bg-red-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
         HOT
+      </div>
+      <div v-if="!isApproved" class="absolute bottom-0 left-0 bg-yellow-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
+        PENDING
       </div>
     </div>
     <div class="p-4 flex flex-col flex-grow bg-white rounded-b-lg transition-shadow duration-300 group-hover:shadow-lg">
@@ -74,7 +77,7 @@ const handleImageError = () => {
 }
 
 const formattedPrice = computed(() => 
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(props.deal?.price || 0)
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(props.deal?.price || 0)
 )
 
 const formattedDate = computed(() => {
@@ -114,6 +117,8 @@ const isHot = computed(() => {
 
   return recentViews >= viewThreshold && recentComments >= commentThreshold;
 })
+
+const isApproved = computed(() => props.deal?.status === 'approved')
 
 // Use a computed property to safely access the deal ID
 const dealId = computed(() => props.deal['_id'] || props.deal.id || 'no-id')
