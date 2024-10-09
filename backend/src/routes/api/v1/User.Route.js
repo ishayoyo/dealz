@@ -60,4 +60,7 @@ router.get('/:id/status', auth, userController.checkUserStatus);
 // Add this new route
 router.post('/upload-profile-picture', auth, upload.single('image'), userController.uploadProfilePicture);
 
+// Add this new route
+router.get('/:id/recent-deals', userController.getUserRecentDeals);
+
 module.exports = router;

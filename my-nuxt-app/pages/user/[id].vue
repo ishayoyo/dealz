@@ -12,8 +12,9 @@
             <div class="flex flex-col sm:flex-row items-center">
               <UserAvatar :name="profile.username" :src="profile.profilePicture" :size="120" class="mb-4 sm:mb-0 sm:mr-6" />
               <div class="text-center sm:text-left">
-                <h1 class="text-2xl font-bold text-gray-800">{{ profile.username || 'User' }}</h1>
-                <p class="text-gray-600 mt-2">{{ profile.bio || 'No bio available' }}</p>
+                <h1 class="text-2xl font-bold text-gray-800">{{ profile.username }}</h1>
+                <!-- Only show bio if it exists -->
+                <p v-if="profile.bio" class="text-gray-600 mt-2">{{ profile.bio }}</p>
                 <div class="flex justify-center sm:justify-start mt-4 space-x-4">
                   <div class="flex flex-col items-center sm:items-start">
                     <span class="font-bold text-gray-700">{{ profile.followerCount || 0 }}</span>
@@ -49,7 +50,7 @@
                 v-for="deal in deals" 
                 :key="deal['_id']" 
                 :deal="deal" 
-                @click="openDealModal(deal)" 
+                @open-modal="openDealModal" 
                 class="cursor-pointer transition duration-300 transform hover:scale-105"
               />
             </div>
@@ -60,8 +61,7 @@
 </template>
   
   <script setup>
-  import { ref, computed, onMounted, watch } from 'vue'
-  import { useUserFollow } from '~/composables/useUserFollow'
+  import { ref, computed, onMounted } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useToastification } from '~/composables/useToastification'
   import { useAuthStore } from '~/stores/auth'
@@ -80,18 +80,13 @@
     return authStore.user && profile.value && authStore.user.following && authStore.user.following.includes(profile.value.id)
   })
 
-  const { followUser } = useUserFollow()
-
   const fetchProfile = async () => {
     isLoading.value = true
     try {
       const response = await api.get(`/users/profile/${route.params.id}`)
-      console.log('Profile response:', response.data)
       if (response.data && response.data.data) {
         profile.value = response.data.data.user
-        profile.value.followerCount = response.data.data.user.followerCount || 0
         deals.value = response.data.data.deals || []
-        console.log('Profile set:', profile.value)
       } else {
         error.value = 'Unexpected data format received from server'
       }
@@ -106,25 +101,17 @@
   }
 
   const handleFollowUser = async () => {
-    console.log('handleFollowUser called')
     if (!authStore.isAuthenticated) {
-      console.log('User not authenticated')
       toast.info("Please log in to follow users")
       return
     }
     if (!profile.value || !profile.value.id) {
-      console.log('Invalid profile:', profile.value)
       toast.error("Unable to follow user at this time")
       return
     }
     const result = await authStore.followUser(profile.value.id)
     if (result.success) {
-      if (result.followerCount !== undefined) {
-        profile.value.followerCount = result.followerCount
-      } else {
-        // If followerCount is not returned, increment or decrement based on the action
-        profile.value.followerCount += result.isFollowing ? 1 : -1
-      }
+      profile.value.followerCount = result.followerCount !== undefined ? result.followerCount : (profile.value.followerCount + (result.isFollowing ? 1 : -1))
       toast.success(result.isFollowing ? 'User followed successfully' : 'User unfollowed successfully')
     } else {
       toast.error(result.error || 'An error occurred while following/unfollowing the user')
@@ -132,7 +119,6 @@
   }
 
   const openDealModal = (deal) => {
-    console.log('Opening deal modal:', deal)
     router.push(`/deals/${deal['_id']}`)
   }
 

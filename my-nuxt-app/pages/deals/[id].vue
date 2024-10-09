@@ -30,8 +30,6 @@ const deal = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
-// Remove the isFollowing computed property, as it's now handled in DealModal
-
 onMounted(async () => {
   await fetchDeal()
 })
@@ -39,24 +37,35 @@ onMounted(async () => {
 async function fetchDeal() {
   loading.value = true
   error.value = null
+  
+  // First, try to get the deal from the store
+  const storeData = dealsStore.getDealById(route.params.id)
+  
+  if (storeData) {
+    deal.value = storeData
+    loading.value = false
+    return
+  }
+  
+  // If not in store, fetch from API
   try {
     const response = await api.get(`/deals/${route.params.id}`)
-    console.log('Deal data:', response.data.data.deal) // Add this line
     deal.value = response.data.data.deal
-    if (authStore.isAuthenticated && deal.value.user) {
-      deal.value.isFollowingUser = authStore.user.following.includes(deal.value.user._id)
-    }
+    
+    // Set follow status
     if (authStore.isAuthenticated) {
+      if (deal.value.user) {
+        deal.value.isFollowingUser = authStore.user.following.includes(deal.value.user._id)
+      }
       const statusResponse = await api.get(`/deals/${route.params.id}/status`)
       deal.value.isFollowing = statusResponse.data.data.isFollowing
+    } else {
+      deal.value.isFollowingUser = false
+      deal.value.isFollowing = false
     }
   } catch (err) {
     console.error('Error fetching deal:', err)
-    if (err.response && err.response.status === 403) {
-      error.value = 'This deal is not available or pending approval.'
-    } else {
-      error.value = 'Failed to load deal'
-    }
+    error.value = 'Failed to load deal'
   } finally {
     loading.value = false
   }

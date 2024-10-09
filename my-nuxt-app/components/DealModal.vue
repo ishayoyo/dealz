@@ -135,6 +135,10 @@ const props = defineProps({
   deal: {
     type: Object,
     required: true
+  },
+  isOpen: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -428,27 +432,12 @@ onUnmounted(() => {
   window.removeEventListener('resize', onResize)
 })
 
-watch(() => {
-  // Safely return an array, even if props.deal or isAuthenticated are undefined
-  return [props.deal, isAuthenticated?.value]
-}, async (newValues, oldValues) => {
-  const [newDeal, newIsAuthenticated] = newValues || []
-  const [oldDeal, oldIsAuthenticated] = oldValues || []
-
-  console.log('DealModal: Deal prop or authentication state changed:', newDeal, newIsAuthenticated)
-  
-  if (newDeal && newDeal._id && newIsAuthenticated && 
-      (!oldDeal || newDeal._id !== oldDeal._id || newIsAuthenticated !== oldIsAuthenticated)) {
-    try {
-      await fetchDealData()
-      await fetchMentionableUsers()
-    } catch (err) {
-      console.error('Error in watch effect:', err)
-      error.value = 'An error occurred while loading deal data.'
-      toast.error(error.value)
-    }
+watch(() => props.isOpen, async (newIsOpen) => {
+  if (newIsOpen && props.deal && props.deal._id && isAuthenticated.value) {
+    await fetchDealData()
+    await fetchMentionableUsers()
   }
-}, { immediate: true, deep: true })
+}, { immediate: true })
 </script>
 
 <style scoped>

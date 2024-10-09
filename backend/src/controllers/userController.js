@@ -685,4 +685,22 @@ exports.checkAuth = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getUserRecentDeals = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const limit = req.query.limit || 5; // Default to 5 recent deals, but allow it to be configurable
+
+    const recentDeals = await Deal.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .populate('category', 'name')
+      .lean();
+
+    res.json(recentDeals);
+  } catch (error) {
+    console.error('Error fetching user recent deals:', error);
+    res.status(500).json({ message: 'Error fetching recent deals' });
+  }
+};
+
 module.exports = exports;
