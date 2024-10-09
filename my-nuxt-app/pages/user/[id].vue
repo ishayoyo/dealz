@@ -1,32 +1,32 @@
 <template>
-    <div class="bg-gray-100 min-h-screen">
+    <div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
         <div v-if="isLoading" class="flex justify-center items-center h-screen">
           <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary-600"></div>
         </div>
-        <div v-else-if="error" class="container mx-auto px-4 py-8 text-center text-red-500">
+        <div v-else-if="error" class="container mx-auto px-4 py-8 text-center text-accent-600">
           {{ error }}
         </div>
-        <div v-else-if="profile" class="container mx-auto px-4 py-8">
+        <div v-else-if="profile" class="container mx-auto">
           <!-- Profile Header -->
-          <div class="bg-white shadow rounded-lg p-6 mb-6">
+          <div class="bg-white shadow-lg rounded-xl p-8 mb-8 animate-float">
             <div class="flex flex-col sm:flex-row items-center">
-              <UserAvatar :name="profile.username" :src="profile.profilePicture" :size="120" class="mb-4 sm:mb-0 sm:mr-6" />
+              <UserAvatar :name="profile.username" :src="profile.profilePicture" :size="120" class="mb-4 sm:mb-0 sm:mr-8" />
               <div class="text-center sm:text-left">
-                <h1 class="text-2xl font-bold text-gray-800">{{ profile.username }}</h1>
+                <h1 class="text-3xl font-bold text-primary-800 mb-2">{{ profile.username }}</h1>
                 <!-- Only show bio if it exists -->
-                <p v-if="profile.bio" class="text-gray-600 mt-2">{{ profile.bio }}</p>
-                <div class="flex justify-center sm:justify-start mt-4 space-x-4">
+                <p v-if="profile.bio" class="text-gray-600 mt-2 mb-4">{{ profile.bio }}</p>
+                <div class="flex justify-center sm:justify-start space-x-6">
                   <div class="flex flex-col items-center sm:items-start">
-                    <span class="font-bold text-gray-700">{{ profile.followerCount || 0 }}</span>
-                    <span class="text-gray-600">Followers</span>
+                    <span class="font-bold text-primary-600 text-xl">{{ profile.followerCount || 0 }}</span>
+                    <span class="text-gray-500">Followers</span>
                   </div>
                   <div class="flex flex-col items-center sm:items-start">
-                    <span class="font-bold text-gray-700">{{ profile.followingCount || 0 }}</span>
-                    <span class="text-gray-600">Following</span>
+                    <span class="font-bold text-primary-600 text-xl">{{ profile.followingCount || 0 }}</span>
+                    <span class="text-gray-500">Following</span>
                   </div>
                   <div class="flex flex-col items-center sm:items-start">
-                    <span class="font-bold text-gray-700">{{ deals.length }}</span>
-                    <span class="text-gray-600">Deals</span>
+                    <span class="font-bold text-primary-600 text-xl">{{ deals.length }}</span>
+                    <span class="text-gray-500">Deals</span>
                   </div>
                 </div>
               </div>
@@ -35,7 +35,7 @@
               <button 
                 v-if="authStore.isAuthenticated && profile.id !== authStore.user?.id"
                 @click="handleFollowUser" 
-                class="bg-primary-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-primary-700 transition duration-300"
+                class="btn btn-primary"
               >
                 {{ isFollowing ? 'Unfollow' : 'Follow' }}
               </button>
@@ -43,18 +43,18 @@
           </div>
 
           <!-- Deals Grid -->
-          <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Recent Deals</h2>
-            <div v-if="deals && deals.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="bg-white shadow-lg rounded-xl p-8">
+            <h2 class="text-2xl font-semibold mb-6 text-primary-800">Recent Deals</h2>
+            <div v-if="deals && deals.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <DealCard 
                 v-for="deal in deals" 
                 :key="deal['_id']" 
                 :deal="deal" 
                 @open-modal="openDealModal" 
-                class="cursor-pointer transition duration-300 transform hover:scale-105"
+                class="deal-card cursor-pointer transition duration-300 transform hover:scale-105"
               />
             </div>
-            <p v-else class="text-center text-gray-500">No deals posted yet.</p>
+            <p v-else class="text-center text-gray-500 py-8">No deals posted yet.</p>
           </div>
         </div>
     </div>

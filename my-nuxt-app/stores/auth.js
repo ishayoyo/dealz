@@ -300,15 +300,22 @@ export const useAuthStore = defineStore('auth', {
     async followUser(userId) {
       try {
         const currentUser = this.user;
+        console.log('Current user:', currentUser);
+        console.log('User ID to follow:', userId);
+
         if (!currentUser || userId === currentUser._id) {
+          console.log('Invalid operation: user not logged in or trying to follow self');
           return { success: false, error: "Invalid operation" };
         }
 
         const isCurrentlyFollowing = currentUser.following && currentUser.following.includes(userId);
         const method = isCurrentlyFollowing ? 'delete' : 'post';
         
+        console.log(`Sending ${method} request to /users/${userId}/follow`);
         const response = await api[method](`/users/${userId}/follow`);
         
+        console.log('Response from server:', response.data);
+
         if (response.data && response.data.status === 'success') {
           // Update local user data
           if (isCurrentlyFollowing) {
@@ -332,6 +339,7 @@ export const useAuthStore = defineStore('auth', {
         return { success: false, error: 'Failed to update follow status' };
       } catch (error) {
         console.error('Error following/unfollowing user:', error);
+        console.error('Error response:', error.response?.data);
         if (error.response && error.response.data) {
           return { 
             success: false, 

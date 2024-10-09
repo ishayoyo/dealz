@@ -3,16 +3,17 @@
     <div v-if="loading" class="text-center py-8">Loading user data...</div>
     <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
     <div v-else-if="!user" class="text-center py-8 text-red-500">User data not available. Please try logging in again.</div>
-    <div v-else class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <div v-else class="bg-white shadow-lg rounded-lg overflow-hidden max-w-3xl mx-auto">
       <div class="p-4 sm:p-6">
-        <div class="flex flex-col sm:flex-row items-center mb-6">
-          <div class="relative mb-4 sm:mb-0 sm:mr-6">
+        <!-- User Info Section -->
+        <div class="flex flex-col items-center mb-6">
+          <div class="relative mb-4">
             <UserAvatar 
               :name="getUserName" 
               :size="80" 
               :src="fullProfilePictureUrl" 
             />
-            <button @click="triggerFileInput" class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600">
+            <button @click="triggerFileInput" class="absolute bottom-0 right-0 bg-primary-500 text-white rounded-full p-2 hover:bg-primary-600">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -20,59 +21,82 @@
             </button>
             <input type="file" ref="fileInput" @change="handleFileChange" class="hidden" accept="image/*">
           </div>
-          <div class="text-center sm:text-left">
+          <div class="text-center">
             <h3 class="text-xl font-semibold">{{ getUserName }}</h3>
             <p class="text-gray-600">{{ user.email }}</p>
             <p class="text-sm text-gray-500 mt-1">{{ followersCount }} followers</p>
           </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="border-b border-gray-200 mb-6 overflow-x-auto">
-          <nav class="flex whitespace-nowrap">
-            <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" 
-                    :class="['mr-4 sm:mr-8 py-2 px-1 border-b-2 font-medium text-sm', 
-                             currentTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300']">
+        <!-- Mobile Menu Toggle -->
+        <div class="md:hidden mb-4">
+          <button @click="toggleMobileMenu" class="w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-lg flex justify-between items-center">
+            <span>{{ getCurrentTabName }}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div v-if="isMobileMenuOpen" class="md:hidden mb-4">
+          <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <button v-for="tab in tabs" :key="tab.id" @click="selectTab(tab.id)" 
+                    class="w-full py-2 px-4 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100"
+                    :class="{ 'bg-gray-100': currentTab === tab.id }">
+              {{ tab.name }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Desktop Tabs -->
+        <div class="hidden md:block border-b border-gray-200 mb-6">
+          <nav class="flex">
+            <button v-for="tab in tabs" :key="tab.id" @click="selectTab(tab.id)" 
+                    :class="['mr-4 py-2 px-1 border-b-2 font-medium text-sm', 
+                             currentTab === tab.id ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300']">
               {{ tab.name }}
             </button>
           </nav>
         </div>
 
         <!-- Tab content -->
-        <div v-if="currentTab === 'info'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div v-for="field in userFields" :key="field.key" class="flex flex-col">
-            <label :for="field.key" class="text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
-            <input :id="field.key" v-model="user[field.key]" :type="field.type" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div class="max-w-md mx-auto">
+          <div v-if="currentTab === 'info'" class="space-y-4">
+            <div v-for="field in userFields" :key="field.key" class="flex flex-col">
+              <label :for="field.key" class="text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+              <input :id="field.key" v-model="user[field.key]" :type="field.type" class="input-field">
+            </div>
+            <div>
+              <button @click="saveChanges" class="btn btn-primary w-full">Save Changes</button>
+            </div>
           </div>
-          <div class="col-span-1 sm:col-span-2">
-            <button @click="saveChanges" class="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-300">Save Changes</button>
+
+          <div v-else-if="currentTab === 'password'" class="space-y-4">
+            <div v-for="field in passwordFields" :key="field.key" class="flex flex-col">
+              <label :for="field.key" class="text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+              <input :id="field.key" v-model="passwordChange[field.key]" type="password" class="input-field">
+            </div>
+            <div>
+              <button @click="changePassword" class="btn btn-primary w-full">Change Password</button>
+            </div>
           </div>
-        </div>
 
-        <div v-else-if="currentTab === 'password'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div v-for="field in passwordFields" :key="field.key" class="flex flex-col">
-            <label :for="field.key" class="text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
-            <input :id="field.key" v-model="passwordChange[field.key]" type="password" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <div v-else-if="currentTab === 'following'">
+            <FollowingList :following="followingUsers" @unfollow="unfollowUser" />
           </div>
-          <div class="col-span-1 sm:col-span-2">
-            <button @click="changePassword" class="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-300">Change Password</button>
+
+          <div v-else-if="currentTab === 'followers'">
+            <FollowersList :followers="followers" :followingIds="followingUserIds" @follow="followUser" @unfollow="unfollowUser" />
           </div>
-        </div>
 
-        <div v-else-if="currentTab === 'following'">
-          <FollowingList :following="followingUsers" @unfollow="unfollowUser" />
-        </div>
+          <div v-else-if="currentTab === 'deals'">
+            <UserDeals :userDeals="userDeals" @dealClicked="navigateToDeal" />
+          </div>
 
-        <div v-else-if="currentTab === 'followers'">
-          <FollowersList :followers="followers" :followingIds="followingUserIds" @follow="followUser" @unfollow="unfollowUser" />
-        </div>
-
-        <div v-else-if="currentTab === 'deals'">
-          <UserDeals :userDeals="userDeals" @dealClicked="navigateToDeal" />
-        </div>
-
-        <div v-else-if="currentTab === 'followedDeals'">
-          <UserDeals :userDeals="followedDeals" @dealClicked="navigateToDeal" />
+          <div v-else-if="currentTab === 'followedDeals'">
+            <UserDeals :userDeals="followedDeals" @dealClicked="navigateToDeal" />
+          </div>
         </div>
       </div>
     </div>
@@ -316,6 +340,22 @@ const followingUserIds = computed(() => followingUsers.value.map(user => user._i
 
 const navigateToDeal = (dealId) => {
   navigateTo(`/deals/${dealId}`)
+}
+
+const isMobileMenuOpen = ref(false)
+
+const getCurrentTabName = computed(() => {
+  const currentTabObj = tabs.find(tab => tab.id === currentTab.value)
+  return currentTabObj ? currentTabObj.name : ''
+})
+
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const selectTab = (tabId) => {
+  currentTab.value = tabId
+  isMobileMenuOpen.value = false
 }
 </script>
 
