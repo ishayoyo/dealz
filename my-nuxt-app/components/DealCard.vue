@@ -35,6 +35,9 @@
         >
           {{ dealUsername }}
         </NuxtLink>
+        <span v-else class="text-sm text-gray-500">
+          {{ dealUsername }}
+        </span>
       </div>
       <span class="text-sm text-gray-500 flex items-center">
         <i class="far fa-clock mr-1"></i>{{ formattedDate }}
@@ -57,6 +60,10 @@ const props = defineProps({
   deal: {
     type: Object,
     required: true
+  },
+  username: {
+    type: String,
+    default: ''
   }
 })
 
@@ -85,7 +92,16 @@ const formattedDate = computed(() => {
   return formatDistanceToNow(date, { addSuffix: true })
 })
 
-const dealUsername = computed(() => props.deal?.user?.username || 'Unknown User')
+const dealUsername = computed(() => {
+  if (props.deal?.user?.username) {
+    return props.deal.user.username;
+  } else if (props.deal?.username) {
+    return props.deal.username;
+  } else if (props.username) {
+    return props.username;
+  }
+  return 'Unknown User';
+})
 
 const openModal = () => {
   if (props.deal) {

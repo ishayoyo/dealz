@@ -49,7 +49,8 @@
               <DealCard 
                 v-for="deal in deals" 
                 :key="deal['_id']" 
-                :deal="deal" 
+                :deal="deal"
+                :username="profile.username"
                 @open-modal="openDealModal" 
                 class="deal-card cursor-pointer transition duration-300 transform hover:scale-105"
               />
@@ -86,7 +87,10 @@
       const response = await api.get(`/users/profile/${route.params.id}`)
       if (response.data && response.data.data) {
         profile.value = response.data.data.user
-        deals.value = response.data.data.deals || []
+        deals.value = response.data.data.deals.map(deal => ({
+          ...deal,
+          user: { username: profile.value.username }
+        })) || []
       } else {
         error.value = 'Unexpected data format received from server'
       }
