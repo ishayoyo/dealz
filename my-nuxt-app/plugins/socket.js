@@ -61,6 +61,11 @@ export default defineNuxtPlugin((nuxtApp) => {
     socket.on('newNotification', (notification) => {
       console.log('Received new notification:', notification)
       notificationStore.handleNewNotification(notification)
+      
+      // Show a toast notification for deal approval
+      if (notification.type === 'DEAL_APPROVED') {
+        toast.success(notification.content)
+      }
     })
 
     socket.on('newDeal', (payload) => {

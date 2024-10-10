@@ -3,6 +3,7 @@ const User = require('../models/User.Model');
 const Deal = require('../models/Deal.Model');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const NotificationService = require('../services/NotificationService');
 
 exports.getUsers = catchAsync(async (req, res, next) => {
   const users = await User.find().select('-password');
@@ -62,7 +63,7 @@ exports.moderateDeal = catchAsync(async (req, res, next) => {
     return next(new AppError('Invalid status', 400));
   }
 
-  const deal = await Deal.findByIdAndUpdate(id, { status }, { new: true });
+  const deal = await Deal.findByIdAndUpdate(id, { status }, { new: true }).populate('user', 'username');
 
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
@@ -71,6 +72,10 @@ exports.moderateDeal = catchAsync(async (req, res, next) => {
   const io = req.app.get('io');
   if (status === 'approved') {
     io.emit('newDeal', { deal, status: 'approved' });
+    
+    // Create a notification for the deal owner
+    const notificationService = new NotificationService(io);
+    await notificationService.createDealApprovalNotification(deal.user._id, deal._id, deal.title);
   }
 
   res.status(200).json({

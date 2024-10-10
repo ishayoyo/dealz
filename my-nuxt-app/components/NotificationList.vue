@@ -13,7 +13,7 @@
             </div>
             <div class="ml-3 w-0 flex-1">
               <p class="text-sm font-medium text-gray-900" :class="{ 'font-bold': !notification.read }">
-                {{ notification.content }}
+                {{ formatNotificationContent(notification) }}
               </p>
               <p class="text-sm text-gray-500">
                 {{ formatDate(notification.createdAt) }}
@@ -69,5 +69,14 @@ const markAllAsRead = async () => {
 
 const formatDate = (date) => {
   return new Date(date).toLocaleString()
+}
+
+const formatNotificationContent = (notification) => {
+  switch (notification.type) {
+    case 'DEAL_APPROVED':
+      return `Your deal "${notification.relatedDeal?.title || 'Untitled'}" has been approved!`
+    default:
+      return notification.content
+  }
 }
 </script>

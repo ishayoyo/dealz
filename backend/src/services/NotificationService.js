@@ -67,6 +67,15 @@ class NotificationService {
     this.io.to(dealOwnerId.toString()).emit('notification', notification);
   }
 
+  async createDealApprovalNotification(userId, dealId, dealTitle) {
+    return this.createNotification({
+      recipient: userId,
+      type: 'DEAL_APPROVED',
+      content: `Your deal "${dealTitle}" has been approved!`,
+      relatedDeal: dealId
+    });
+  }
+
   async getUnreadNotifications(userId) {
     try {
       console.log('Fetching unread notifications for user:', userId);
