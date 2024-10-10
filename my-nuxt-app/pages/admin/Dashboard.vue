@@ -46,6 +46,7 @@
         <table class="w-full">
           <thead>
             <tr class="bg-primary-100">
+              <th class="p-2 text-left">Image</th>
               <th class="p-2 text-left">Title</th>
               <th class="p-2 text-left">User</th>
               <th class="p-2 text-left">Created At</th>
@@ -54,12 +55,16 @@
           </thead>
           <tbody>
             <tr v-for="deal in pendingDeals" :key="deal._id" class="border-b border-primary-100">
+              <td class="p-2">
+                <img :src="getFullImageUrl(deal.imageUrl)" alt="Deal image" class="w-16 h-16 object-cover rounded">
+              </td>
               <td class="p-2">{{ deal.title }}</td>
               <td class="p-2">{{ deal.user?.username }}</td>
               <td class="p-2">{{ formatDate(deal.createdAt) }}</td>
               <td class="p-2">
                 <button @click="approveDeal(deal._id)" class="btn btn-sm btn-primary mr-2">Approve</button>
-                <button @click="rejectDeal(deal._id)" class="btn btn-sm btn-accent">Reject</button>
+                <button @click="rejectDeal(deal._id)" class="btn btn-sm btn-accent mr-2">Reject</button>
+                <button @click="openEditModal(deal)" class="btn btn-sm btn-secondary">Edit</button>
               </td>
             </tr>
           </tbody>
@@ -125,38 +130,58 @@
     </section>
     
     <!-- Edit Deal Modal -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
-      <div class="bg-white p-8 rounded-xl shadow-xl w-full max-w-md">
-        <h3 class="text-2xl font-heading text-primary-700 mb-4">Edit Deal</h3>
-        <form @submit.prevent="submitEditDeal" class="space-y-4">
-          <div>
-            <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
-            <input v-model="editingDeal.title" id="title" type="text" class="input-field" required>
-          </div>
-          <div>
-            <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-            <textarea v-model="editingDeal.description" id="description" class="input-field" rows="3" required></textarea>
-          </div>
-          <div>
-            <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
-            <input v-model="editingDeal.price" id="price" type="number" step="0.01" class="input-field" required>
-          </div>
-          <div>
-            <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
-            <input v-model="editingDeal.category" id="category" type="text" class="input-field" required>
-          </div>
-          <div class="flex justify-end space-x-2">
-            <button type="button" @click="closeEditModal" class="btn btn-secondary">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-          </div>
-        </form>
+    <div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-auto overflow-y-auto max-h-[90vh]">
+        <div class="p-6 space-y-4">
+          <h3 class="text-2xl font-heading text-primary-700 mb-4">Edit Deal</h3>
+          <form @submit.prevent="submitEditDeal" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+                <input v-model="editingDeal.title" id="title" type="text" class="input-field" required>
+              </div>
+              <div>
+                <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
+                <input v-model="editingDeal.price" id="price" type="number" step="0.01" class="input-field" required>
+              </div>
+            </div>
+            <div>
+              <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+              <textarea v-model="editingDeal.description" id="description" class="input-field" rows="3" required></textarea>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                <select v-model="editingDeal.category" id="category" class="input-field" required>
+                  <option v-for="category in categories" :key="category" :value="category">
+                    {{ category }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label for="url" class="block text-sm font-medium text-gray-700">URL</label>
+                <input v-model="editingDeal.url" id="url" type="url" class="input-field" required>
+              </div>
+            </div>
+            <div>
+              <label for="imageUrl" class="block text-sm font-medium text-gray-700">Image Path</label>
+              <input v-model="editingDeal.imageUrl" id="imageUrl" type="text" class="input-field" required>
+              <img v-if="editingDeal.imageUrl" :src="fullImageUrl" alt="Deal image preview" class="mt-2 w-full h-40 object-cover rounded">
+            </div>
+            <div class="flex justify-end space-x-2">
+              <button type="button" @click="closeEditModal" class="btn btn-secondary">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRuntimeConfig } from '#app'
 import Chart from 'chart.js/auto'
 import api from '~/services/api'
 import { formatDistanceToNow } from 'date-fns'
@@ -176,6 +201,37 @@ const usersChartRef = ref(null)
 
 const showEditModal = ref(false)
 const editingDeal = ref({})
+
+const config = useRuntimeConfig()
+
+const categories = ref([
+  "Electronics",
+  "Home",
+  "Fashion",
+  "Beauty",
+  "Sports",
+  "Books",
+  "Toys",
+  "Travel",
+  "Food",
+  "Auto",
+  "DIY",
+  "Pets",
+  "Other"
+]);
+
+const fullImageUrl = computed(() => {
+  if (!editingDeal.value?.imageUrl) return '/default-deal-image.jpg'
+  return editingDeal.value.imageUrl.startsWith('http') 
+    ? editingDeal.value.imageUrl 
+    : `${getImageBaseUrl()}${editingDeal.value.imageUrl.split('/').pop()}`
+})
+
+const getImageBaseUrl = () => {
+  return config.public.apiBase.includes('localhost') 
+    ? 'http://localhost:5000/images/deals/' 
+    : 'https://deals.ishay.me/images/deals/'
+}
 
 const fetchAnalytics = async () => {
   try {
@@ -314,12 +370,20 @@ const submitEditDeal = async () => {
   try {
     await api.patch(`/admin/deals/${editingDeal.value._id}`, editingDeal.value)
     await fetchAllDeals()
+    await fetchPendingDeals()
     toast.success('Deal updated successfully')
     closeEditModal()
   } catch (error) {
     console.error('Error updating deal:', error)
     toast.error('Failed to update deal')
   }
+}
+
+const getFullImageUrl = (imageUrl) => {
+  if (!imageUrl) return '/default-deal-image.jpg'
+  return imageUrl.startsWith('http') 
+    ? imageUrl 
+    : `${getImageBaseUrl()}${imageUrl.split('/').pop()}`
 }
 
 onMounted(async () => {
