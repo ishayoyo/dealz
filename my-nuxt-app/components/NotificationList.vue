@@ -13,7 +13,7 @@
             </div>
             <div class="ml-3 w-0 flex-1">
               <p class="text-sm font-medium text-gray-900" :class="{ 'font-bold': !notification.read }">
-                {{ formatNotificationContent(notification) }}
+                <span v-html="formatNotificationContent(notification)"></span>
               </p>
               <p class="text-sm text-gray-500">
                 {{ formatDate(notification.createdAt) }}
@@ -40,13 +40,15 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useNotificationStore } from '@/stores/notification'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const notificationStore = useNotificationStore()
 const { notifications, unreadCount } = storeToRefs(notificationStore)
-const emit = defineEmits(['close'])  // This line should already exist
+const emit = defineEmits(['close'])
 
 const sortedNotifications = computed(() => {
   return notifications.value.slice(0, 5).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -59,11 +61,10 @@ const markAsRead = async (notificationId) => {
 const markAllAsRead = async () => {
   try {
     await notificationStore.markAllNotificationsAsRead()
-    await notificationStore.fetchNotifications() // Fetch fresh notifications
+    await notificationStore.fetchNotifications()
     emit('close')
   } catch (error) {
     console.error('Error marking all notifications as read:', error)
-    // Handle the error (e.g., show a toast notification)
   }
 }
 
@@ -72,11 +73,60 @@ const formatDate = (date) => {
 }
 
 const formatNotificationContent = (notification) => {
+  let content = ''
   switch (notification.type) {
     case 'DEAL_APPROVED':
-      return `Your deal "${notification.relatedDeal?.title || 'Untitled'}" has been approved!`
+      content = `Your deal "<a href="#" class="debug-link text-blue-600 hover:underline" data-type="deal" data-id="${notification.relatedDeal?._id}">${notification.relatedDeal?.title || 'Untitled'}</a>" has been approved!`
+      break
+    case 'USER_FOLLOW':
+      content = `<a href="#" class="debug-link text-blue-600 hover:underline" data-type="user" data-id="${notification.relatedUser?._id}">${notification.relatedUser?.username || 'A user'}</a> started following you`
+      break
+    case 'DEAL_FOLLOW':
+      content = `<a href="#" class="debug-link text-blue-600 hover:underline" data-type="user" data-id="${notification.relatedUser?._id}">${notification.relatedUser?.username || 'A user'}</a> followed your deal "<a href="#" class="debug-link text-blue-600 hover:underline" data-type="deal" data-id="${notification.relatedDeal?._id}">${notification.relatedDeal?.title || 'Untitled'}</a>"`
+      break
+    case 'COMMENT':
+    case 'NEW_COMMENT':
+      content = `<a href="#" class="debug-link text-blue-600 hover:underline" data-type="user" data-id="${notification.relatedUser?._id}">${notification.relatedUser?.username || 'Someone'}</a> commented on your deal: <a href="#" class="debug-link text-blue-600 hover:underline" data-type="deal" data-id="${notification.relatedDeal?._id}">${notification.relatedDeal?.title || 'Untitled'}</a>`
+      break
+    case 'MENTION':
+      content = `<a href="#" class="debug-link text-blue-600 hover:underline" data-type="user" data-id="${notification.relatedUser?._id}">${notification.relatedUser?.username || 'Someone'}</a> mentioned you in a comment on "<a href="#" class="debug-link text-blue-600 hover:underline" data-type="deal" data-id="${notification.relatedDeal?._id}">${notification.relatedDeal?.title || 'Untitled'}</a>"`
+      break
     default:
-      return notification.content
+      content = notification.content
   }
+  return content
 }
+
+const navigateToUser = (userId) => {
+  router.push(`/user/${userId}`)
+  emit('close')
+}
+
+const navigateToDeal = (dealId) => {
+  router.push(`/deals/${dealId}`)
+  emit('close')
+}
+
+onMounted(() => {
+  const handleClick = (event) => {
+    const target = event.target.closest('.debug-link')
+    if (target) {
+      event.preventDefault()
+      event.stopPropagation()
+      const type = target.dataset.type
+      const id = target.dataset.id
+      if (type === 'user') {
+        navigateToUser(id)
+      } else if (type === 'deal') {
+        navigateToDeal(id)
+      }
+    }
+  }
+
+  document.addEventListener('click', handleClick)
+
+  onUnmounted(() => {
+    document.removeEventListener('click', handleClick)
+  })
+})
 </script>
