@@ -22,6 +22,8 @@ router.get('/categories', dealController.getCategories);
 router.get('/stores', dealController.getStores);
 router.get('/trending', dealController.getTrendingDeals);
 router.get('/expiring-soon', dealController.getExpiringSoonDeals);
+router.get('/:id', dealController.getDeal);  // Move this line here
+router.get('/:id/comments', commentController.getComments);  // Move this line here if you want comments to be public
 
 // Routes that require authentication
 router.use(auth);

@@ -4,6 +4,7 @@
       v-if="deal" 
       :deal="deal" 
       :isOpen="true"
+      :isAuthenticated="isAuthenticated"
       @close-modal="goBack"
       @update-follow-status="updateFollowStatus"
       @follow-deal="handleFollowDeal"
@@ -23,7 +24,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
@@ -44,9 +45,7 @@ const error = ref(null)
 const showAuthModal = ref(false)
 const isLoginMode = ref(true)
 
-onMounted(async () => {
-  await fetchDeal()
-})
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 async function fetchDeal() {
   loading.value = true
@@ -64,12 +63,17 @@ async function fetchDeal() {
     }
     
     // Set follow status if user is authenticated
-    if (authStore.isAuthenticated) {
+    if (isAuthenticated.value) {
       if (deal.value.user) {
         deal.value.isFollowingUser = authStore.user.following.includes(deal.value.user._id)
       }
-      const statusResponse = await api.get(`/deals/${route.params.id}/status`)
-      deal.value.isFollowing = statusResponse.data.data.isFollowing
+      try {
+        const statusResponse = await api.get(`/deals/${route.params.id}/status`)
+        deal.value.isFollowing = statusResponse.data.data.isFollowing
+      } catch (statusError) {
+        console.error('Error fetching deal status:', statusError)
+        // Don't set error.value here, as this is not critical for viewing the deal
+      }
     } else {
       deal.value.isFollowingUser = false
       deal.value.isFollowing = false
@@ -77,11 +81,18 @@ async function fetchDeal() {
   } catch (err) {
     console.error('Error fetching deal:', err)
     error.value = 'Failed to load deal'
+  } finally {
+    loading.value = false
   }
 }
 
-function goBack() {
-  router.back()
+const goBack = () => {
+  if (window.history.length > 2) {
+    router.go(-1)
+  } else {
+    // No previous page in history, redirect to home or deals list
+    router.push('/')  // or router.push('/deals') if you have a deals listing page
+  }
 }
 
 function updateFollowStatus(isFollowing) {
@@ -138,4 +149,8 @@ const handleSignup = async (userData) => {
     toast.error(error.response?.data?.message || 'An error occurred during signup')
   }
 }
+
+onMounted(async () => {
+  await fetchDeal()
+})
 </script>

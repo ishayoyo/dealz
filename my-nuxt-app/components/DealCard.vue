@@ -1,5 +1,5 @@
 <template>
-  <div v-if="deal" class="deal-card group" @click="openModal">
+  <div v-if="deal" class="deal-card group" @click="openDealPage">
     <div class="relative w-full aspect-[4/3] overflow-hidden rounded-t-lg">
       <img 
         :src="fullImageUrl" 
@@ -53,6 +53,7 @@
 import { computed, ref } from 'vue'
 import { useRuntimeConfig } from '#app'
 import { formatDistanceToNow } from 'date-fns'
+import { useRouter } from 'vue-router'
 
 const config = useRuntimeConfig()
 
@@ -103,10 +104,9 @@ const dealUsername = computed(() => {
   return 'Unknown User';
 })
 
-const openModal = () => {
+const openDealPage = () => {
   if (props.deal) {
-    console.log('DealCard: Emitting open-modal event for deal:', props.deal)
-    emit('open-modal', props.deal)
+    router.push(`/deals/${props.deal._id || props.deal.id}`)
   }
 }
 
@@ -138,6 +138,10 @@ const isApproved = computed(() => props.deal?.status === 'approved')
 
 // Use a computed property to safely access the deal ID
 const dealId = computed(() => props.deal['_id'] || props.deal.id || 'no-id')
+
+const router = useRouter()
+
+// Removed openModal function and its associated button
 </script>
 
 <style scoped>
