@@ -22,34 +22,30 @@ router.get('/categories', dealController.getCategories);
 router.get('/stores', dealController.getStores);
 router.get('/trending', dealController.getTrendingDeals);
 router.get('/expiring-soon', dealController.getExpiringSoonDeals);
-router.get('/:id', dealController.getDeal);  // Move this line here
-router.get('/:id/comments', commentController.getComments);  // Move this line here if you want comments to be public
 
 // Routes that require authentication
 router.use(auth);
 
-// Move the '/saved' route before the '/:id' route
+// Authenticated routes without specific deal ID
 router.get('/followed', dealController.getFollowedDeals);
+router.post('/', dealController.createDeal);
+router.post('/fetch-image', dealController.fetchImage);
+router.post('/upload-image', upload.single('image'), dealController.uploadImage);
 
+// Public routes for specific deals (move these after '/followed')
 router.get('/:id', dealController.getDeal);
 router.get('/:id/comments', commentController.getComments);
-router.get('/:id/status', dealController.checkDealStatus);
 
-router.post('/', dealController.createDeal);
-// Remove or comment out this line if updateDeal is not implemented
-// router.put('/:id', dealController.updateDeal);
+// Authenticated routes for specific deals
+router.get('/:id/status', dealController.checkDealStatus);
 router.delete('/:id', dealController.deleteDeal);
 router.post('/:id/buy', dealController.markAsBought);
 router.post('/:id/follow', dealController.followDeal);
 router.delete('/:id/follow', dealController.unfollowDeal);
-router.post('/:dealId/comments', auth, commentController.createComment);
-router.get('/:dealId/comments', commentController.getComments);
+router.post('/:id/comments', commentController.createComment);
 
-// Image-related routes
-router.post('/fetch-image', dealController.fetchImage);
-router.post('/upload-image', upload.single('image'), dealController.uploadImage);
-
-// New route to fetch mentionable users
-// router.get('/:id/mentionable-users', auth, dealController.getMentionableUsers);
+// Uncomment if you implement these routes in the future
+// router.put('/:id', dealController.updateDeal);
+// router.get('/:id/mentionable-users', dealController.getMentionableUsers);
 
 module.exports = router;
