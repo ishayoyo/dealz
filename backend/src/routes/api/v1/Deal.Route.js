@@ -48,7 +48,6 @@ router.post('/fetch-image', dealController.fetchImage);
 router.post('/upload-image', upload.single('image'), dealController.uploadImage);
 
 // New route to fetch mentionable users
-router.get('/:id/mentionable-users', auth, dealController.getMentionableUsers);
-
+// router.get('/:id/mentionable-users', auth, dealController.getMentionableUsers);
 
 module.exports = router;

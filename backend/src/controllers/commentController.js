@@ -151,3 +151,32 @@ exports.getComments = catchAsync(async (req, res, next) => {
     data: { comments }
   });
 });
+
+exports.getMentionableUsers = catchAsync(async (req, res, next) => {
+  const deal = await Deal.findById(req.params.dealId);
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  // Get users who commented on the deal
+  const commenters = await Comment.find({ deal: deal._id }).distinct('user');
+
+  // Get users who are following the deal
+  const followers = await User.find({ followedDeals: deal._id });
+
+  // Combine all user IDs, including the deal creator
+  const userIds = new Set([
+    ...commenters.map(id => id.toString()),
+    ...followers.map(user => user._id.toString()),
+    deal.user.toString()
+  ]);
+
+  // Fetch user details
+  const users = await User.find({ _id: { $in: Array.from(userIds) } })
+    .select('username profilePicture');
+
+  res.status(200).json({
+    status: 'success',
+    data: { users }
+  });
+});

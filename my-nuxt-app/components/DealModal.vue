@@ -222,14 +222,12 @@ const fetchDealData = async () => {
 const fetchMentionableUsers = async () => {
   if (!props.deal || !props.deal._id) return
   try {
-    const response = await api.get(`/deals/${props.deal._id}/mentionable-users`)
+    const response = await api.get(`/comments/deal/${props.deal._id}/mentionable-users`)
     mentionableUsers.value = response.data.data.users
   } catch (err) {
     console.error('Error fetching mentionable users:', err)
     if (err.response && err.response.status === 401) {
       toast.error('Please log in to view mentionable users')
-      // Optionally, you can trigger the auth modal here
-      // openAuthModal()
     } else {
       toast.error('Failed to fetch mentionable users')
     }

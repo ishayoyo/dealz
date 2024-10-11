@@ -10,6 +10,9 @@ router.put('/:id', auth, commentController.updateComment);
 router.delete('/:id', auth, commentController.deleteComment);
 router.get('/deal/:dealId', commentController.getComments);
 
+// Add this new route
+router.get('/deal/:dealId/mentionable-users', auth, commentController.getMentionableUsers);
+
 // Remove the reply route
 
 module.exports = router;
