@@ -87,8 +87,7 @@ exports.createComment = [
 
 exports.getComment = catchAsync(async (req, res, next) => {
   const comment = await Comment.findById(req.params.id)
-    .populate('user', 'username profilePicture')
-    .populate('replies');
+    .populate('user', 'username profilePicture');
   
   if (!comment) {
     return next(new AppError('No comment found with that ID', 404));
@@ -140,12 +139,8 @@ exports.deleteComment = catchAsync(async (req, res, next) => {
 
 exports.getComments = catchAsync(async (req, res, next) => {
   const { dealId } = req.params;
-  const comments = await Comment.find({ deal: dealId, status: 'active', parentComment: null })
+  const comments = await Comment.find({ deal: dealId, status: 'active' })
     .populate('user', 'username profilePicture')
-    .populate({
-      path: 'replies',
-      populate: { path: 'user', select: 'username profilePicture' }
-    })
     .sort('-createdAt');
 
   console.log('Fetched comments:', JSON.stringify(comments, null, 2)); // More detailed logging
