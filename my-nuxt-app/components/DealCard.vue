@@ -22,27 +22,30 @@
       </div>
     </div>
     <div class="p-4 flex flex-col flex-grow bg-white rounded-b-lg transition-shadow duration-300 group-hover:shadow-lg">
-      <h3 class="font-heading font-bold text-lg text-gray-800 line-clamp-2 group-hover:text-primary-600 transition-colors duration-300">
+      <h3 class="font-heading font-bold text-xl text-gray-800 line-clamp-2 group-hover:text-primary-600 transition-colors duration-300 mb-2">
         {{ deal.title || 'Untitled Deal' }}
       </h3>
-      <p class="text-gray-600 text-sm mt-2 mb-3 line-clamp-3 flex-grow">{{ deal.description || 'No description available' }}</p>
-      <div class="flex items-center space-x-2">
+      <p class="text-gray-600 text-sm mt-1 mb-3 line-clamp-3 flex-grow leading-relaxed">
+        {{ deal.description || 'No description available' }}
+      </p>
+      <div class="flex items-center space-x-2 mb-2">
         <UserAvatar :name="dealUsername" :size="24" />
         <NuxtLink 
           v-if="deal.user && (deal.user['_id'] || deal.user.id)" 
           :to="`/user/${deal.user['_id'] || deal.user.id}`" 
-          class="text-sm text-gray-500 hover:text-primary-600 hover:underline"
+          class="text-sm font-medium text-gray-700 hover:text-primary-600 hover:underline"
+          @click.stop
         >
           {{ dealUsername }}
         </NuxtLink>
-        <span v-else class="text-sm text-gray-500">
+        <span v-else class="text-sm font-medium text-gray-700">
           {{ dealUsername }}
         </span>
       </div>
-      <span class="text-sm text-gray-500 flex items-center">
-        <i class="far fa-clock mr-1"></i>{{ formattedDate }}
+      <span class="text-sm text-gray-500 flex items-center mb-3">
+        <i class="far fa-clock mr-2"></i>{{ formattedDate }}
       </span>
-      <button class="btn btn-primary w-full mt-3 group-hover:shadow-md transition-all duration-300 transform group-hover:-translate-y-0.5">
+      <button class="btn btn-primary w-full group-hover:shadow-md transition-all duration-300 transform group-hover:-translate-y-0.5">
         View Deal
       </button>
     </div>
@@ -51,11 +54,11 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { useRuntimeConfig } from '#app'
+import { useRuntimeConfig, useRouter } from '#app'
 import { formatDistanceToNow } from 'date-fns'
-import { useRouter } from 'vue-router'
 
 const config = useRuntimeConfig()
+const router = useRouter()
 
 const props = defineProps({
   deal: {
@@ -139,8 +142,6 @@ const isApproved = computed(() => props.deal?.status === 'approved')
 // Use a computed property to safely access the deal ID
 const dealId = computed(() => props.deal['_id'] || props.deal.id || 'no-id')
 
-const router = useRouter()
-
 // Removed openModal function and its associated button
 </script>
 
@@ -150,6 +151,6 @@ const router = useRouter()
 }
 
 .btn-primary {
-  @apply bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50 transition-all duration-300;
+  @apply bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50 transition-all duration-300 font-semibold text-sm;
 }
 </style>
