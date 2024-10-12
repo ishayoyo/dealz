@@ -298,7 +298,13 @@ const addComment = async () => {
   if (!newComment.value.trim() || newComment.value.length > MAX_COMMENT_LENGTH) return
   
   try {
-    const response = await api.post(`/deals/${props.deal._id}/comments`, { content: newComment.value })
+    console.log('Deal object:', props.deal);
+    console.log('Adding comment to deal with ID:', props.deal._id);
+    if (!props.deal._id) {
+      throw new Error('Deal ID is undefined');
+    }
+    
+    const response = await api.post(`/comments/${props.deal._id}/comments`, { content: newComment.value })
     const newCommentData = response.data.data.comment
     // Add the current user's information to the new comment
     newCommentData.user = {
@@ -424,6 +430,7 @@ onMounted(async () => {
     await fetchMentionableUsers()
   }
   window.addEventListener('resize', onResize)
+  console.log('Deal object:', props.deal); // Add this line to verify the deal object
 })
 
 onUnmounted(() => {
