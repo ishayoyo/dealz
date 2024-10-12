@@ -194,8 +194,10 @@ exports.getDeal = catchAsync(async (req, res, next) => {
   }
 
   // Check if the deal is approved or if the user is an admin or the deal creator
-  if (deal.status !== 'approved' && 
-      (!req.user || (req.user.role !== 'admin' && req.user.id !== deal.user.id.toString()))) {
+  const isAuthorized = deal.status === 'approved' || 
+    (req.user && (req.user.role === 'admin' || req.user.id === deal.user.id.toString()));
+
+  if (!isAuthorized) {
     return next(new AppError('This deal is not available', 403));
   }
 
@@ -205,10 +207,21 @@ exports.getDeal = catchAsync(async (req, res, next) => {
     isFollowing = user.followedDeals.includes(deal._id);
   }
 
+  // Remove sensitive information for non-authenticated users
+  const sanitizedDeal = {
+    ...deal.toObject(),
+    user: {
+      _id: deal.user._id,
+      username: deal.user.username,
+      profilePicture: deal.user.profilePicture
+    },
+    comments: deal.status === 'approved' ? deal.comments : []
+  };
+
   res.status(200).json({
     status: 'success',
     data: { 
-      deal,
+      deal: sanitizedDeal,
       isFollowing
     }
   });

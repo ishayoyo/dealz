@@ -1,5 +1,3 @@
-// File: src/routes/api/v1/Deal.Route.js
-
 const express = require('express');
 const router = express.Router();
 const dealController = require('../../../controllers/dealController');
@@ -22,21 +20,17 @@ router.get('/categories', dealController.getCategories);
 router.get('/stores', dealController.getStores);
 router.get('/trending', dealController.getTrendingDeals);
 router.get('/expiring-soon', dealController.getExpiringSoonDeals);
+router.get('/:id', dealController.getDeal);
+router.get('/:id/comments', commentController.getComments);
 
 // Routes that require authentication
 router.use(auth);
 
-// Authenticated routes without specific deal ID
 router.get('/followed', dealController.getFollowedDeals);
 router.post('/', dealController.createDeal);
 router.post('/fetch-image', dealController.fetchImage);
 router.post('/upload-image', upload.single('image'), dealController.uploadImage);
 
-// Public routes for specific deals (move these after '/followed')
-router.get('/:id', dealController.getDeal);
-router.get('/:id/comments', commentController.getComments);
-
-// Authenticated routes for specific deals
 router.get('/:id/status', dealController.checkDealStatus);
 router.delete('/:id', dealController.deleteDeal);
 router.post('/:id/buy', dealController.markAsBought);

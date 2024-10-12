@@ -188,6 +188,16 @@ export const useDealsStore = defineStore('deals', {
       }
     },
 
+    async fetchDealById(id) {
+      try {
+        const response = await api.get(`/deals/${id}`)
+        return response.data
+      } catch (error) {
+        console.error('Error fetching deal:', error)
+        throw error
+      }
+    },
+
     async searchDeals(query, options = {}) {
       this.loading = true
       try {
