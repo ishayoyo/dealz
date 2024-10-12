@@ -8,7 +8,7 @@
         @error="handleImageError"
         loading="lazy"
       >
-      <div class="absolute top-0 left-0 bg-accent-500 text-white px-3 py-1 m-3 rounded-full text-sm font-semibold shadow-md">
+      <div class="absolute top-0 left-0 bg-accent-500 text-white px-4 py-2 m-4 rounded-full text-base font-bold shadow-lg transform transition-transform duration-300 group-hover:scale-110">
         {{ formattedPrice }}
       </div>
       <div v-if="isNew" class="absolute top-0 right-0 bg-primary-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
@@ -88,7 +88,12 @@ const handleImageError = () => {
 }
 
 const formattedPrice = computed(() => 
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(props.deal?.price || 0)
+  new Intl.NumberFormat('en-US', { 
+    style: 'currency', 
+    currency: 'USD', 
+    minimumFractionDigits: 0, 
+    maximumFractionDigits: 0 
+  }).format(props.deal?.price || 0)
 )
 
 const formattedDate = computed(() => {
