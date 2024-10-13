@@ -41,7 +41,7 @@
               
               <div class="flex items-center justify-between mb-6">
                 <span class="font-bold text-accent text-3xl md:text-4xl">${{ formattedPrice }}</span>
-                <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+                <a :href="getOutgoingLink(deal.url)" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
                   GET THIS DEAL
                 </a>
               </div>
@@ -460,6 +460,12 @@ const handleDeleteComment = (commentId) => {
   } else {
     console.error('Attempted to delete comment with undefined ID')
   }
+}
+
+const getOutgoingLink = (url) => {
+  // Remove the '/api/v1' from the end of the baseURL
+  const baseURL = api.defaults.baseURL.replace(/\/api\/v1$/, '')
+  return `${baseURL}/api/v1/link/out?url=${encodeURIComponent(url)}`
 }
 
 onMounted(async () => {
