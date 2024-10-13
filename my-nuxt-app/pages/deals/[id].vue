@@ -7,10 +7,12 @@
       :deal="deal" 
       :isOpen="true"
       :isAuthenticated="isAuthenticated"
+      :isAdmin="isAdmin"
       @close-modal="goBack"
       @update-follow-status="updateFollowStatus"
       @follow-deal="handleFollowDeal"
       @open-auth-modal="openAuthModal"
+      @delete-comment="handleDeleteComment"
     />
     <AuthModal 
       v-if="showAuthModal" 
@@ -31,6 +33,7 @@ import { useDealsStore } from '~/stores/deals'
 import { useToastification } from '~/composables/useToastification'
 import DealModal from '~/components/DealModal.vue'
 import AuthModal from '~/components/AuthModal.vue'
+import api from '~/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -45,6 +48,7 @@ const showAuthModal = ref(false)
 const isLoginMode = ref(true)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+const isAdmin = computed(() => authStore.user && authStore.user.role === 'admin')
 
 async function fetchDeal() {
   loading.value = true
@@ -55,6 +59,10 @@ async function fetchDeal() {
     if (isAuthenticated.value) {
       deal.value.isFollowing = response.data.isFollowing
       deal.value.isFollowingUser = authStore.user.following.includes(deal.value.user._id)
+    }
+    console.log('Fetched deal:', deal.value)
+    if (deal.value.comments) {
+      console.log('Deal comments:', deal.value.comments)
     }
   } catch (err) {
     console.error('Error fetching deal:', err)
@@ -122,6 +130,30 @@ async function handleSignup(userData) {
   } catch (error) {
     console.error('Signup error:', error)
     toast.error(error.response?.data?.message || 'An error occurred during signup')
+  }
+}
+
+async function handleDeleteComment(commentId) {
+  if (!commentId) {
+    console.error('Attempted to delete comment with undefined ID')
+    toast.error('Error: Comment ID is missing')
+    return
+  }
+
+  try {
+    await api.delete(`/comments/${commentId}`)
+    // Remove the deleted comment from the deal's comments
+    deal.value.comments = deal.value.comments.filter(comment => comment.id !== commentId)
+    toast.success('Comment deleted successfully')
+  } catch (err) {
+    console.error('Error deleting comment:', err)
+    if (err.response && err.response.status === 500) {
+      toast.error('Server error. Please try again later.')
+    } else if (err.response && err.response.status === 404) {
+      toast.error('Comment not found. It may have been already deleted.')
+    } else {
+      toast.error('Failed to delete comment. Please try again.')
+    }
   }
 }
 </script>

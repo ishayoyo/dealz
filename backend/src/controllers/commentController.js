@@ -118,18 +118,24 @@ exports.updateComment = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteComment = catchAsync(async (req, res, next) => {
-  const comment = await Comment.findOneAndUpdate(
-    { _id: req.params.id, user: req.user.id },
-    { status: 'deleted' },
-    { new: true }
-  );
+  const { id } = req.params;
 
-  if (!comment) {
-    return next(new AppError('No comment found with that ID or you are not authorized', 404));
+  if (!id) {
+    return next(new AppError('Comment ID is required', 400));
   }
 
-  // Decrement the deal's commentCount
-  await Deal.findByIdAndUpdate(comment.deal, { $inc: { commentCount: -1 } });
+  const comment = await Comment.findById(id);
+
+  if (!comment) {
+    return next(new AppError('No comment found with that ID', 404));
+  }
+
+  // Check if the user is the comment owner or an admin
+  if (comment.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new AppError('You are not authorized to delete this comment', 403));
+  }
+
+  await Comment.findByIdAndDelete(id);
 
   res.status(204).json({
     status: 'success',
@@ -139,7 +145,7 @@ exports.deleteComment = catchAsync(async (req, res, next) => {
 
 exports.getComments = catchAsync(async (req, res, next) => {
   const { dealId } = req.params;
-  const comments = await Comment.find({ deal: dealId, status: 'active' })
+  const comments = await Comment.find({ deal: dealId })
     .populate('user', 'username profilePicture')
     .sort('-createdAt');
 

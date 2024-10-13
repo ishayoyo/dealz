@@ -47,5 +47,4 @@ const auth = catchAsync(async (req, res, next) => {
     return next(new AppError('Invalid token. Please log in again.', 401));
   }
 });
-
 module.exports = auth;

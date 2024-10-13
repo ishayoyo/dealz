@@ -82,7 +82,14 @@
                 <div v-else class="comments-container space-y-4 mb-6 max-h-64 md:max-h-96 overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
                   <div v-if="comments.length === 0" class="text-gray-500 text-sm md:text-base">No comments yet. Be the first to comment!</div>
                   <div v-else>
-                    <Comment v-for="comment in comments" :key="comment._id" :comment="comment" class="bg-white p-3 md:p-4 rounded shadow-sm" />
+                    <Comment 
+                      v-for="comment in comments" 
+                      :key="comment.id" 
+                      :comment="comment" 
+                      class="bg-white p-3 md:p-4 rounded shadow-sm"
+                      :show-delete="isAdmin || (authStore.user && comment.user.id === authStore.user.id)"
+                      @delete-comment="handleDeleteComment"
+                    />
                   </div>
                 </div>
                 <div class="mt-4 relative">
@@ -141,6 +148,10 @@ const props = defineProps({
     required: true
   },
   isOpen: {
+    type: Boolean,
+    default: false
+  },
+  isAdmin: {
     type: Boolean,
     default: false
   }
@@ -429,6 +440,16 @@ const dealId = computed(() => props.deal._id || props.deal.id)
 
 const showSkeleton = computed(() => loading.value && !error.value && !comments.value.length)
 
+const isAdmin = computed(() => authStore.user && authStore.user.role === 'admin')
+
+const handleDeleteComment = (commentId) => {
+  if (commentId) {
+    emit('delete-comment', commentId)
+  } else {
+    console.error('Attempted to delete comment with undefined ID')
+  }
+}
+
 onMounted(async () => {
   console.log('DealModal: Mounted')
   if (props.deal && props.deal._id && isAuthenticated.value) {
@@ -437,6 +458,7 @@ onMounted(async () => {
   }
   window.addEventListener('resize', onResize)
   console.log('Deal object:', props.deal); // Add this line to verify the deal object
+  console.log('DealModal comments:', comments.value)
 })
 
 onUnmounted(() => {
@@ -449,6 +471,10 @@ watch(() => props.isOpen, async (newIsOpen) => {
     await fetchMentionableUsers()
   }
 }, { immediate: true })
+
+watch(comments, (newComments) => {
+  console.log('Comments updated:', newComments)
+}, { deep: true })
 </script>
 
 <style scoped>

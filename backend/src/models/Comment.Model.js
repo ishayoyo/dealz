@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const commentSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    auto: true
+  },
   content: { type: String, required: true },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   deal: { type: mongoose.Schema.Types.ObjectId, ref: 'Deal', required: true, index: true },
