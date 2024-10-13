@@ -455,7 +455,10 @@ exports.getCurrentUserFollowers = catchAsync(async (req, res, next) => {
     
     res.status(200).json({
       status: 'success',
-      data: { followers: followers.map(f => f.follower) }
+      data: { 
+        followers: followers.map(f => f.follower),
+        count: followers.length
+      }
     });
   } catch (error) {
     console.error('Error in getCurrentUserFollowers:', error);
@@ -562,7 +565,6 @@ exports.getCurrentUserCollections = catchAsync(async (req, res, next) => {
 
 exports.getCurrentUserFollowedDeals = catchAsync(async (req, res, next) => {
   console.log('getCurrentUserFollowedDeals called');
-  console.log('User  called');
   console.log('User ID:', req.user._id);
   try {
     const user = await User.findById(req.user._id).populate({

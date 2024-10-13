@@ -176,11 +176,11 @@ const getFullProfilePictureUrl = (profilePicture) => {
 
 const fetchFollowedDeals = async () => {
   try {
-    const response = await api.get('/deals/followed')
+    const response = await api.get('/users/me/followed-deals')
     followedDeals.value = response.data.data.followedDeals
   } catch (error) {
     console.error('Error fetching followed deals:', error)
-    throw error
+    toast.error('Failed to fetch followed deals')
   }
 }
 
@@ -219,14 +219,15 @@ const fetchFollowersCount = async () => {
     console.log('Fetching followers...')
     const response = await api.get('/users/me/followers')
     console.log('Followers response:', response.data)
-    if (response.data && Array.isArray(response.data.data.followers)) {
-      followersCount.value = response.data.data.followers.length
+    if (response.data && response.data.data) {
+      followersCount.value = response.data.data.count
       console.log('Followers count:', followersCount.value)
     } else {
       console.error('Unexpected response structure:', response.data)
     }
   } catch (error) {
     console.error('Error fetching followers:', error)
+    toast.error('Failed to fetch followers count')
   }
 }
 

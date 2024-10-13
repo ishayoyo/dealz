@@ -1,6 +1,7 @@
 <!-- components/FollowedDeals.vue -->
 <template>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div v-if="followedDeals && followedDeals.length > 0">
       <div v-for="deal in followedDeals" :key="deal._id" class="flex items-center justify-between border-b border-gray-200 py-3">
         <div class="flex items-center">
           <img :src="getFullImageUrl(deal.imageUrl)" :alt="deal.title" class="w-16 h-16 object-cover mr-3 rounded-md">
@@ -12,27 +13,36 @@
         <button @click="$emit('unfollow', deal._id)" class="text-blue-600 hover:text-blue-800">Unfollow</button>
       </div>
     </div>
-  </template>
-  
-  <script setup>
-  import { useRuntimeConfig } from '#app'
-  
-  const props = defineProps(['followedDeals'])
-  defineEmits(['unfollow'])
-  
-  const config = useRuntimeConfig()
-  
-  const getFullImageUrl = (imageUrl) => {
-    if (!imageUrl) return ''
-    const baseUrl = getImageBaseUrl()
-    return imageUrl.startsWith('http') 
-      ? imageUrl 
-      : `${baseUrl}${imageUrl}`
+    <div v-else class="text-center py-4">
+      No followed deals found.
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { useRuntimeConfig } from '#app'
+
+const props = defineProps({
+  followedDeals: {
+    type: Array,
+    default: () => []
   }
-  
-  const getImageBaseUrl = () => {
-    return config.public.apiBase.includes('localhost') 
-      ? 'http://localhost:5000' 
-      : 'https://deals.ishay.me'
-  }
-  </script>
+})
+defineEmits(['unfollow'])
+
+const config = useRuntimeConfig()
+
+const getFullImageUrl = (imageUrl) => {
+  if (!imageUrl) return ''
+  const baseUrl = getImageBaseUrl()
+  return imageUrl.startsWith('http') 
+    ? imageUrl 
+    : `${baseUrl}${imageUrl}`
+}
+
+const getImageBaseUrl = () => {
+  return config.public.apiBase.includes('localhost') 
+    ? 'http://localhost:5000' 
+    : 'https://deals.ishay.me'
+}
+</script>
