@@ -1,7 +1,10 @@
 <template>
     <div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-        <div v-if="isLoading" class="flex justify-center items-center h-screen">
-          <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary-600"></div>
+        <div v-if="isLoading" class="container mx-auto">
+          <UserProfileSkeleton />
+          <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <DealCardSkeleton v-for="i in 6" :key="i" />
+          </div>
         </div>
         <div v-else-if="error" class="container mx-auto px-4 py-8 text-center text-accent-600">
           {{ error }}
@@ -68,6 +71,8 @@
   import { useAuthStore } from '~/stores/auth'
   import DealCard from '~/components/DealCard.vue'
   import api from '~/services/api'
+  import UserProfileSkeleton from '~/components/UserProfileSkeleton.vue'
+  import DealCardSkeleton from '~/components/DealCardSkeleton.vue'
 
   const route = useRoute()
   const router = useRouter()

@@ -14,7 +14,12 @@
         </button>
       </div>
 
-      <div v-if="dealsStore.loading" class="text-center py-8">Loading deals...</div>
+      <div v-if="showSkeleton" class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <DealCardSkeleton v-for="i in 8" :key="i" />
+        </div>
+      </div>
+      <div v-else-if="dealsStore.loading" class="text-center py-8">Loading deals...</div>
       <div v-else-if="dealsStore.error" class="text-center py-8 text-red-500">{{ dealsStore.error }}</div>
       <div v-else class="container mx-auto px-4 py-8">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -53,6 +58,7 @@ import DealCard from '~/components/DealCard.vue'
 import DealModal from '~/components/DealModal.vue'
 import { useToastification } from '~/composables/useToastification'
 import AuthModal from '~/components/AuthModal.vue'
+import DealCardSkeleton from '~/components/DealCardSkeleton.vue'
 
 const dealsStore = useDealsStore()
 const authStore = useAuthStore()
@@ -200,4 +206,6 @@ const filteredDeals = computed(() => {
   }
   return safeDeals.value.filter(deal => selectedCategories.value.includes(deal.category))
 })
+
+const showSkeleton = computed(() => dealsStore.loading && dealsStore.deals.length === 0)
 </script>
