@@ -5,21 +5,21 @@ export default defineNuxtPlugin((nuxtApp) => {
   if (process.client) {
     nuxtApp.vueApp.use(Toast, {
       // Toast options
-      position: 'top-right',
-      timeout: 5000,
+      position: 'bottom-center',
+      timeout: 3000,
       closeOnClick: true,
-      pauseOnFocusLoss: true,
-      pauseOnHover: true,
-      draggable: true,
+      pauseOnFocusLoss: false,
+      pauseOnHover: false,
+      draggable: false,
       draggablePercent: 0.6,
       showCloseButtonOnHover: false,
-      hideProgressBar: false,
-      closeButton: 'button',
-      icon: true,
+      hideProgressBar: true,
+      closeButton: false,
+      icon: false,
       rtl: false,
-      transition: 'Vue-Toastification__bounce',
-      maxToasts: 20,
-      newestOnTop: true
+      transition: 'Vue-Toastification__fade',
+      maxToasts: 3,
+      newestOnTop: false
     })
   }
 })
