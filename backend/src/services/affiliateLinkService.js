@@ -12,6 +12,13 @@ class AffiliateLinkService {
   }
 
   async processLink(url, dealId, userId) {
+    // First, check if this is our own redirection URL
+    if (url.includes('deals.ishay.me/api/v1/link/out')) {
+      // Extract the actual URL from the 'url' parameter
+      const urlParams = new URLSearchParams(url.split('?')[1]);
+      url = decodeURIComponent(urlParams.get('url'));
+    }
+
     let originalUrl = url;
     let isExistingAffiliate = this.isAffiliateLink(url);
     
