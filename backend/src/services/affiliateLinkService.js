@@ -13,13 +13,19 @@ class AffiliateLinkService {
 
   async processLink(url, dealId, userId) {
     let originalUrl = url;
+    let isExistingAffiliate = this.isAffiliateLink(url);
     
-    // If it's already an affiliate link, try to extract the original product URL
-    if (this.isAffiliateLink(url)) {
+    if (isExistingAffiliate) {
       originalUrl = await this.extractOriginalUrl(url);
     }
 
-    const affiliateUrl = await this.convertAliExpressLink(originalUrl);
+    let affiliateUrl;
+    try {
+      affiliateUrl = await this.convertAliExpressLink(originalUrl);
+    } catch (error) {
+      console.error('Error converting link:', error);
+      affiliateUrl = isExistingAffiliate ? url : originalUrl; // Use original affiliate link if conversion fails
+    }
     
     if (affiliateUrl !== url) {
       await this.logClick(originalUrl, affiliateUrl, dealId, userId);
@@ -80,8 +86,8 @@ class AffiliateLinkService {
       return affiliateLink;
     } catch (error) {
       console.error('Error converting AliExpress link:', error);
+      throw error; // Propagate the error to be handled in processLink
     }
-    return url;
   }
 
   async extractProductId(url) {
