@@ -12,11 +12,43 @@ class AffiliateLinkService {
   }
 
   async processLink(url, dealId, userId) {
-    const affiliateUrl = await this.convertAliExpressLink(url);
-    if (affiliateUrl !== url) {
-      await this.logClick(url, affiliateUrl, dealId, userId);
+    let originalUrl = url;
+    
+    // If it's already an affiliate link, try to extract the original product URL
+    if (this.isAffiliateLink(url)) {
+      originalUrl = await this.extractOriginalUrl(url);
     }
+
+    const affiliateUrl = await this.convertAliExpressLink(originalUrl);
+    
+    if (affiliateUrl !== url) {
+      await this.logClick(originalUrl, affiliateUrl, dealId, userId);
+    }
+    
     return affiliateUrl;
+  }
+
+  isAffiliateLink(url) {
+    return url.includes('aff_') || url.includes('_aff') || url.includes('affiliate');
+  }
+
+  async extractOriginalUrl(affiliateUrl) {
+    try {
+      const response = await axios.get(affiliateUrl, {
+        maxRedirects: 5,
+        timeout: 10000,
+        validateStatus: function (status) {
+          return status >= 200 && status < 300 || status === 302;
+        },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+      return response.request.res.responseUrl || affiliateUrl;
+    } catch (error) {
+      console.error('Error extracting original URL:', error);
+      return affiliateUrl;
+    }
   }
 
   async logClick(originalUrl, affiliateUrl, dealId, userId) {
