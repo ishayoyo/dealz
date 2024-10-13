@@ -157,7 +157,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close-modal', 'open-auth-modal', 'update-follow-status', 'follow-deal'])
+const emit = defineEmits(['close-modal', 'open-auth-modal', 'update-follow-status', 'follow-deal', 'update:deal', 'delete-comment'])
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
@@ -212,6 +212,11 @@ watch(() => props.deal, (newDeal) => {
     isFollowing.value = newDeal.isFollowing || false
   }
 }, { immediate: true })
+
+watch(() => props.deal.comments, (newComments) => {
+  comments.value = newComments
+}, { immediate: true, deep: true })
+
 const fetchDealData = async () => {
   loading.value = true
   error.value = null
@@ -444,7 +449,12 @@ const isAdmin = computed(() => authStore.user && authStore.user.role === 'admin'
 
 const handleDeleteComment = (commentId) => {
   if (commentId) {
+    // Remove the comment from the local array
+    comments.value = comments.value.filter(comment => comment.id !== commentId)
+    // Emit the delete event to the parent component
     emit('delete-comment', commentId)
+    // Update the deal object
+    emit('update:deal', { ...props.deal, comments: comments.value })
   } else {
     console.error('Attempted to delete comment with undefined ID')
   }

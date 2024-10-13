@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue'
+import { computed } from 'vue'
 import { formatDistanceToNow } from 'date-fns'
 
 const props = defineProps({
@@ -35,14 +35,9 @@ const props = defineProps({
   }
 })
 
-onMounted(() => {
-  console.log('Comment props:', props.comment)
-})
-
 const emit = defineEmits(['delete-comment'])
 
 const commentId = computed(() => props.comment.id)
-const userId = computed(() => props.comment.user.id)
 
 const handleDelete = () => {
   if (commentId.value) {

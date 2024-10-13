@@ -4,7 +4,7 @@
     <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
     <DealModal 
       v-else-if="deal" 
-      :deal="deal" 
+      v-model:deal="deal"
       :isOpen="true"
       :isAuthenticated="isAuthenticated"
       :isAdmin="isAdmin"
@@ -142,8 +142,7 @@ async function handleDeleteComment(commentId) {
 
   try {
     await api.delete(`/comments/${commentId}`)
-    // Remove the deleted comment from the deal's comments
-    deal.value.comments = deal.value.comments.filter(comment => comment.id !== commentId)
+    // The comment has already been removed from the deal object in the DealModal component
     toast.success('Comment deleted successfully')
   } catch (err) {
     console.error('Error deleting comment:', err)
@@ -153,6 +152,11 @@ async function handleDeleteComment(commentId) {
       toast.error('Comment not found. It may have been already deleted.')
     } else {
       toast.error('Failed to delete comment. Please try again.')
+    }
+    // If the API call fails, we need to add the comment back to the deal object
+    const deletedComment = deal.value.comments.find(comment => comment.id === commentId)
+    if (deletedComment) {
+      deal.value.comments.push(deletedComment)
     }
   }
 }
