@@ -65,6 +65,13 @@ module.exports = {
       boxShadow: {
         'inner-glow': 'inset 0 0 20px rgba(99, 102, 241, 0.2)',
       },
+      transitionTimingFunction: {
+        'in-expo': 'cubic-bezier(0.95, 0.05, 0.795, 0.035)',
+        'out-expo': 'cubic-bezier(0.19, 1, 0.22, 1)',
+      },
+      transitionDuration: {
+        '400': '400ms',
+      },
     },
   },
   plugins: [],  // Removed the plugins that weren't installed

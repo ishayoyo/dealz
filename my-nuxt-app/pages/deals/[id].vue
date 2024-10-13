@@ -1,27 +1,32 @@
 <template>
   <div class="container mx-auto px-4 py-8 pt-24">
-    <div v-if="loading" class="text-center py-8">Loading deal...</div>
-    <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
-    <DealModal 
-      v-else-if="deal" 
-      v-model:deal="deal"
-      :isOpen="true"
-      :isAuthenticated="isAuthenticated"
-      :isAdmin="isAdmin"
-      @close-modal="goBack"
-      @update-follow-status="updateFollowStatus"
-      @follow-deal="handleFollowDeal"
-      @open-auth-modal="openAuthModal"
-      @delete-comment="handleDeleteComment"
-    />
-    <AuthModal 
-      v-if="showAuthModal" 
-      :show="showAuthModal"
-      @close="closeAuthModal" 
-      @login="handleLogin" 
-      @signup="handleSignup" 
-      :is-login="isLoginMode" 
-    />
+    <Transition name="fade" mode="out-in">
+      <DealModalSkeleton v-if="loading" key="loading" />
+      <div v-else-if="error" class="text-center py-8 text-red-500" key="error">{{ error }}</div>
+      <DealModal 
+        v-else-if="deal" 
+        v-model:deal="deal"
+        :isOpen="true"
+        :isAuthenticated="isAuthenticated"
+        :isAdmin="isAdmin"
+        @close-modal="goBack"
+        @update-follow-status="updateFollowStatus"
+        @follow-deal="handleFollowDeal"
+        @open-auth-modal="openAuthModal"
+        @delete-comment="handleDeleteComment"
+        key="deal-modal"
+      />
+    </Transition>
+    <Transition name="fade">
+      <AuthModal 
+        v-if="showAuthModal" 
+        :show="showAuthModal"
+        @close="closeAuthModal" 
+        @login="handleLogin" 
+        @signup="handleSignup" 
+        :is-login="isLoginMode" 
+      />
+    </Transition>
   </div>
 </template>
 
@@ -32,6 +37,7 @@ import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
 import { useToastification } from '~/composables/useToastification'
 import DealModal from '~/components/DealModal.vue'
+import DealModalSkeleton from '~/components/DealModalSkeleton.vue'
 import AuthModal from '~/components/AuthModal.vue'
 import api from '~/services/api'
 
@@ -161,3 +167,15 @@ async function handleDeleteComment(commentId) {
   }
 }
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

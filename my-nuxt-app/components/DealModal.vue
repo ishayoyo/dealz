@@ -1,133 +1,135 @@
   <template>
-  <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-    <div 
-      class="bg-white w-full overflow-hidden flex flex-col relative"
-      :class="modalSizeClass"
-      :style="modalStyle"
-    >
-      <DealModalSkeleton v-if="showSkeleton" />
-      <template v-else>
-        <!-- Close button -->
-        <button @click="closeModal" class="absolute top-4 right-4 text-gray-700 hover:text-text z-20 bg-white rounded-full p-2 shadow-md transition duration-300">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+  <Transition name="modal-fade" appear>
+    <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div 
+        class="bg-white w-full overflow-hidden flex flex-col relative transform transition-all duration-300"
+        :class="[modalSizeClass, { 'scale-95 opacity-0': !isOpen, 'scale-100 opacity-100': isOpen }]"
+        :style="modalStyle"
+      >
+        <DealModalSkeleton v-if="showSkeleton" />
+        <template v-else>
+          <!-- Close button -->
+          <button @click="closeModal" class="absolute top-4 right-4 text-gray-700 hover:text-text z-20 bg-white rounded-full p-2 shadow-md transition duration-300">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
 
-        <!-- Scrollable container for modal content -->
-        <div class="flex flex-col md:flex-row h-full w-full overflow-y-auto">
-          <!-- Image container -->
-          <div ref="imageContainer" class="w-full md:w-1/2 flex items-center justify-center p-4 bg-gray-100">
-            <img 
-              :src="imageUrl" 
-              :alt="deal.title" 
-              @load="onImageLoad" 
-              class="max-w-full max-h-full object-contain rounded-lg shadow-lg transition-transform duration-300 hover:scale-105"
-              :style="imageStyle"
-            >
-          </div>
-          
-          <!-- Content container -->
-          <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col">
-            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-text">{{ deal.title }}</h2>
-            <p class="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">{{ deal.description }}</p>
-            
-            <!-- Add this section to display the category -->
-            <div class="mb-4">
-              <span class="font-semibold text-gray-700">Category:</span>
-              <span class="ml-2 text-primary-600">{{ deal.category }}</span>
-            </div>
-            
-            <div class="flex items-center justify-between mb-6">
-              <span class="font-bold text-accent text-3xl md:text-4xl">${{ formattedPrice }}</span>
-              <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
-                GET THIS DEAL
-              </a>
-            </div>
-            
-            <div class="flex items-center justify-between mb-6">
-              <button @click="handleFollowDeal" class="btn btn-outline-secondary">
-                <span>{{ isFollowing ? 'Unfollow Deal' : 'Follow Deal' }}</span>
-                <span class="ml-2 bg-gray-200 text-gray-700 rounded-full px-2 py-1 text-xs">
-                  {{ formattedFollowCount }}
-                </span>
-              </button>
-            </div>
-            
-            <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 md:p-6 rounded-lg shadow-sm">
-              <div class="flex items-center">
-                <UserAvatar :name="dealUserName" :size="40" class="mr-3 md:mr-4" />
-                <div>
-                  <span class="text-sm text-gray-500">Posted by:</span>
-                  <NuxtLink :to="`/user/${deal.user._id}`" class="font-semibold ml-1 text-text text-base md:text-lg hover:text-primary-600 hover:underline">
-                    {{ dealUserName }}
-                  </NuxtLink>
-                </div>
-              </div>
-              <button 
-                @click="handleFollowUser" 
-                class="btn btn-outline-secondary"
-                :disabled="isCurrentUser"
-                :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
+          <!-- Scrollable container for modal content -->
+          <div class="flex flex-col md:flex-row h-full w-full overflow-y-auto">
+            <!-- Image container -->
+            <div ref="imageContainer" class="w-full md:w-1/2 flex items-center justify-center p-4 bg-gray-100">
+              <img 
+                :src="imageUrl" 
+                :alt="deal.title" 
+                @load="onImageLoad" 
+                class="max-w-full max-h-full object-contain rounded-lg shadow-lg transition-transform duration-300 hover:scale-105"
+                :style="imageStyle"
               >
-                {{ isFollowingUser ? 'Unfollow User' : 'Follow User' }}
-              </button>
             </div>
             
-            <div class="border-t border-gray-200 pt-6 flex-grow">
-              <h3 class="font-bold text-xl md:text-2xl mb-4 text-text">Comments</h3>
-              <div v-if="isAuthenticated">
-                <div v-if="loading" class="text-gray-500">Loading comments...</div>
-                <div v-else-if="error" class="text-red-500">{{ error }}</div>
-                <div v-else class="comments-container space-y-4 mb-6 max-h-64 md:max-h-96 overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
-                  <div v-if="comments.length === 0" class="text-gray-500 text-sm md:text-base">No comments yet. Be the first to comment!</div>
-                  <div v-else>
-                    <Comment 
-                      v-for="comment in comments" 
-                      :key="comment.id" 
-                      :comment="comment" 
-                      class="bg-white p-3 md:p-4 rounded shadow-sm"
-                      :show-delete="isAdmin || (authStore.user && comment.user.id === authStore.user.id)"
-                      @delete-comment="handleDeleteComment"
-                    />
-                  </div>
-                </div>
-                <div class="mt-4 relative">
-                  <textarea
-                    v-model="newComment"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
-                    rows="3"
-                    placeholder="Add a comment..."
-                    @input="handleInput"
-                    :maxlength="MAX_COMMENT_LENGTH"
-                  ></textarea>
-                  <UserMentionAutocomplete
-                    v-if="showMentions"
-                    :users="filteredMentionableUsers"
-                    @select="handleUserSelect"
-                  />
-                  <div class="text-sm text-gray-500 mt-1">
-                    {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
+            <!-- Content container -->
+            <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 text-text">{{ deal.title }}</h2>
+              <p class="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">{{ deal.description }}</p>
+              
+              <!-- Add this section to display the category -->
+              <div class="mb-4">
+                <span class="font-semibold text-gray-700">Category:</span>
+                <span class="ml-2 text-primary-600">{{ deal.category }}</span>
+              </div>
+              
+              <div class="flex items-center justify-between mb-6">
+                <span class="font-bold text-accent text-3xl md:text-4xl">${{ formattedPrice }}</span>
+                <a :href="deal.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+                  GET THIS DEAL
+                </a>
+              </div>
+              
+              <div class="flex items-center justify-between mb-6">
+                <button @click="handleFollowDeal" class="btn btn-outline-secondary">
+                  <span>{{ isFollowing ? 'Unfollow Deal' : 'Follow Deal' }}</span>
+                  <span class="ml-2 bg-gray-200 text-gray-700 rounded-full px-2 py-1 text-xs">
+                    {{ formattedFollowCount }}
+                  </span>
+                </button>
+              </div>
+              
+              <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 md:p-6 rounded-lg shadow-sm">
+                <div class="flex items-center">
+                  <UserAvatar :name="dealUserName" :size="40" class="mr-3 md:mr-4" />
+                  <div>
+                    <span class="text-sm text-gray-500">Posted by:</span>
+                    <NuxtLink :to="`/user/${deal.user._id}`" class="font-semibold ml-1 text-text text-base md:text-lg hover:text-primary-600 hover:underline">
+                      {{ dealUserName }}
+                    </NuxtLink>
                   </div>
                 </div>
                 <button 
-                  @click="handleAddComment" 
-                  class="btn btn-primary mt-3 w-full"
-                  :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
+                  @click="handleFollowUser" 
+                  class="btn btn-outline-secondary"
+                  :disabled="isCurrentUser"
+                  :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
                 >
-                  Add Comment
+                  {{ isFollowingUser ? 'Unfollow User' : 'Follow User' }}
                 </button>
               </div>
-              <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner">
-                <p class="mb-3 text-sm md:text-base">Login to view and post comments</p>
-                <button @click="openAuthModal" class="btn btn-primary w-full max-w-xs mx-auto">Login</button>
+              
+              <div class="border-t border-gray-200 pt-6 flex-grow">
+                <h3 class="font-bold text-xl md:text-2xl mb-4 text-text">Comments</h3>
+                <div v-if="isAuthenticated">
+                  <div v-if="loading" class="text-gray-500">Loading comments...</div>
+                  <div v-else-if="error" class="text-red-500">{{ error }}</div>
+                  <div v-else class="comments-container space-y-4 mb-6 max-h-64 md:max-h-96 overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
+                    <div v-if="comments.length === 0" class="text-gray-500 text-sm md:text-base">No comments yet. Be the first to comment!</div>
+                    <div v-else>
+                      <Comment 
+                        v-for="comment in comments" 
+                        :key="comment.id" 
+                        :comment="comment" 
+                        class="bg-white p-3 md:p-4 rounded shadow-sm"
+                        :show-delete="isAdmin || (authStore.user && comment.user.id === authStore.user.id)"
+                        @delete-comment="handleDeleteComment"
+                      />
+                    </div>
+                  </div>
+                  <div class="mt-4 relative">
+                    <textarea
+                      v-model="newComment"
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                      rows="3"
+                      placeholder="Add a comment..."
+                      @input="handleInput"
+                      :maxlength="MAX_COMMENT_LENGTH"
+                    ></textarea>
+                    <UserMentionAutocomplete
+                      v-if="showMentions"
+                      :users="filteredMentionableUsers"
+                      @select="handleUserSelect"
+                    />
+                    <div class="text-sm text-gray-500 mt-1">
+                      {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
+                    </div>
+                  </div>
+                  <button 
+                    @click="handleAddComment" 
+                    class="btn btn-primary mt-3 w-full"
+                    :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
+                  >
+                    Add Comment
+                  </button>
+                </div>
+                <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner">
+                  <p class="mb-3 text-sm md:text-base">Login to view and post comments</p>
+                  <button @click="openAuthModal" class="btn btn-primary w-full max-w-xs mx-auto">Login</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </template>
+        </template>
+      </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <script setup>
@@ -485,6 +487,9 @@ watch(() => props.isOpen, async (newIsOpen) => {
 watch(comments, (newComments) => {
   console.log('Comments updated:', newComments)
 }, { deep: true })
+
+// Add this computed property
+const isOpen = computed(() => props.isOpen)
 </script>
 
 <style scoped>
@@ -543,5 +548,20 @@ watch(comments, (newComments) => {
   background-color: #CBD5E0;
   border-radius: 3px;
   border: 2px solid #EDF2F7;
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-enter-to,
+.modal-fade-leave-from {
+  opacity: 1;
 }
 </style>
