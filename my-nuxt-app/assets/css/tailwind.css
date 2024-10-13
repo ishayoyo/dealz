@@ -1,3 +1,4 @@
+/* tailwind.css */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
 
 @tailwind base;
@@ -15,7 +16,7 @@
 
 @layer components {
   .btn {
-    @apply font-semibold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply font-semibold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95;
   }
 
   .btn-primary {
@@ -35,7 +36,7 @@
   }
 
   .input-field {
-    @apply w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-300;
+    @apply w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-300 bg-white bg-opacity-80 hover:bg-opacity-100;
   }
 
   .btn-sm {
@@ -46,9 +47,20 @@
 /* Custom animations */
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-5px); }
 }
 
 .animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: float 5s ease-in-out infinite;
+}
+
+/* Add a new animation for the notification bell */
+@keyframes ring {
+  0%, 100% { transform: rotate(0); }
+  20%, 60% { transform: rotate(-10deg); }
+  40%, 80% { transform: rotate(10deg); }
+}
+
+.animate-ring {
+  animation: ring 1s ease-in-out;
 }

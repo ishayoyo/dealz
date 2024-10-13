@@ -14,32 +14,37 @@
           </button>
         </div>
         
-        <div v-if="notifications.length === 0" class="text-center text-gray-500">
+        <div v-if="groupedNotifications.length === 0" class="text-center text-gray-500">
           No notifications to display.
         </div>
         
-        <ul v-else class="divide-y divide-gray-200">
-          <li v-for="notification in notifications" :key="notification._id" class="py-4">
-            <div class="flex items-start sm:items-center">
-              <div class="flex-shrink-0 mt-1 sm:mt-0">
-                <span class="inline-block h-2 w-2 rounded-full" :class="notification.read ? 'bg-gray-300' : 'bg-blue-500'"></span>
-              </div>
-              <div class="ml-3 w-0 flex-1">
-                <p class="text-sm font-medium text-gray-900" :class="{ 'font-bold': !notification.read }">
-                  <span v-html="formatNotificationContent(notification)"></span>
-                </p>
-                <p class="text-xs sm:text-sm text-gray-500 mt-1">
-                  {{ formatDate(notification.createdAt) }}
-                </p>
-              </div>
-              <div class="ml-4 flex-shrink-0" v-if="!notification.read">
-                <button @click="markAsRead(notification._id)" class="text-xs sm:text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                  Mark as read
-                </button>
-              </div>
-            </div>
-          </li>
-        </ul>
+        <div v-else>
+          <div v-for="(group, index) in groupedNotifications" :key="index" class="mb-8">
+            <h3 class="text-lg font-semibold mb-4">{{ group.date }}</h3>
+            <ul class="divide-y divide-gray-200">
+              <li v-for="notification in group.notifications" :key="notification._id" class="py-4">
+                <div class="flex items-start sm:items-center">
+                  <div class="flex-shrink-0 mt-1 sm:mt-0">
+                    <span class="inline-block h-2 w-2 rounded-full" :class="notification.read ? 'bg-gray-300' : 'bg-blue-500'"></span>
+                  </div>
+                  <div class="ml-3 w-0 flex-1">
+                    <p class="text-sm font-medium text-gray-900" :class="{ 'font-bold': !notification.read }">
+                      <span v-html="formatNotificationContent(notification)"></span>
+                    </p>
+                    <p class="text-xs sm:text-sm text-gray-500 mt-1">
+                      {{ formatTime(notification.createdAt) }}
+                    </p>
+                  </div>
+                  <div class="ml-4 flex-shrink-0" v-if="!notification.read">
+                    <button @click="markAsRead(notification._id)" class="text-xs sm:text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                      Mark as read
+                    </button>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -60,6 +65,21 @@ const { notifications } = storeToRefs(notificationStore)
 const loading = ref(true)
 
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
+
+const groupedNotifications = computed(() => {
+  const groups = {}
+  notifications.value.forEach(notification => {
+    const date = new Date(notification.createdAt).toLocaleDateString()
+    if (!groups[date]) {
+      groups[date] = []
+    }
+    groups[date].push(notification)
+  })
+  return Object.entries(groups).map(([date, notifications]) => ({
+    date,
+    notifications: notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  })).sort((a, b) => new Date(b.date) - new Date(a.date))
+})
 
 onMounted(async () => {
   await notificationStore.fetchNotifications()
@@ -84,8 +104,8 @@ const markAllAsRead = async () => {
   }
 }
 
-const formatDate = (date) => {
-  return new Date(date).toLocaleString()
+const formatTime = (date) => {
+  return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 const formatNotificationContent = (notification) => {
