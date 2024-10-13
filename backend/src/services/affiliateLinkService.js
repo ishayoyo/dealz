@@ -30,6 +30,11 @@ class AffiliateLinkService {
 
   async convertAliExpressLink(url) {
     const trackingId = process.env.ALIEXPRESS_TRACKING_ID;
+    if (!trackingId) {
+      console.error('ALIEXPRESS_TRACKING_ID is not set in the environment variables');
+      return url;
+    }
+
     try {
       const productId = await this.extractProductId(url);
       if (!productId) {
