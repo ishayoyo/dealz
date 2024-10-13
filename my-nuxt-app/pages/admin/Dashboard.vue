@@ -1,147 +1,86 @@
-<!-- pages/admin/dashboard.vue -->
 <template>
   <div class="admin-dashboard p-6 space-y-8">
     <h1 class="text-3xl font-heading text-primary-800 mb-8">Admin Dashboard</h1>
     
     <!-- Analytics Section -->
-    <section class="bg-white rounded-xl shadow-lg p-6">
-      <h2 class="text-2xl font-heading text-primary-700 mb-4">Analytics</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="stat-card bg-gradient-to-br from-primary-100 to-primary-200 p-4 rounded-lg">
-          <h3 class="text-lg font-heading text-primary-800">Total Users</h3>
-          <p class="text-3xl font-bold text-primary-600">{{ totalUsers }}</p>
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div v-for="(stat, index) in stats" :key="index" 
+           :class="`bg-gradient-to-br from-${stat.color}-100 to-${stat.color}-200 p-6 rounded-xl shadow-md`">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-heading text-gray-800">{{ stat.title }}</h3>
+          <i :class="`fas fa-${stat.icon} text-${stat.color}-500 text-2xl`"></i>
         </div>
-        <div class="stat-card bg-gradient-to-br from-secondary-100 to-secondary-200 p-4 rounded-lg">
-          <h3 class="text-lg font-heading text-secondary-800">Total Deals</h3>
-          <p class="text-3xl font-bold text-secondary-600">{{ totalDeals }}</p>
-        </div>
-        <div class="stat-card bg-gradient-to-br from-accent-100 to-accent-200 p-4 rounded-lg">
-          <h3 class="text-lg font-heading text-accent-800">Pending Deals</h3>
-          <p class="text-3xl font-bold text-accent-600">{{ pendingDeals.length }}</p>
-        </div>
-        <div class="stat-card bg-gradient-to-br from-chip-100 to-chip-200 p-4 rounded-lg">
-          <h3 class="text-lg font-heading text-chip-800">Total Comments</h3>
-          <p class="text-3xl font-bold text-chip-600">{{ totalComments }}</p>
-        </div>
+        <p class="text-3xl font-bold text-gray-900 mt-2">{{ stat.value }}</p>
       </div>
     </section>
     
     <!-- Charts Section -->
-    <section class="bg-white rounded-xl shadow-lg p-6">
-      <h2 class="text-2xl font-heading text-primary-700 mb-4">Charts</h2>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div v-for="chart in charts" :key="chart.title" class="bg-white rounded-xl shadow-md p-6">
+        <h3 class="text-xl font-heading text-gray-800 mb-4">{{ chart.title }}</h3>
         <div class="chart-container">
-          <canvas ref="dealsChartRef"></canvas>
+          <canvas :ref="chart.ref"></canvas>
         </div>
-        <div class="chart-container">
-          <canvas ref="usersChartRef"></canvas>
-        </div>
-      </div>
-    </section>
-    
-    <!-- Pending Deals Section -->
-    <section class="bg-white rounded-xl shadow-lg p-6">
-      <h2 class="text-2xl font-heading text-primary-700 mb-4">Pending Deals</h2>
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="bg-primary-100">
-              <th class="p-2 text-left">Image</th>
-              <th class="p-2 text-left">Title</th>
-              <th class="p-2 text-left">User</th>
-              <th class="p-2 text-left">Created At</th>
-              <th class="p-2 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="deal in pendingDeals" :key="deal._id" class="border-b border-primary-100">
-              <td class="p-2">
-                <img :src="getFullImageUrl(deal.imageUrl)" alt="Deal image" class="w-16 h-16 object-cover rounded">
-              </td>
-              <td class="p-2">{{ deal.title }}</td>
-              <td class="p-2">{{ deal.user?.username }}</td>
-              <td class="p-2">{{ formatDate(deal.createdAt) }}</td>
-              <td class="p-2">
-                <button @click="approveDeal(deal._id)" class="btn btn-sm btn-primary mr-2">Approve</button>
-                <button @click="rejectDeal(deal._id)" class="btn btn-sm btn-accent mr-2">Reject</button>
-                <button @click="openEditModal(deal)" class="btn btn-sm btn-secondary">Edit</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-    
-    <!-- All Deals Section -->
-    <section class="bg-white rounded-xl shadow-lg p-6">
-      <h2 class="text-2xl font-heading text-primary-700 mb-4">All Deals</h2>
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="bg-primary-100">
-              <th class="p-2 text-left">Title</th>
-              <th class="p-2 text-left">User</th>
-              <th class="p-2 text-left">Status</th>
-              <th class="p-2 text-left">Created At</th>
-              <th class="p-2 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="deal in allDeals" :key="deal._id" class="border-b border-primary-100">
-              <td class="p-2">{{ deal.title }}</td>
-              <td class="p-2">{{ deal.user?.username }}</td>
-              <td class="p-2">{{ deal.status }}</td>
-              <td class="p-2">{{ formatDate(deal.createdAt) }}</td>
-              <td class="p-2">
-                <button @click="openEditModal(deal)" class="btn btn-sm btn-secondary mr-2">Edit</button>
-                <button @click="deleteDeal(deal._id)" class="btn btn-sm btn-accent">Delete</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-    
-    <!-- Users Section -->
-    <section class="bg-white rounded-xl shadow-lg p-6">
-      <h2 class="text-2xl font-heading text-primary-700 mb-4">Users</h2>
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="bg-primary-100">
-              <th class="p-2 text-left">Username</th>
-              <th class="p-2 text-left">Email</th>
-              <th class="p-2 text-left">Created At</th>
-              <th class="p-2 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="user in users" :key="user._id" class="border-b border-primary-100">
-              <td class="p-2">{{ user.username }}</td>
-              <td class="p-2">{{ user.email }}</td>
-              <td class="p-2">{{ formatDate(user.createdAt) }}</td>
-              <td class="p-2">
-                <button @click="deleteUser(user._id)" class="btn btn-sm btn-accent">Delete</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </section>
     
     <!-- Affiliate Statistics Section -->
-    <section class="bg-white rounded-xl shadow-lg p-6">
-      <h2 class="text-2xl font-heading text-primary-700 mb-4">Affiliate Statistics</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="stat-card bg-gradient-to-br from-primary-100 to-primary-200 p-4 rounded-lg">
-          <h3 class="text-lg font-heading text-primary-800">Total Affiliate Clicks</h3>
-          <p class="text-3xl font-bold text-primary-600">{{ affiliateStats.totalClicks }}</p>
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="bg-gradient-to-br from-success-100 to-success-200 p-6 rounded-xl shadow-md">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-heading text-gray-800">Total Affiliate Clicks</h3>
+          <i class="fas fa-mouse-pointer text-success-500 text-2xl"></i>
+        </div>
+        <p class="text-3xl font-bold text-gray-900 mt-2">{{ affiliateStats.totalClicks }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-md p-6 lg:col-span-2">
+        <h3 class="text-xl font-heading text-gray-800 mb-4">Clicks Over Time</h3>
+        <div class="chart-container">
+          <canvas ref="clicksOverTimeChartRef"></canvas>
         </div>
       </div>
-      <div class="mt-6">
-        <div class="chart-container">
-          <h3 class="text-lg font-heading text-primary-800 mb-2">Clicks Over Time</h3>
-          <canvas ref="clicksOverTimeChartRef"></canvas>
+    </section>
+    
+    <!-- Data Tables Section -->
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div v-for="table in tables" :key="table.title" 
+           :class="{'xl:col-span-2': table.title === 'Users'}"
+           class="bg-white rounded-xl shadow-md p-6">
+        <h3 class="text-xl font-heading text-gray-800 mb-4">{{ table.title }}</h3>
+        <div class="overflow-x-auto max-h-96">
+          <table class="w-full">
+            <thead>
+              <tr class="bg-gray-100">
+                <th v-for="column in table.columns" :key="column.key" class="p-2 text-left">{{ column.label }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in table.data" :key="item._id" class="border-b border-gray-200">
+                <td v-for="column in table.columns" :key="column.key" class="p-2">
+                  <template v-if="column.type === 'image'">
+                    <img :src="getFullImageUrl(item[column.key])" :alt="item.title" class="w-16 h-16 object-cover rounded">
+                  </template>
+                  <template v-else-if="column.type === 'date'">
+                    {{ formatDate(getNestedValue(item, column.key)) }}
+                  </template>
+                  <template v-else-if="column.type === 'actions'">
+                    <button 
+                      v-for="action in column.actions" 
+                      :key="action"
+                      @click="handleAction(action, item._id)"
+                      class="btn btn-sm mr-2"
+                      :class="`btn-${getActionColor(action)}`"
+                    >
+                      {{ action }}
+                    </button>
+                  </template>
+                  <template v-else>
+                    {{ getNestedValue(item, column.key) }}
+                  </template>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -150,7 +89,7 @@
     <div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center p-4">
       <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-auto overflow-y-auto max-h-[90vh]">
         <div class="p-6 space-y-4">
-          <h3 class="text-2xl font-heading text-primary-700 mb-4">Edit Deal</h3>
+          <h3 class="text-2xl font-heading text-gray-800 mb-4">Edit Deal</h3>
           <form @submit.prevent="submitEditDeal" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -222,20 +161,9 @@ const editingDeal = ref({})
 const config = useRuntimeConfig()
 
 const categories = ref([
-  "Electronics",
-  "Home",
-  "Fashion",
-  "Beauty",
-  "Sports",
-  "Books",
-  "Toys",
-  "Travel",
-  "Food",
-  "Auto",
-  "DIY",
-  "Pets",
-  "Other"
-]);
+  "Electronics", "Home", "Fashion", "Beauty", "Sports", "Books", "Toys",
+  "Travel", "Food", "Auto", "DIY", "Pets", "Other"
+])
 
 const affiliateStats = ref({
   totalClicks: 0,
@@ -243,6 +171,53 @@ const affiliateStats = ref({
 })
 
 const clicksOverTimeChartRef = ref(null)
+
+const stats = computed(() => [
+  { title: 'Total Users', value: totalUsers.value, color: 'primary', icon: 'users' },
+  { title: 'Total Deals', value: totalDeals.value, color: 'secondary', icon: 'tag' },
+  { title: 'Pending Deals', value: pendingDeals.value.length, color: 'accent', icon: 'clock' },
+  { title: 'Total Comments', value: totalComments.value, color: 'chip', icon: 'comment' }
+])
+
+const charts = [
+  { title: 'Deals Over Time', ref: dealsChartRef },
+  { title: 'New Users', ref: usersChartRef }
+]
+
+const tables = computed(() => [
+  {
+    title: 'Pending Deals',
+    data: pendingDeals.value,
+    columns: [
+      { key: 'imageUrl', label: 'Image', type: 'image' },
+      { key: 'title', label: 'Title' },
+      { key: 'user.username', label: 'User' },
+      { key: 'createdAt', label: 'Created At', type: 'date' },
+      { key: 'actions', label: 'Actions', type: 'actions', actions: ['approve', 'reject', 'edit'] }
+    ]
+  },
+  {
+    title: 'All Deals',
+    data: allDeals.value,
+    columns: [
+      { key: 'title', label: 'Title' },
+      { key: 'user.username', label: 'User' },
+      { key: 'status', label: 'Status' },
+      { key: 'createdAt', label: 'Created At', type: 'date' },
+      { key: 'actions', label: 'Actions', type: 'actions', actions: ['edit', 'delete'] }
+    ]
+  },
+  {
+    title: 'Users',
+    data: users.value,
+    columns: [
+      { key: 'username', label: 'Username' },
+      { key: 'email', label: 'Email' },
+      { key: 'createdAt', label: 'Created At', type: 'date' },
+      { key: 'actions', label: 'Actions', type: 'actions', actions: ['delete'] }
+    ]
+  }
+])
 
 const fullImageUrl = computed(() => {
   if (!editingDeal.value?.imageUrl) return '/default-deal-image.jpg'
@@ -327,6 +302,31 @@ const fetchUsers = async () => {
   } catch (error) {
     console.error('Error fetching users:', error)
     toast.error('Failed to fetch users')
+  }
+}
+
+const handleAction = async (action, itemId) => {
+  switch (action) {
+    case 'approve':
+      await approveDeal(itemId)
+      break
+    case 'reject':
+      await rejectDeal(itemId)
+      break
+    case 'edit':
+      openEditModal(allDeals.value.find(deal => deal._id === itemId) || 
+                    pendingDeals.value.find(deal => deal._id === itemId))
+      break
+    case 'delete':
+      if (confirm('Are you sure you want to delete this item?')) {
+        // Check if it's a user or a deal
+        if (users.value.find(user => user._id === itemId)) {
+          await deleteUser(itemId)
+        } else {
+          await deleteDeal(itemId)
+        }
+      }
+      break
   }
 }
 
@@ -437,6 +437,20 @@ const createClicksOverTimeChart = () => {
   })
 }
 
+const getNestedValue = (obj, path) => {
+  return path.split('.').reduce((acc, part) => acc && acc[part], obj)
+}
+
+const getActionColor = (action) => {
+  switch (action) {
+    case 'approve': return 'success'
+    case 'reject': return 'danger'
+    case 'edit': return 'info'
+    case 'delete': return 'danger'
+    default: return 'primary'
+  }
+}
+
 onMounted(async () => {
   await fetchAnalytics();
   await fetchPendingDeals();
@@ -458,3 +472,37 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.input-field {
+  @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50;
+}
+
+.btn {
+  @apply font-bold py-2 px-4 rounded;
+}
+
+.btn-sm {
+  @apply py-1 px-2 text-sm;
+}
+
+.btn-primary {
+  @apply bg-blue-500 text-white hover:bg-blue-700;
+}
+
+.btn-secondary {
+  @apply bg-gray-500 text-white hover:bg-gray-700;
+}
+
+.btn-success {
+  @apply bg-green-500 text-white hover:bg-green-700;
+}
+
+.btn-danger {
+  @apply bg-red-500 text-white hover:bg-red-700;
+}
+
+.btn-info {
+  @apply bg-cyan-500 text-white hover:bg-cyan-700;
+}
+</style>
