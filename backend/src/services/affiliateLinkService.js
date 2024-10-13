@@ -1,4 +1,5 @@
 const axios = require('axios');
+const AffiliateClick = require('../models/AffiliateClick.Model');
 
 class AffiliateLinkService {
   constructor() {
@@ -10,13 +11,21 @@ class AffiliateLinkService {
     };
   }
 
-  async processLink(url) {
-    for (const network of Object.values(this.affiliateNetworks)) {
-      if (network.isApplicable(url)) {
-        return await network.convert(url);
-      }
+  async processLink(url, dealId, userId) {
+    const affiliateUrl = await this.convertAliExpressLink(url);
+    if (affiliateUrl !== url) {
+      await this.logClick(url, affiliateUrl, dealId, userId);
     }
-    return url;
+    return affiliateUrl;
+  }
+
+  async logClick(originalUrl, affiliateUrl, dealId, userId) {
+    await AffiliateClick.create({
+      originalUrl,
+      affiliateUrl,
+      dealId,
+      userId
+    });
   }
 
   async convertAliExpressLink(url) {

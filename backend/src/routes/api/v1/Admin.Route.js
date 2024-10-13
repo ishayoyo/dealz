@@ -23,4 +23,6 @@ router.get('/pending-deals', adminController.getPendingDeals);
 // Add this line with the other routes
 router.patch('/deals/:id', adminController.editDeal);
 
+router.get('/affiliate-stats', auth, isAdmin, adminController.getAffiliateStats);
+
 module.exports = router;

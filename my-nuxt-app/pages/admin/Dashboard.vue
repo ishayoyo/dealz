@@ -129,6 +129,23 @@
       </div>
     </section>
     
+    <!-- Affiliate Statistics Section -->
+    <section class="bg-white rounded-xl shadow-lg p-6">
+      <h2 class="text-2xl font-heading text-primary-700 mb-4">Affiliate Statistics</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="stat-card bg-gradient-to-br from-primary-100 to-primary-200 p-4 rounded-lg">
+          <h3 class="text-lg font-heading text-primary-800">Total Affiliate Clicks</h3>
+          <p class="text-3xl font-bold text-primary-600">{{ affiliateStats.totalClicks }}</p>
+        </div>
+      </div>
+      <div class="mt-6">
+        <div class="chart-container">
+          <h3 class="text-lg font-heading text-primary-800 mb-2">Clicks Over Time</h3>
+          <canvas ref="clicksOverTimeChartRef"></canvas>
+        </div>
+      </div>
+    </section>
+    
     <!-- Edit Deal Modal -->
     <div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center p-4">
       <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-auto overflow-y-auto max-h-[90vh]">
@@ -219,6 +236,13 @@ const categories = ref([
   "Pets",
   "Other"
 ]);
+
+const affiliateStats = ref({
+  totalClicks: 0,
+  clicksOverTime: []
+})
+
+const clicksOverTimeChartRef = ref(null)
 
 const fullImageUrl = computed(() => {
   if (!editingDeal.value?.imageUrl) return '/default-deal-image.jpg'
@@ -386,11 +410,39 @@ const getFullImageUrl = (imageUrl) => {
     : `${getImageBaseUrl()}${imageUrl.split('/').pop()}`
 }
 
+const fetchAffiliateStats = async () => {
+  try {
+    const response = await api.get('/admin/affiliate-stats')
+    affiliateStats.value = response.data
+    createClicksOverTimeChart()
+  } catch (error) {
+    console.error('Error fetching affiliate stats:', error)
+    toast.error('Failed to fetch affiliate statistics')
+  }
+}
+
+const createClicksOverTimeChart = () => {
+  if (!clicksOverTimeChartRef.value) return
+  new Chart(clicksOverTimeChartRef.value, {
+    type: 'line',
+    data: {
+      labels: affiliateStats.value.clicksOverTime.map(item => item.date),
+      datasets: [{
+        label: 'Clicks',
+        data: affiliateStats.value.clicksOverTime.map(item => item.count),
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.1
+      }]
+    }
+  })
+}
+
 onMounted(async () => {
   await fetchAnalytics();
   await fetchPendingDeals();
   await fetchAllDeals();
   await fetchUsers();
+  await fetchAffiliateStats();
   
   try {
     const [dealsChartData, usersChartData] = await Promise.all([

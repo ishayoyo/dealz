@@ -4,6 +4,7 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const NotificationService = require('../services/NotificationService');
 const Comment = require('../models/Comment.Model');
+const AffiliateClick = require('../models/AffiliateClick.Model');
 
 exports.getUsers = catchAsync(async (req, res, next) => {
   const users = await User.find().select('-password');
@@ -257,3 +258,23 @@ exports.editDeal = catchAsync(async (req, res, next) => {
     data: { deal }
   });
 });
+
+exports.getAffiliateStats = async (req, res) => {
+  try {
+    const totalClicks = await AffiliateClick.countDocuments();
+    const clicksOverTime = await AffiliateClick.aggregate([
+      { $group: {
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$clickedAt" } },
+        count: { $sum: 1 }
+      }},
+      { $sort: { _id: 1 } }
+    ]);
+
+    res.json({
+      totalClicks,
+      clicksOverTime: clicksOverTime.map(item => ({ date: item._id, count: item.count }))
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching affiliate statistics', error });
+  }
+};
