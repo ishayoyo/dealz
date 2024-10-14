@@ -449,7 +449,7 @@ const onResize = () => {
 const getImageBaseUrl = () => {
   return config.public.apiBase.includes('localhost') 
     ? 'http://localhost:5000' 
-    : 'https://deals.ishay.me'
+    : 'https://saversonic.com'
 }
 
 const dealId = computed(() => props.deal._id || props.deal.id)

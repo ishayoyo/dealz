@@ -43,6 +43,6 @@ const getFullImageUrl = (imageUrl) => {
 const getImageBaseUrl = () => {
   return config.public.apiBase.includes('localhost') 
     ? 'http://localhost:5000' 
-    : 'https://deals.ishay.me'
+    : 'https://saversonic.com'
 }
 </script>

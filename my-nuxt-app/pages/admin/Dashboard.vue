@@ -229,7 +229,7 @@ const fullImageUrl = computed(() => {
 const getImageBaseUrl = () => {
   return config.public.apiBase.includes('localhost') 
     ? 'http://localhost:5000/images/deals/' 
-    : 'https://deals.ishay.me/images/deals/'
+    : 'https://saversonic.com/images/deals/'
 }
 
 const fetchAnalytics = async () => {
