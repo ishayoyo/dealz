@@ -5,7 +5,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   console.log('Auth plugin: Starting initialization')
   const authStore = useAuthStore()
 
-  if (process.client) {
+  if (import.meta.client) {
     try {
       await authStore.initializeAuth()
       console.log('Auth plugin: initializeAuth completed')
