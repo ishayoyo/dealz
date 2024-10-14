@@ -102,6 +102,25 @@
             </select>
           </div>
           
+          <div>
+            <label for="shipping" class="block text-gray-700 text-sm font-bold mb-2">Shipping</label>
+            <div class="flex items-center">
+              <input 
+                type="text" 
+                id="shipping" 
+                v-model="dealDetails.shipping" 
+                class="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
+                :class="{ 'border-red-500': !isValidShipping }"
+                placeholder="Enter 'FREE' or a number"
+                required
+              >
+              <span class="ml-2 text-gray-600">$</span>
+            </div>
+            <p v-if="!isValidShipping" class="text-red-500 text-xs mt-1">
+              Please enter 'FREE' or a valid number for shipping.
+            </p>
+          </div>
+          
           <button type="submit" class="w-full btn btn-primary">
             {{ isLoading ? 'Submitting...' : 'Submit for Review' }}
           </button>
@@ -131,7 +150,8 @@ const dealDetails = reactive({
   title: '',
   description: '',
   price: '',
-  category: ''
+  category: '',
+  shipping: 'FREE'
 })
 
 const toast = useToastification()
@@ -196,8 +216,8 @@ const removeImage = () => {
 }
 
 const submitDeal = async () => {
-  if (!isTitleValid.value || !isDescriptionValid.value) {
-    toast.error('Please check the title and description length')
+  if (!isTitleValid.value || !isDescriptionValid.value || !isValidShipping.value) {
+    toast.error('Please check the title, description, and shipping fields')
     return
   }
 
@@ -207,6 +227,7 @@ const submitDeal = async () => {
     const dealData = {
       ...dealDetails,
       price: parseFloat(dealDetails.price).toFixed(2),
+      shipping: dealDetails.shipping === 'FREE' ? 'FREE' : parseFloat(dealDetails.shipping).toFixed(2),
       imageUrl: dealImage.value ? dealImage.value.replace(imageBaseUrl, '') : '',
       link: dealLink.value
     }
@@ -251,7 +272,7 @@ watch(() => props.show, (newValue) => {
     step.value = 1
     dealLink.value = ''
     dealImage.value = ''
-    Object.assign(dealDetails, { title: '', description: '', price: '', category: '' })
+    Object.assign(dealDetails, { title: '', description: '', price: '', category: '', shipping: 'FREE' })
   }
 })
 
@@ -271,6 +292,10 @@ const fetchCategories = async () => {
     toast.error('Failed to load categories')
   }
 }
+
+const isValidShipping = computed(() => {
+  return dealDetails.shipping === 'FREE' || (!isNaN(parseFloat(dealDetails.shipping)) && isFinite(dealDetails.shipping));
+})
 
 onMounted(async () => {
   console.log('Component mounted') // Add this line

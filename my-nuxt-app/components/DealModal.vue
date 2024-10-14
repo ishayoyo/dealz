@@ -40,7 +40,12 @@
               </div>
               
               <div class="flex items-center justify-between mb-6">
-                <span class="font-bold text-accent text-3xl md:text-4xl">${{ formattedPrice }}</span>
+                <div>
+                  <span class="font-bold text-accent text-3xl md:text-4xl">${{ formattedPrice }}</span>
+                  <span class="text-gray-600 text-sm ml-2">
+                    + {{ deal.shipping === 'FREE' ? 'FREE Shipping' : `$${deal.shipping} Shipping` }}
+                  </span>
+                </div>
                 <a :href="getOutgoingLink(deal.url)" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
                   GET THIS DEAL
                 </a>
@@ -191,6 +196,10 @@ const imageUrl = computed(() => {
 
 const formattedPrice = computed(() => {
   return parseFloat(props.deal.price).toFixed(2)
+})
+
+const formattedShipping = computed(() => {
+  return props.deal.shipping === 'FREE' ? 'FREE' : `$${parseFloat(props.deal.shipping).toFixed(2)}`
 })
 
 const formattedFollowCount = computed(() => {

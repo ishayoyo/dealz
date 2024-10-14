@@ -47,6 +47,16 @@ const dealSchema = new mongoose.Schema({
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   buyers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   commentCount: { type: Number, default: 0 },
+  shipping: {
+    type: String,
+    default: 'FREE',
+    validate: {
+      validator: function(v) {
+        return v === 'FREE' || (!isNaN(parseFloat(v)) && isFinite(v));
+      },
+      message: props => `${props.value} is not a valid shipping price. Use 'FREE' or a number.`
+    }
+  },
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

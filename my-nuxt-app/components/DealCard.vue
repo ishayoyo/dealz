@@ -28,18 +28,23 @@
       <p class="text-gray-600 text-sm mt-1 mb-3 line-clamp-3 flex-grow leading-relaxed">
         {{ deal.description || 'No description available' }}
       </p>
-      <div class="flex items-center space-x-2 mb-2">
-        <UserAvatar :name="dealUsername" :size="24" />
-        <NuxtLink 
-          v-if="deal.user && (deal.user['_id'] || deal.user.id)" 
-          :to="`/user/${deal.user['_id'] || deal.user.id}`" 
-          class="text-sm font-medium text-gray-700 hover:text-primary-600 hover:underline"
-          @click.stop
-        >
-          {{ dealUsername }}
-        </NuxtLink>
-        <span v-else class="text-sm font-medium text-gray-700">
-          {{ dealUsername }}
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center space-x-2">
+          <UserAvatar :name="dealUsername" :size="24" />
+          <NuxtLink 
+            v-if="deal.user && (deal.user['_id'] || deal.user.id)" 
+            :to="`/user/${deal.user['_id'] || deal.user.id}`" 
+            class="text-sm font-medium text-gray-700 hover:text-primary-600 hover:underline"
+            @click.stop
+          >
+            {{ dealUsername }}
+          </NuxtLink>
+          <span v-else class="text-sm font-medium text-gray-700">
+            {{ dealUsername }}
+          </span>
+        </div>
+        <span class="text-sm text-gray-500">
+          {{ formattedShipping }}
         </span>
       </div>
       <span class="text-sm text-gray-500 flex items-center mb-3">
@@ -147,7 +152,9 @@ const isApproved = computed(() => props.deal?.status === 'approved')
 // Use a computed property to safely access the deal ID
 const dealId = computed(() => props.deal['_id'] || props.deal.id || 'no-id')
 
-// Removed openModal function and its associated button
+const formattedShipping = computed(() => {
+  return props.deal.shipping === 'FREE' ? 'FREE Shipping' : `+$${parseFloat(props.deal.shipping).toFixed(2)} Shipping`
+})
 </script>
 
 <style scoped>

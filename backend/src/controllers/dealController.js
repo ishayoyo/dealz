@@ -78,7 +78,7 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.createDeal = catchAsync(async (req, res, next) => {
-  let { title, description, price, imageUrl, link, category } = req.body;
+  let { title, description, price, imageUrl, link, category, shipping } = req.body;
 
   // Sanitize inputs
   title = validator.trim(title);
@@ -133,6 +133,11 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     return next(new AppError('Image URL is required', 400));
   }
 
+  // Validate shipping
+  if (shipping !== 'FREE' && isNaN(parseFloat(shipping))) {
+    return next(new AppError('Invalid shipping value. Use "FREE" or a number.', 400));
+  }
+
   const deal = await Deal.create({
     title,
     description,
@@ -140,6 +145,7 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     imageUrl,
     url: link,
     category,
+    shipping,
     status: 'pending',
     user: req.user.id
   });
