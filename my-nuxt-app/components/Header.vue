@@ -1,13 +1,13 @@
 <template>
   <header class="fixed top-0 left-0 right-0 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg shadow-md z-40 transition-all duration-300" :class="{ 'shadow-lg': scrolled }">
-    <div class="container mx-auto px-4 flex items-center justify-between h-24 md:h-32">
+    <div class="container mx-auto px-4 flex items-center justify-between h-20 md:h-24">
       <div class="flex items-center">
         <NuxtLink to="/" class="flex items-center relative group">
           <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 -m-1"></div>
           <img 
             src="/images/logo.png"
             alt="Dealz Logo" 
-            class="h-20 w-20 md:h-28 md:w-28 object-contain animate-float transition-all duration-300 group-hover:scale-110 relative z-10"
+            class="h-16 w-16 md:h-20 md:w-20 object-contain animate-float transition-all duration-300 group-hover:scale-110 relative z-10"
           />
         </NuxtLink>
         <form @submit.prevent="handleSearch" class="relative hidden md:block ml-4">
@@ -174,12 +174,12 @@ const logoAnimationDuration = '4s'
 
 <style scoped>
 header {
-  height: 96px; /* Increased for mobile */
+  height: 80px; /* Reduced for mobile */
 }
 
 @media (min-width: 768px) {
   header {
-    height: 128px; /* Increased for larger screens */
+    height: 96px; /* Reduced for larger screens */
   }
 }
 
