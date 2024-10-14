@@ -13,7 +13,7 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["https://deals.ishay.me", "http://localhost:3000"],
+    origin: ["saversonic.com", "https://deals.ishay.me", "http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true
   }

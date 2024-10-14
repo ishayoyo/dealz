@@ -7,7 +7,7 @@ const routes = require('./routes/api/v1');
 const app = express();
 
 app.use(cors({
-  origin: ["https://deals.ishay.me", "http://localhost:3000"],
+  origin: ["saversonic.com", "https://deals.ishay.me", "http://localhost:3000"],
   credentials: true
 }));
 app.use(express.json());
