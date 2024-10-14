@@ -14,11 +14,11 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 
         (process.env.NODE_ENV === 'production' 
-          ? 'https://deals.ishay.me/api/v1' 
+          ? 'https://saversonic.com/api/v1' 
           : 'http://localhost:5000/api/v1'),
       socketUrl: process.env.NUXT_PUBLIC_SOCKET_URL || 
         (process.env.NODE_ENV === 'production'
-          ? 'https://deals.ishay.me'
+          ? 'https://saversonic.com'
           : 'http://localhost:5000')
     }
   },
