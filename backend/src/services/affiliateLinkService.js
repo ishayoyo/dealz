@@ -20,18 +20,22 @@ class AffiliateLinkService {
     }
 
     let originalUrl = url;
-    let isExistingAffiliate = this.isAffiliateLink(url);
     
-    if (isExistingAffiliate) {
+    // Always try to extract the original URL, even if it's not an affiliate link
+    try {
       originalUrl = await this.extractOriginalUrl(url);
+    } catch (error) {
+      console.error('Error extracting original URL:', error);
+      // If extraction fails, use the original URL
     }
 
     let affiliateUrl;
     try {
+      // Always attempt to convert the link, even if it was already an affiliate link
       affiliateUrl = await this.convertAliExpressLink(originalUrl);
     } catch (error) {
       console.error('Error converting link:', error);
-      affiliateUrl = isExistingAffiliate ? url : originalUrl; // Use original affiliate link if conversion fails
+      affiliateUrl = url; // Use original link if conversion fails
     }
     
     if (affiliateUrl !== url) {
@@ -93,19 +97,19 @@ class AffiliateLinkService {
       return affiliateLink;
     } catch (error) {
       console.error('Error converting AliExpress link:', error);
-      throw error; // Propagate the error to be handled in processLink
+      throw error;
     }
   }
 
   async extractProductId(url) {
-    // Normalize URL to remove language-specific subdomains
-    url = url.replace(/^https?:\/\/([a-z]{2})\.aliexpress\.com/, 'https://aliexpress.com');
+    // Normalize URL to remove language-specific subdomains and any existing affiliate parameters
+    url = url.replace(/^https?:\/\/([a-z]{2})\.aliexpress\.com/, 'https://aliexpress.com')
+             .split('?')[0]; // Remove all query parameters
 
     const patterns = [
       /\/(\d+)\.html/,
       /\/item\/(\d+)/,
       /\_(\d+)\.html/,
-      /productId=(\d+)/  // Add this pattern to catch product IDs in query parameters
     ];
 
     for (const pattern of patterns) {
