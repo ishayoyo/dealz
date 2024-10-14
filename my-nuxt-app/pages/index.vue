@@ -1,7 +1,7 @@
 <template>
   <div>
-    <div class="container mx-auto px-4 py-8">
-      <!-- Add category filter chips -->
+    <div class="container mx-auto px-4 pt-20 md:pt-20 pb-8">
+                  <!-- Add category filter chips -->
       <div class="flex flex-wrap gap-2 mb-6">
         <button
           v-for="category in categories"

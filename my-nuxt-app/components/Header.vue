@@ -1,12 +1,13 @@
 <template>
   <header class="fixed top-0 left-0 right-0 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg shadow-md z-40 transition-all duration-300" :class="{ 'shadow-lg': scrolled }">
-    <div class="container mx-auto px-4 flex items-center justify-between h-16 md:h-24">
+    <div class="container mx-auto px-4 flex items-center justify-between h-24 md:h-32">
       <div class="flex items-center">
-        <NuxtLink to="/" class="flex items-center">
+        <NuxtLink to="/" class="flex items-center relative group">
+          <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 -m-1"></div>
           <img 
             src="/images/logo.png"
             alt="Dealz Logo" 
-            class="h-14 md:h-20 w-auto animate-float transition-all duration-300 hover:scale-105"
+            class="h-20 w-20 md:h-28 md:w-28 object-contain animate-float transition-all duration-300 group-hover:scale-110 relative z-10"
           />
         </NuxtLink>
         <form @submit.prevent="handleSearch" class="relative hidden md:block ml-4">
@@ -168,17 +169,17 @@ watch(isAuthenticated, (newValue) => {
 })
 
 // Update the animation duration for the logo
-const logoAnimationDuration = '3s'
+const logoAnimationDuration = '4s'
 </script>
 
 <style scoped>
 header {
-  height: 72px; /* For mobile */
+  height: 96px; /* Increased for mobile */
 }
 
 @media (min-width: 768px) {
   header {
-    height: 96px; /* For larger screens */
+    height: 128px; /* Increased for larger screens */
   }
 }
 
@@ -204,11 +205,36 @@ header {
 
 .animate-float {
   animation: float v-bind(logoAnimationDuration) ease-in-out infinite;
-  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.15));
+  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.2));
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(2deg); }
+  75% { transform: translateY(5px) rotate(-2deg); }
+}
+
+/* Add this new style for the logo container */
+.logo-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+/* Add this new style for the logo shine effect */
+.logo-shine {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
+  transform: rotate(45deg);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
 }
 </style>
