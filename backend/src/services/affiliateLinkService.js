@@ -97,12 +97,31 @@ class AffiliateLinkService {
       return affiliateLink;
     } catch (error) {
       console.error('Error converting AliExpress link:', error);
-      throw error;
+      return url; // Return original URL if conversion fails
     }
   }
 
   async extractProductId(url) {
-    // Normalize URL to remove language-specific subdomains and any existing affiliate parameters
+    // First, follow any redirects to get the final URL
+    try {
+      const response = await axios.get(url, { 
+        maxRedirects: 5,
+        timeout: 10000,
+        validateStatus: function (status) {
+          return status >= 200 && status < 300 || status === 302;
+        },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+      url = response.request.res.responseUrl || url;
+    } catch (error) {
+      console.error('Error following redirect:', error);
+      // If we can't follow the redirect, return null
+      return null;
+    }
+
+    // Now extract the product ID from the final URL
     url = url.replace(/^https?:\/\/([a-z]{2})\.aliexpress\.com/, 'https://aliexpress.com')
              .split('?')[0]; // Remove all query parameters
 
@@ -119,22 +138,7 @@ class AffiliateLinkService {
       }
     }
 
-    // If no match found, try to resolve shortened URLs
-    if (url.includes('aliexpress.com') && !url.includes('/item/')) {
-      try {
-        const response = await axios.get(url, { 
-          maxRedirects: 5,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
-        });
-        const finalUrl = response.request.res.responseUrl;
-        return this.extractProductId(finalUrl);
-      } catch (error) {
-        console.error('Error resolving URL:', error);
-      }
-    }
-
+    console.error('Could not extract product ID from URL:', url);
     return null;
   }
 }
