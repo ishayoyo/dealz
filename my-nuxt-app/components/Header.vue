@@ -1,12 +1,12 @@
 <template>
   <header class="fixed top-0 left-0 right-0 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg shadow-md z-40 transition-all duration-300" :class="{ 'shadow-lg': scrolled }">
-    <div class="container mx-auto px-4 flex items-center justify-between h-16 md:h-20">
+    <div class="container mx-auto px-4 flex items-center justify-between h-16 md:h-24">
       <div class="flex items-center">
         <NuxtLink to="/" class="flex items-center">
           <img 
             src="/images/logo.png"
             alt="Dealz Logo" 
-            class="h-8 md:h-10 w-auto animate-float"
+            class="h-14 md:h-20 w-auto animate-float transition-all duration-300 hover:scale-105"
           />
         </NuxtLink>
         <form @submit.prevent="handleSearch" class="relative hidden md:block ml-4">
@@ -168,17 +168,17 @@ watch(isAuthenticated, (newValue) => {
 })
 
 // Update the animation duration for the logo
-const logoAnimationDuration = '5s'
+const logoAnimationDuration = '3s'
 </script>
 
 <style scoped>
 header {
-  height: 64px; /* For mobile */
+  height: 72px; /* For mobile */
 }
 
 @media (min-width: 768px) {
   header {
-    height: 80px; /* For larger screens */
+    height: 96px; /* For larger screens */
   }
 }
 
@@ -204,10 +204,11 @@ header {
 
 .animate-float {
   animation: float v-bind(logoAnimationDuration) ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.15));
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  50% { transform: translateY(-3px); }
 }
 </style>
