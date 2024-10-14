@@ -12,9 +12,7 @@ class AffiliateLinkService {
   }
 
   async processLink(url, dealId, userId) {
-    const cachedUrl = this.cache.get(url);
-    if (cachedUrl) return cachedUrl;
-
+    // Simplified URL parsing
     if (url.includes('deals.ishay.me/api/v1/link/out')) {
       const urlParams = new URLSearchParams(url.split('?')[1]);
       url = decodeURIComponent(urlParams.get('url'));
@@ -23,10 +21,10 @@ class AffiliateLinkService {
     const affiliateUrl = await this.convertAliExpressLink(url);
     
     if (affiliateUrl !== url) {
+      // Log click asynchronously without waiting
       this.logClick(url, affiliateUrl, dealId, userId).catch(console.error);
     }
     
-    this.cache.set(url, affiliateUrl);
     return affiliateUrl;
   }
 
@@ -40,6 +38,7 @@ class AffiliateLinkService {
   }
 
   extractProductId(url) {
+    // Optimized regex and URL cleaning
     const cleanUrl = url.replace(/^https?:\/\/([a-z]{2}\.)?aliexpress\.com/, '')
                         .split('?')[0];
     
@@ -48,12 +47,13 @@ class AffiliateLinkService {
   }
 
   async logClick(originalUrl, affiliateUrl, dealId, userId) {
-    await AffiliateClick.create({
+    // Ensure non-blocking database operation
+    AffiliateClick.create({
       originalUrl,
       affiliateUrl,
       dealId,
       userId
-    });
+    }).catch(console.error);
   }
 }
 
