@@ -1,10 +1,8 @@
 const axios = require('axios');
 const AffiliateClick = require('../models/AffiliateClick.Model');
-const NodeCache = require('node-cache');
 
 class AffiliateLinkService {
   constructor() {
-    this.cache = new NodeCache({ stdTTL: 3600 }); // Cache for 1 hour
     this.trackingId = process.env.ALIEXPRESS_TRACKING_ID;
     if (!this.trackingId) {
       console.error('ALIEXPRESS_TRACKING_ID is not set in the environment variables');
