@@ -752,7 +752,7 @@ const sendVerificationEmail = async (user) => {
   sendSmtpEmail.to = [{ email: user.email, name: user.username }];
   sendSmtpEmail.subject = "Verify Your Email";
   sendSmtpEmail.htmlContent = generateVerificationEmailHTML(user.username, user.verificationCode);
-  sendSmtpEmail.sender = { name: "Your App Name", email: "saversonic.com@gmail.com" };
+  sendSmtpEmail.sender = { name: "Verify Your SaverSonic Account", email: "saversonic.com@gmail.com" };
 
   try {
     await apiInstance.sendTransacEmail(sendSmtpEmail);
@@ -771,43 +771,77 @@ function generateVerificationEmailHTML(username, verificationCode) {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Verify Your Email</title>
+      <title>Verify Your SaverSonic Account</title>
       <style>
         body {
-          font-family: Arial, sans-serif;
+          font-family: 'Arial', sans-serif;
           line-height: 1.6;
           color: #333;
           max-width: 600px;
           margin: 0 auto;
           padding: 20px;
+          background-color: #f4f4f4;
         }
         .container {
-          background-color: #f9f9f9;
-          border-radius: 5px;
-          padding: 20px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+          background-color: #ffffff;
+          border-radius: 8px;
+          padding: 30px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         h1 {
           color: #2c3e50;
+          font-size: 28px;
+          margin-bottom: 20px;
+        }
+        .logo {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .logo img {
+          max-width: 200px;
         }
         .verification-code {
-          font-size: 24px;
+          font-size: 32px;
           font-weight: bold;
-          color: #3498db;
-          background-color: #eaf2f8;
-          padding: 10px;
+          color: #ffffff;
+          background-color: #3498db;
+          padding: 10px 20px;
           border-radius: 5px;
           display: inline-block;
+          margin: 20px 0;
+        }
+        .footer {
+          margin-top: 30px;
+          font-size: 14px;
+          color: #7f8c8d;
+          text-align: center;
         }
       </style>
     </head>
     <body>
       <div class="container">
-        <h1>Welcome to Our App, ${username}!</h1>
-        <p>Thank you for signing up. To complete your registration, please use the following 6-digit verification code:</p>
+        <div class="logo">
+          <!-- Replace with your actual logo -->
+          <img src="https://yourdomain.com/path-to-your-logo.png" alt="SaverSonic Logo">
+        </div>
+        <h1>Welcome to SaverSonic, ${username}!</h1>
+        <p>Thank you for joining our social shopping community. We're excited to have you on board!</p>
+        <p>To complete your registration and start discovering amazing deals, please use the following verification code:</p>
         <p class="verification-code">${verificationCode}</p>
         <p>This code will expire in 15 minutes. If you didn't request this code, please ignore this email.</p>
-        <p>Best regards,<br>Your App Team</p>
+        <p>At SaverSonic, you'll be able to:</p>
+        <ul>
+          <li>Discover and share the best deals</li>
+          <li>Connect with fellow savvy shoppers</li>
+          <li>Build your own collections of favorite finds</li>
+          <li>Stay updated on the latest trends and discounts</li>
+        </ul>
+        <p>We can't wait to see you in action!</p>
+        <p>Happy saving,<br>The SaverSonic Team</p>
+        <div class="footer">
+          <p>If you have any questions, please contact us at support@saversonic.com</p>
+          <p>&copy; 2023 SaverSonic. All rights reserved.</p>
+        </div>
       </div>
     </body>
     </html>
