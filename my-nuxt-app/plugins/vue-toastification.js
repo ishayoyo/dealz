@@ -18,8 +18,8 @@ export default defineNuxtPlugin((nuxtApp) => {
       icon: false,
       rtl: false,
       transition: 'Vue-Toastification__fade',
-      maxToasts: 3,
-      newestOnTop: false
+      maxToasts: 2,
+      newestOnTop: true
     })
   }
 })

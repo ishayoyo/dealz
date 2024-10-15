@@ -1,27 +1,29 @@
 .Vue-Toastification__toast {
-  @apply font-sans rounded-lg shadow-lg border border-opacity-20 mb-2 mx-auto max-w-md;
+  @apply font-sans rounded-lg shadow-md border border-opacity-10 mb-2 mx-auto;
   padding: 8px 12px;
   min-height: auto;
+  max-width: 90vw;
+  width: auto;
 }
 
 .Vue-Toastification__toast-body {
-  @apply text-sm font-medium;
+  @apply text-xs font-medium;
 }
 
 .Vue-Toastification__toast--success {
-  @apply bg-green-500 text-white border-green-300;
+  @apply bg-green-500 bg-opacity-90 text-white border-green-300;
 }
 
 .Vue-Toastification__toast--error {
-  @apply bg-red-500 text-white border-red-300;
+  @apply bg-red-500 bg-opacity-90 text-white border-red-300;
 }
 
 .Vue-Toastification__toast--warning {
-  @apply bg-yellow-500 text-white border-yellow-300;
+  @apply bg-yellow-500 bg-opacity-90 text-white border-yellow-300;
 }
 
 .Vue-Toastification__toast--info {
-  @apply bg-blue-500 text-white border-blue-300;
+  @apply bg-blue-500 bg-opacity-90 text-white border-blue-300;
 }
 
 .Vue-Toastification__close-button {
@@ -33,5 +35,16 @@
 }
 
 .Vue-Toastification__container {
-  @apply bottom-4 !important;
+  @apply bottom-2 !important;
+}
+
+@media (max-width: 640px) {
+  .Vue-Toastification__toast {
+    @apply mb-1;
+    max-width: 95vw;
+  }
+
+  .Vue-Toastification__container {
+    @apply bottom-1 !important;
+  }
 }
