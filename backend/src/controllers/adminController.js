@@ -261,20 +261,72 @@ exports.editDeal = catchAsync(async (req, res, next) => {
 
 exports.getAffiliateStats = async (req, res) => {
   try {
-    const totalClicks = await AffiliateClick.countDocuments();
-    const clicksOverTime = await AffiliateClick.aggregate([
-      { $group: {
-        _id: { $dateToString: { format: "%Y-%m-%d", date: "$clickedAt" } },
-        count: { $sum: 1 }
-      }},
-      { $sort: { _id: 1 } }
+    const stats = await AffiliateClick.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalClicks: { $sum: 1 },
+          amazonClicks: {
+            $sum: {
+              $cond: [{ $eq: ["$platform", "Amazon"] }, 1, 0]
+            }
+          },
+          aliexpressClicks: {
+            $sum: {
+              $cond: [{ $eq: ["$platform", "AliExpress"] }, 1, 0]
+            }
+          }
+        }
+      }
     ]);
 
+    const clickStats = stats[0] || { totalClicks: 0, amazonClicks: 0, aliexpressClicks: 0 };
+
+    // Get clicks over time (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const clicksOverTime = await AffiliateClick.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: thirtyDaysAgo }
+        }
+      },
+      {
+        $group: {
+          _id: { 
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            platform: "$platform"
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.date": 1 } }
+    ]);
+
+    // Format clicksOverTime for frontend
+    const formattedClicksOverTime = clicksOverTime.reduce((acc, curr) => {
+      const date = curr._id.date;
+      if (!acc[date]) {
+        acc[date] = { date, totalCount: 0, amazonCount: 0, aliexpressCount: 0 };
+      }
+      acc[date].totalCount += curr.count;
+      if (curr._id.platform === 'Amazon') {
+        acc[date].amazonCount = curr.count;
+      } else if (curr._id.platform === 'AliExpress') {
+        acc[date].aliexpressCount = curr.count;
+      }
+      return acc;
+    }, {});
+
     res.json({
-      totalClicks,
-      clicksOverTime: clicksOverTime.map(item => ({ date: item._id, count: item.count }))
+      totalClicks: clickStats.totalClicks,
+      amazonClicks: clickStats.amazonClicks,
+      aliexpressClicks: clickStats.aliexpressClicks,
+      clicksOverTime: Object.values(formattedClicksOverTime)
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching affiliate statistics', error });
+    console.error('Error fetching affiliate stats:', error);
+    res.status(500).json({ message: 'Error fetching affiliate statistics', error: error.message });
   }
 };

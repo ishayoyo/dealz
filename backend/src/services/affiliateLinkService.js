@@ -3,43 +3,62 @@ const AffiliateClick = require('../models/AffiliateClick.Model');
 
 class AffiliateLinkService {
   constructor() {
-    this.trackingId = process.env.ALIEXPRESS_TRACKING_ID;
-    if (!this.trackingId) {
+    this.aliExpressTrackingId = process.env.ALIEXPRESS_TRACKING_ID;
+    this.amazonTrackingId = process.env.AMAZON_TRACKING_ID;
+    if (!this.aliExpressTrackingId) {
       console.error('ALIEXPRESS_TRACKING_ID is not set in the environment variables');
     }
+    if (!this.amazonTrackingId) {
+      console.error('AMAZON_TRACKING_ID is not set in the environment variables');
+    }
+    console.log('AffiliateLinkService initialized');
   }
 
   async processLink(url, dealId, userId) {
     console.log(`Processing link: ${url}`);
 
-    // Handle short URLs
-    if (url.includes('s.click.aliexpress.com')) {
-      try {
-        const response = await axios.get(url, { maxRedirects: 0, validateStatus: null });
-        if (response.headers.location) {
-          url = response.headers.location;
-          console.log(`Redirected to: ${url}`);
+    let affiliateUrl;
+    let platform;
+
+    if (url.includes('amazon.com') || url.includes('amzn.to')) {
+      console.log('Detected Amazon URL');
+      affiliateUrl = await this.convertAmazonLink(url);
+      platform = 'Amazon';
+    } else if (url.includes('aliexpress.com')) {
+      console.log('Detected AliExpress URL');
+      // Handle short URLs
+      if (url.includes('s.click.aliexpress.com')) {
+        try {
+          const response = await axios.get(url, { maxRedirects: 0, validateStatus: null });
+          if (response.headers.location) {
+            url = response.headers.location;
+            console.log(`Redirected to: ${url}`);
+          }
+        } catch (error) {
+          console.error('Error following redirect:', error);
         }
-      } catch (error) {
-        console.error('Error following redirect:', error);
       }
+
+      // Check if it's a share link
+      if (url.startsWith('https://star.aliexpress.com/share/share.htm')) {
+        const urlParams = new URLSearchParams(url.split('?')[1]);
+        const redirectUrl = urlParams.get('redirectUrl');
+        if (redirectUrl) {
+          url = decodeURIComponent(redirectUrl);
+          console.log(`Extracted redirect URL: ${url}`);
+        }
+      }
+
+      affiliateUrl = await this.convertAliExpressLink(url);
+      platform = 'AliExpress';
+    } else {
+      console.log('Unsupported URL, returning original');
+      return { processedUrl: url, platform: 'Other' };
     }
 
-    // Check if it's a share link
-    if (url.startsWith('https://star.aliexpress.com/share/share.htm')) {
-      const urlParams = new URLSearchParams(url.split('?')[1]);
-      const redirectUrl = urlParams.get('redirectUrl');
-      if (redirectUrl) {
-        url = decodeURIComponent(redirectUrl);
-        console.log(`Extracted redirect URL: ${url}`);
-      }
-    }
-
-    const affiliateUrl = await this.convertAliExpressLink(url);
-    
     if (affiliateUrl !== url) {
       console.log(`Converted to affiliate URL: ${affiliateUrl}`);
-      this.logClick(url, affiliateUrl, dealId, userId).catch(error => {
+      this.logClick(url, affiliateUrl, dealId, userId, platform).catch(error => {
         console.error('Error logging click:', error);
       });
     } else {
@@ -47,11 +66,11 @@ class AffiliateLinkService {
     }
     
     console.log(`Returning URL: ${affiliateUrl}`);
-    return affiliateUrl;
+    return { processedUrl: affiliateUrl, platform };
   }
 
   async convertAliExpressLink(url) {
-    if (!this.trackingId) {
+    if (!this.aliExpressTrackingId) {
       console.log('No tracking ID set, returning original URL');
       return url;
     }
@@ -62,7 +81,7 @@ class AffiliateLinkService {
       return url;
     }
 
-    const affiliateUrl = `https://aliexpress.com/item/${productId}.html?aff_fcid=${this.trackingId}`;
+    const affiliateUrl = `https://aliexpress.com/item/${productId}.html?aff_fcid=${this.aliExpressTrackingId}`;
     console.log(`Generated affiliate URL: ${affiliateUrl}`);
     return affiliateUrl;
   }
@@ -91,14 +110,43 @@ class AffiliateLinkService {
     }
   }
 
-  async logClick(originalUrl, affiliateUrl, dealId, userId) {
-    // Ensure non-blocking database operation
-    AffiliateClick.create({
-      originalUrl,
-      affiliateUrl,
-      dealId,
-      userId
-    }).catch(console.error);
+  async logClick(originalUrl, affiliateUrl, dealId, userId, platform) {
+    console.log(`Logging ${platform} click - Original: ${originalUrl}, Affiliate: ${affiliateUrl}, Deal ID: ${dealId}, User ID: ${userId}`);
+    try {
+      const click = await AffiliateClick.create({
+        originalUrl,
+        affiliateUrl,
+        dealId,
+        userId,
+        platform
+      });
+      console.log(`${platform} click logged successfully:`, click);
+    } catch (error) {
+      console.error(`Error logging ${platform} click:`, error);
+    }
+  }
+
+  async convertAmazonLink(url) {
+    console.log(`Converting Amazon link: ${url}`);
+    try {
+      // Handle shortened URLs
+      if (url.includes('amzn.to')) {
+        const response = await axios.get(url, { maxRedirects: 0, validateStatus: null });
+        if (response.headers.location) {
+          url = response.headers.location;
+          console.log(`Redirected to: ${url}`);
+        }
+      }
+
+      const urlObj = new URL(url);
+      urlObj.searchParams.set('tag', this.amazonTrackingId);
+      const convertedUrl = urlObj.toString();
+      console.log(`Converted Amazon URL: ${convertedUrl}`);
+      return convertedUrl;
+    } catch (error) {
+      console.error('Error converting Amazon link:', error);
+      return url;
+    }
   }
 }
 

@@ -25,7 +25,7 @@
     </section>
     
     <!-- Affiliate Statistics Section -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <div class="bg-gradient-to-br from-success-100 to-success-200 p-6 rounded-xl shadow-md">
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-heading text-gray-800">Total Affiliate Clicks</h3>
@@ -33,7 +33,21 @@
         </div>
         <p class="text-3xl font-bold text-gray-900 mt-2">{{ affiliateStats.totalClicks }}</p>
       </div>
-      <div class="bg-white rounded-xl shadow-md p-6 lg:col-span-2">
+      <div class="bg-gradient-to-br from-warning-100 to-warning-200 p-6 rounded-xl shadow-md">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-heading text-gray-800">Amazon Clicks</h3>
+          <i class="fab fa-amazon text-warning-500 text-2xl"></i>
+        </div>
+        <p class="text-3xl font-bold text-gray-900 mt-2">{{ affiliateStats.amazonClicks }}</p>
+      </div>
+      <div class="bg-gradient-to-br from-info-100 to-info-200 p-6 rounded-xl shadow-md">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-heading text-gray-800">AliExpress Clicks</h3>
+          <i class="fas fa-shopping-bag text-info-500 text-2xl"></i>
+        </div>
+        <p class="text-3xl font-bold text-gray-900 mt-2">{{ affiliateStats.aliexpressClicks }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-md p-6 lg:col-span-1">
         <h3 class="text-xl font-heading text-gray-800 mb-4">Clicks Over Time</h3>
         <div class="chart-container">
           <canvas ref="clicksOverTimeChartRef"></canvas>
@@ -136,7 +150,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRuntimeConfig } from '#app'
 import Chart from 'chart.js/auto'
 import api from '~/services/api'
@@ -167,6 +181,8 @@ const categories = ref([
 
 const affiliateStats = ref({
   totalClicks: 0,
+  amazonClicks: 0,
+  aliexpressClicks: 0,
   clicksOverTime: []
 })
 
@@ -413,7 +429,17 @@ const getFullImageUrl = (imageUrl) => {
 const fetchAffiliateStats = async () => {
   try {
     const response = await api.get('/admin/affiliate-stats')
-    affiliateStats.value = response.data
+    console.log('Received affiliate stats:', response.data)
+    
+    affiliateStats.value = {
+      totalClicks: response.data.totalClicks || 0,
+      amazonClicks: response.data.amazonClicks || 0,
+      aliexpressClicks: response.data.aliexpressClicks || 0,
+      clicksOverTime: response.data.clicksOverTime || []
+    }
+    
+    console.log('Updated affiliateStats:', affiliateStats.value)
+    
     createClicksOverTimeChart()
   } catch (error) {
     console.error('Error fetching affiliate stats:', error)
@@ -427,12 +453,26 @@ const createClicksOverTimeChart = () => {
     type: 'line',
     data: {
       labels: affiliateStats.value.clicksOverTime.map(item => item.date),
-      datasets: [{
-        label: 'Clicks',
-        data: affiliateStats.value.clicksOverTime.map(item => item.count),
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0.1
-      }]
+      datasets: [
+        {
+          label: 'Total Clicks',
+          data: affiliateStats.value.clicksOverTime.map(item => item.totalCount),
+          borderColor: 'rgb(75, 192, 192)',
+          tension: 0.1
+        },
+        {
+          label: 'Amazon Clicks',
+          data: affiliateStats.value.clicksOverTime.map(item => item.amazonCount),
+          borderColor: 'rgb(255, 159, 64)',
+          tension: 0.1
+        },
+        {
+          label: 'AliExpress Clicks',
+          data: affiliateStats.value.clicksOverTime.map(item => item.aliexpressCount),
+          borderColor: 'rgb(54, 162, 235)',
+          tension: 0.1
+        }
+      ]
     }
   })
 }
@@ -450,6 +490,10 @@ const getActionColor = (action) => {
     default: return 'primary'
   }
 }
+
+watch(affiliateStats, (newValue) => {
+  console.log('affiliateStats changed:', newValue)
+}, { deep: true })
 
 onMounted(async () => {
   await fetchAnalytics();
