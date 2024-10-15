@@ -25,9 +25,6 @@
       <h3 class="font-heading font-bold text-xl text-gray-800 line-clamp-2 group-hover:text-primary-600 transition-colors duration-300 mb-2">
         {{ deal.title || 'Untitled Deal' }}
       </h3>
-      <p class="text-gray-600 text-sm mt-1 mb-3 line-clamp-3 flex-grow leading-relaxed">
-        {{ deal.description || 'No description available' }}
-      </p>
       <div class="flex items-center justify-between mb-2">
         <div class="flex flex-col">
           <span class="text-gray-500 line-through text-sm">{{ formattedListPrice }}</span>
