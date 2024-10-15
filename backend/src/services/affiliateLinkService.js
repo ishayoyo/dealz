@@ -139,7 +139,22 @@ class AffiliateLinkService {
       }
 
       const urlObj = new URL(url);
-      urlObj.searchParams.set('tag', this.amazonTrackingId);
+      
+      // Remove any existing 'tag' parameter
+      urlObj.searchParams.delete('tag');
+      
+      // Add our tracking ID
+      if (this.amazonTrackingId) {
+        urlObj.searchParams.set('tag', this.amazonTrackingId);
+      } else {
+        console.warn('Amazon tracking ID is not set. Affiliate link may not work correctly.');
+      }
+      
+      // Ensure we're not adding 'undefined' as a tag
+      if (urlObj.searchParams.get('tag') === 'undefined') {
+        urlObj.searchParams.delete('tag');
+      }
+      
       const convertedUrl = urlObj.toString();
       console.log(`Converted Amazon URL: ${convertedUrl}`);
       return convertedUrl;
