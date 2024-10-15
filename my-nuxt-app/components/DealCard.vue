@@ -1,5 +1,5 @@
 <template>
-  <div v-if="deal" class="deal-card group" @click="openDealPage">
+  <div v-if="deal" class="deal-card group cursor-pointer" @click="openDealPage" tabindex="0" @keyup.enter="openDealPage">
     <div class="relative w-full aspect-[4/3] overflow-hidden rounded-t-lg">
       <img 
         :src="fullImageUrl" 
@@ -8,36 +8,44 @@
         @error="handleImageError"
         loading="lazy"
       >
-      <div class="absolute top-0 left-0 bg-accent-500 text-white px-4 py-2 m-4 rounded-full text-base font-bold shadow-lg transform transition-transform duration-300 group-hover:scale-110">
-        {{ formattedPrice }}
+      <div class="absolute top-0 left-0 bg-accent-500 text-white px-4 py-2 m-4 rounded-full text-lg font-bold shadow-lg transform transition-transform duration-300 group-hover:scale-110">
+        {{ formattedDealPrice }}
       </div>
-      <div v-if="isNew" class="absolute top-0 right-0 bg-primary-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
-        NEW
-      </div>
-      <div v-if="isHot" class="absolute bottom-0 right-0 bg-red-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
-        HOT
-      </div>
-      <div v-if="deal.status === 'pending'" class="absolute bottom-0 left-0 bg-yellow-500 text-white px-3 py-1 m-3 rounded-full text-xs font-bold shadow-md">
-        PENDING
+      <div class="absolute top-0 right-0 flex flex-col items-end space-y-2 m-4">
+        <div v-if="isNew" class="bg-primary-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
+          NEW
+        </div>
+        <div v-if="isHot" class="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
+          HOT
+        </div>
+        <div v-if="deal.status === 'pending'" class="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
+          PENDING
+        </div>
       </div>
     </div>
     <div class="p-4 flex flex-col flex-grow bg-white rounded-b-lg transition-shadow duration-300 group-hover:shadow-lg">
       <h3 class="font-heading font-bold text-xl text-gray-800 line-clamp-2 group-hover:text-primary-600 transition-colors duration-300 mb-2">
         {{ deal.title || 'Untitled Deal' }}
       </h3>
-      <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center justify-between mb-3">
         <div class="flex flex-col">
           <span class="text-gray-500 line-through text-sm">{{ formattedListPrice }}</span>
-          <span class="font-bold text-accent text-xl">{{ formattedDealPrice }}</span>
+          <span class="font-bold text-accent text-2xl">{{ formattedDealPrice }}</span>
         </div>
-        <span class="text-green-600 font-semibold">{{ discountPercentage }}% OFF</span>
+        <div class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
+          {{ discountPercentage }}% OFF
+        </div>
       </div>
-      <span class="text-sm text-gray-500 flex items-center mb-3">
-        <i class="far fa-clock mr-2"></i>{{ formattedDate }}
-      </span>
-      <button class="btn btn-primary w-full group-hover:shadow-md transition-all duration-300 transform group-hover:-translate-y-0.5">
-        View Deal
-      </button>
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm text-gray-500 flex items-center">
+          <i class="far fa-clock mr-2"></i>{{ formattedDate }}
+        </span>
+        <span class="text-sm text-gray-500">{{ formattedShipping }}</span>
+      </div>
+      <div class="flex items-center">
+        <UserAvatar :name="dealUsername" :size="24" class="mr-2" />
+        <span class="text-sm text-gray-600">{{ dealUsername }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -46,6 +54,7 @@
 import { computed, ref } from 'vue'
 import { useRuntimeConfig, useRouter } from '#app'
 import { formatDistanceToNow } from 'date-fns'
+import UserAvatar from './UserAvatar.vue'
 
 const config = useRuntimeConfig()
 const router = useRouter()
@@ -134,7 +143,6 @@ const isHot = computed(() => {
 
 const isApproved = computed(() => props.deal?.status === 'approved')
 
-// Use a computed property to safely access the deal ID
 const dealId = computed(() => props.deal['_id'] || props.deal.id || 'no-id')
 
 const formattedShipping = computed(() => {
@@ -173,6 +181,10 @@ const discountPercentage = computed(() => {
 }
 
 .btn-primary {
-  @apply bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50 transition-all duration-300 font-semibold text-sm;
+  @apply bg-primary-600 text-white py-2 px-4 rounded-full hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50 transition-all duration-300 font-semibold text-sm;
+}
+
+.far {
+  @apply text-gray-400;
 }
 </style>
