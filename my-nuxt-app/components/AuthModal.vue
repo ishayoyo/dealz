@@ -104,6 +104,15 @@
           {{ isLogin ? 'Sign Up' : 'Log In' }}
         </a>
       </p>
+
+      <!-- New verification code input -->
+      <div v-if="showVerificationForm">
+        <h2>Verify Your Email</h2>
+        <p>We've sent a verification code to your email. Please enter it below:</p>
+        <input v-model="verificationCode" placeholder="Enter verification code" />
+        <button @click="verifyEmail">Verify</button>
+        <button @click="resendVerificationEmail">Resend Code</button>
+      </div>
     </div>
   </div>
 </template>
@@ -203,40 +212,65 @@ const handleSubmit = async () => {
 
 // Handle login
 const handleLogin = async () => {
-  const result = await authStore.login(form.email, form.password)
-  if (result.success) {
-    toast.success('Logged in successfully!')
-    emit('close')
-  } else {
-    error.value = result.error
-    if (result.attemptsLeft !== undefined) {
-      error.value += ` You have ${result.attemptsLeft} attempts left.`
-    }
+  if (authStore.loginCountdown > 0) {
+    error.value = `Too many login attempts. Please try again in ${formatCountdown(authStore.loginCountdown)}.`
     toast.error(error.value)
+    return
+  }
+
+  try {
+    error.value = null
+    isSubmitting.value = true
+    const result = await authStore.login(form.email, form.password)
+    if (result.success) {
+      toast.success('Logged in successfully!')
+      emit('close')
+    } else if (result.requiresVerification) {
+      toast.info(result.message)
+      // You might want to show a UI element here to allow users to resend the verification email
+    } else {
+      error.value = result.error || 'Login failed. Please check your credentials and try again.'
+      toast.error(error.value)
+    }
+  } catch (err) {
+    handleError(err)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 // Handle signup
 const handleSignup = async () => {
-  if (!isUsernameValid.value || !isEmailValid.value || !isPasswordValid.value) {
-    error.value = 'Please enter valid username, email, and password'
+  if (authStore.signupCountdown > 0) {
+    error.value = `Too many signup attempts. Please try again in ${formatCountdown(authStore.signupCountdown)}.`
+    toast.error(error.value)
     return
   }
 
-  const result = await authStore.signup({
-    username: form.username,
-    email: form.email,
-    password: form.password
-  })
-
-  if (result.success) {
-    toast.success('Signed up successfully!')
-    emit('close')
-  } else {
-    error.value = result.error || 'An error occurred during signup'
-    toast.error(error.value)
+  try {
+    error.value = null
+    isSubmitting.value = true
+    const result = await authStore.signup({
+      username: form.username,
+      email: form.email,
+      password: form.password
+    })
+    if (result.success) {
+      toast.success(result.message || 'Signup successful. Please check your email for the verification code.')
+      navigateTo('/verify-email')
+      emit('close')
+    } else {
+      toast.error(result.error || 'Signup failed. Please check your information and try again.')
+    }
+  } catch (err) {
+    handleError(err)
+  } finally {
+    isSubmitting.value = false
   }
 }
+
+// Add a new ref for showing verification instructions
+const showVerificationInstructions = ref(false)
 
 // Handle errors
 const handleError = (err) => {
@@ -282,6 +316,40 @@ onMounted(() => {
 onUnmounted(() => {
   authStore.clearTimers()
 })
+
+const showSignupForm = ref(true)
+const showVerificationForm = ref(false)
+const verificationCode = ref('')
+
+const verifyEmail = async () => {
+  try {
+    isSubmitting.value = true
+    const result = await authStore.verifyEmail(verificationCode.value)
+    if (result.success) {
+      toast.success('Email verified successfully!')
+      emit('close')
+    } else {
+      toast.error(result.error || 'Verification failed. Please try again.')
+    }
+  } catch (err) {
+    handleError(err)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+const resendVerificationEmail = async () => {
+  try {
+    const result = await authStore.resendVerificationEmail()
+    if (result.success) {
+      toast.success('Verification code resent. Please check your email.')
+    } else {
+      toast.error(result.error || 'Failed to resend verification code.')
+    }
+  } catch (err) {
+    handleError(err)
+  }
+}
 </script>
 
 <style scoped>

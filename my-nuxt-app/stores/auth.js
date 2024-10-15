@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import api from '~/services/api'
 import { useCookie } from '#app'
+import { useRuntimeConfig } from '#app'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -27,33 +28,21 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         const response = await api.post('/users/login', { email, password });
-        if (response.data && response.data.status === 'success' && response.data.data.user) {
+        if (response.data.status === 'success') {
           this.setUser(response.data.data.user);
-          this.loginAttemptsLeft = 5; // Reset attempts on successful login
           return { success: true };
+        } else if (response.data.requiresVerification) {
+          return { success: false, requiresVerification: true, message: response.data.message };
         } else {
-          console.error('Invalid response from server:', response.data);
-          return { success: false, error: 'Invalid credentials or server error' };
+          console.error('Unexpected response from server:', response.data);
+          return { success: false, error: 'An unexpected error occurred' };
         }
       } catch (error) {
         console.error('Login error:', error);
-        if (error.response) {
-          console.error('Error response:', error.response.data);
-          if (error.response.status === 429) {
-            this.handleLoginRateLimiting(error);
-            return { success: false, error: `Too many attempts. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.` };
-          } else if (error.response.status === 401) {
-            this.loginAttemptsLeft = Math.max(this.loginAttemptsLeft - 1, 0); // Decrease attempts left
-            if (this.loginAttemptsLeft > 0) {
-              return { success: false, error: 'Incorrect email or password', attemptsLeft: this.loginAttemptsLeft };
-            } else {
-              // If no attempts left, trigger rate limiting
-              this.handleLoginRateLimiting({ response: { headers: { 'retry-after': '180' } } });
-              return { success: false, error: `Too many failed attempts. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.` };
-            }
-          }
+        if (error.response?.status === 403 && error.response.data.requiresVerification) {
+          return { success: false, requiresVerification: true, message: error.response.data.message };
         }
-        return { success: false, error: error.message || 'An error occurred during login' };
+        return { success: false, error: error.response?.data?.message || error.message || 'An error occurred during login' };
       }
     },
 
@@ -64,9 +53,13 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         const response = await api.post('/users/register', userData);
-        if (response.data && response.data.status === 'success' && response.data.data.user) {
-          this.setUser(response.data.data.user);
-          return { success: true };
+        if (response.data && response.data.status === 'success') {
+          // Don't set the user here, as they need to verify their email first
+          return { 
+            success: true, 
+            message: response.data.message,
+            requiresVerification: true
+          };
         } else {
           console.error('Invalid response from server:', response.data);
           return { success: false, error: 'Invalid response from server' };
@@ -353,5 +346,47 @@ export const useAuthStore = defineStore('auth', {
         };
       }
     },
+
+    showAuthModal(mode = 'login') {
+      this.showAuthModalFlag = true
+      this.authModalMode = mode
+    },
+
+    hideAuthModal() {
+      this.showAuthModalFlag = false
+    },
+
+    async verifyEmail(code) {
+      const config = useRuntimeConfig()
+      try {
+        const response = await $fetch('/users/verify-email', {
+          method: 'POST',
+          body: { code },
+          baseURL: config.public.apiBase
+        })
+        if (response.status === 'success') {
+          return { success: true }
+        } else {
+          return { success: false, error: response.message }
+        }
+      } catch (error) {
+        console.error('Email verification failed:', error)
+        return { success: false, error: error.message || 'Verification failed' }
+      }
+    },
+
+    async resendVerificationEmail() {
+      try {
+        const response = await api.post('/users/resend-verification');
+        if (response.data.status === 'success') {
+          return { success: true };
+        } else {
+          return { success: false, error: response.data.message };
+        }
+      } catch (error) {
+        console.error('Resend verification email error:', error);
+        return { success: false, error: error.response?.data?.message || 'An error occurred while resending the verification email' };
+      }
+    }
   },
 })

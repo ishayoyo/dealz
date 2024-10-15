@@ -10,6 +10,9 @@ const sharp = require('sharp');
 const path = require('path');
 const NotificationService = require('../services/NotificationService');
 const validator = require('validator');
+const crypto = require('crypto');
+const apiInstance = require('../config/brevoConfig');
+const SibApiV3Sdk = require('sib-api-v3-sdk');
 
 const signToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -21,6 +24,10 @@ const signRefreshToken = id => {
   return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, {
     expiresIn: '7d'  // Refresh token expires in 7 days
   });
+};
+
+const generateVerificationCode = () => {
+  return crypto.randomBytes(3).toString('hex').toUpperCase();
 };
 
 exports.register = catchAsync(async (req, res, next) => {
@@ -59,38 +66,33 @@ exports.register = catchAsync(async (req, res, next) => {
       return next(new AppError('User with this email or username already exists', 400));
     }
 
+    const verificationCode = generateVerificationCode();
+    const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
+
     // Create new user
     const newUser = await User.create({
       username,
       email,
-      password
+      password,
+      verificationCode,
+      verificationCodeExpires,
+      isVerified: false
     });
 
-    console.log('New user created:', newUser._id);
-
-    const accessToken = signToken(newUser._id);
-    const refreshToken = signRefreshToken(newUser._id);
-
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000 // 15 minutes
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-
-    // Remove password from output
-    newUser.password = undefined;
+    const emailSent = await sendVerificationEmail(newUser);
+    if (!emailSent) {
+      // If email sending fails, we still create the user but inform the client
+      return res.status(201).json({
+        status: 'success',
+        message: 'User registered successfully, but there was an issue sending the verification email. Please use the resend option.',
+        data: { user: newUser, requiresVerification: true, emailSendingFailed: true }
+      });
+    }
 
     res.status(201).json({
       status: 'success',
-      data: { user: newUser }
+      message: 'User registered successfully. Please check your email for the verification code.',
+      data: { user: newUser, requiresVerification: true }
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -125,6 +127,17 @@ exports.login = catchAsync(async (req, res, next) => {
       res.clearCookie('accessToken');
       res.clearCookie('refreshToken');
       return next(new AppError('Incorrect email or password', 401));
+    }
+
+    // Check if the user's email is verified
+    if (user.isVerified === false) {
+      // If not verified, send a new verification email
+      await sendVerificationEmail(user);
+      return res.status(403).json({
+        status: 'fail',
+        message: 'Please verify your email to log in. A new verification code has been sent.',
+        requiresVerification: true
+      });
     }
 
     console.log('Login successful:', user._id);
@@ -291,10 +304,39 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: 'success', message: 'Password reset email sent' });
 });
 
-exports.verifyEmail = catchAsync(async (req, res, next) => {
-  // Implement email verification logic here
-  res.status(200).json({ status: 'success', message: 'Email verified successfully' });
-});
+exports.verifyEmail = async (req, res) => {
+  const { code } = req.body;
+
+  try {
+    const user = await User.findOne({
+      verificationCode: code,
+      verificationCodeExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Invalid or expired verification code'
+      });
+    }
+
+    user.isVerified = true;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+    await user.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Email verified successfully'
+    });
+  } catch (error) {
+    console.error('Error in verifyEmail:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred during email verification'
+    });
+  }
+};
 
 exports.validateToken = catchAsync(async (req, res, next) => {
   // The user ID should be available in req.user.id, set by the auth middleware
@@ -704,5 +746,72 @@ exports.getUserRecentDeals = async (req, res) => {
     res.status(500).json({ message: 'Error fetching recent deals' });
   }
 };
+
+const sendVerificationEmail = async (user) => {
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  sendSmtpEmail.to = [{ email: user.email, name: user.username }];
+  sendSmtpEmail.subject = "Verify Your Email";
+  sendSmtpEmail.htmlContent = generateVerificationEmailHTML(user.username, user.verificationCode);
+  sendSmtpEmail.sender = { name: "Your App Name", email: "saversonic.com@gmail.com" };
+
+  try {
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Verification email sent successfully');
+    return true;
+  } catch (error) {
+    console.error('Error sending verification email:', error);
+    return false;
+  }
+};
+
+function generateVerificationEmailHTML(username, verificationCode) {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Verify Your Email</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        .container {
+          background-color: #f9f9f9;
+          border-radius: 5px;
+          padding: 20px;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+          color: #2c3e50;
+        }
+        .verification-code {
+          font-size: 24px;
+          font-weight: bold;
+          color: #3498db;
+          background-color: #eaf2f8;
+          padding: 10px;
+          border-radius: 5px;
+          display: inline-block;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Welcome to Our App, ${username}!</h1>
+        <p>Thank you for signing up. To complete your registration, please use the following 6-digit verification code:</p>
+        <p class="verification-code">${verificationCode}</p>
+        <p>This code will expire in 15 minutes. If you didn't request this code, please ignore this email.</p>
+        <p>Best regards,<br>Your App Team</p>
+      </div>
+    </body>
+    </html>
+  `;
+}
 
 module.exports = exports;
