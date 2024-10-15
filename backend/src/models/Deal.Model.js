@@ -57,6 +57,7 @@ const dealSchema = new mongoose.Schema({
       message: props => `${props.value} is not a valid shipping price. Use 'FREE' or a number.`
     }
   },
+  listPrice: { type: Number, required: true }, // Add this line
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

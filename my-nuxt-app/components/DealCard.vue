@@ -29,23 +29,11 @@
         {{ deal.description || 'No description available' }}
       </p>
       <div class="flex items-center justify-between mb-2">
-        <div class="flex items-center space-x-2">
-          <UserAvatar :name="dealUsername" :size="24" />
-          <NuxtLink 
-            v-if="deal.user && (deal.user['_id'] || deal.user.id)" 
-            :to="`/user/${deal.user['_id'] || deal.user.id}`" 
-            class="text-sm font-medium text-gray-700 hover:text-primary-600 hover:underline"
-            @click.stop
-          >
-            {{ dealUsername }}
-          </NuxtLink>
-          <span v-else class="text-sm font-medium text-gray-700">
-            {{ dealUsername }}
-          </span>
+        <div class="flex flex-col">
+          <span class="text-gray-500 line-through text-sm">{{ formattedListPrice }}</span>
+          <span class="font-bold text-accent text-xl">{{ formattedDealPrice }}</span>
         </div>
-        <span class="text-sm text-gray-500">
-          {{ formattedShipping }}
-        </span>
+        <span class="text-green-600 font-semibold">{{ discountPercentage }}% OFF</span>
       </div>
       <span class="text-sm text-gray-500 flex items-center mb-3">
         <i class="far fa-clock mr-2"></i>{{ formattedDate }}
@@ -154,6 +142,31 @@ const dealId = computed(() => props.deal['_id'] || props.deal.id || 'no-id')
 
 const formattedShipping = computed(() => {
   return props.deal.shipping === 'FREE' ? 'FREE Shipping' : `+$${parseFloat(props.deal.shipping).toFixed(2)} Shipping`
+})
+
+const formattedListPrice = computed(() => 
+  new Intl.NumberFormat('en-US', { 
+    style: 'currency', 
+    currency: 'USD', 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  }).format(props.deal?.listPrice || 0)
+)
+
+const formattedDealPrice = computed(() => 
+  new Intl.NumberFormat('en-US', { 
+    style: 'currency', 
+    currency: 'USD', 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  }).format(props.deal?.price || 0)
+)
+
+const discountPercentage = computed(() => {
+  if (props.deal?.listPrice && props.deal?.price) {
+    return Math.round((1 - props.deal.price / props.deal.listPrice) * 100)
+  }
+  return 0
 })
 </script>
 

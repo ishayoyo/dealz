@@ -83,7 +83,12 @@
           </div>
           
           <div>
-            <label for="price" class="block text-gray-700 text-sm font-bold mb-2">Price ($)</label>
+            <label for="listPrice" class="block text-gray-700 text-sm font-bold mb-2">List Price ($)</label>
+            <input type="number" id="listPrice" v-model="dealDetails.listPrice" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" required>
+          </div>
+          
+          <div>
+            <label for="price" class="block text-gray-700 text-sm font-bold mb-2">Deal Price ($)</label>
             <input type="number" id="price" v-model="dealDetails.price" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" required>
           </div>
           
@@ -150,6 +155,7 @@ const dealDetails = reactive({
   title: '',
   description: '',
   price: '',
+  listPrice: '',
   category: '',
   shipping: 'FREE'
 })

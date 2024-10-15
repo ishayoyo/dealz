@@ -78,7 +78,7 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.createDeal = catchAsync(async (req, res, next) => {
-  let { title, description, price, imageUrl, link, category, shipping } = req.body;
+  let { title, description, price, listPrice, imageUrl, link, category, shipping } = req.body;
 
   // Sanitize inputs
   title = validator.trim(title);
@@ -101,6 +101,11 @@ exports.createDeal = catchAsync(async (req, res, next) => {
 
   if (!validator.isURL(link)) {
     return next(new AppError('Invalid deal link', 400));
+  }
+
+  // Add validation for listPrice
+  if (!validator.isNumeric(listPrice.toString())) {
+    return next(new AppError('List price must be a number', 400));
   }
 
   // Validate category
@@ -142,6 +147,7 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     title,
     description,
     price,
+    listPrice,
     imageUrl,
     url: link,
     category,

@@ -33,6 +33,15 @@
               <h2 class="text-2xl md:text-3xl font-bold mb-4 text-text">{{ deal.title }}</h2>
               <p class="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">{{ deal.description }}</p>
               
+              <!-- Add this section to display both prices -->
+              <div class="flex items-center justify-between mb-6">
+                <div class="flex flex-col">
+                  <span class="text-gray-500 line-through text-sm">{{ formattedListPrice }}</span>
+                  <span class="font-bold text-accent text-3xl md:text-4xl">{{ formattedDealPrice }}</span>
+                </div>
+                <span class="text-green-600 font-semibold text-xl">{{ discountPercentage }}% OFF</span>
+              </div>
+              
               <!-- Add this section to display the category -->
               <div class="mb-4">
                 <span class="font-semibold text-gray-700">Category:</span>
@@ -476,6 +485,31 @@ const getOutgoingLink = (url) => {
   const baseURL = api.defaults.baseURL.replace(/\/api\/v1$/, '')
   return `${baseURL}/api/v1/link/out?url=${encodeURIComponent(url)}`
 }
+
+const formattedListPrice = computed(() => 
+  new Intl.NumberFormat('en-US', { 
+    style: 'currency', 
+    currency: 'USD', 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  }).format(props.deal?.listPrice || 0)
+)
+
+const formattedDealPrice = computed(() => 
+  new Intl.NumberFormat('en-US', { 
+    style: 'currency', 
+    currency: 'USD', 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  }).format(props.deal?.price || 0)
+)
+
+const discountPercentage = computed(() => {
+  if (props.deal?.listPrice && props.deal?.price) {
+    return Math.round((1 - props.deal.price / props.deal.listPrice) * 100)
+  }
+  return 0
+})
 
 onMounted(async () => {
   console.log('DealModal: Mounted')
