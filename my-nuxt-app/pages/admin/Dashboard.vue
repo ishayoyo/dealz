@@ -1,53 +1,62 @@
 <template>
-  <div class="admin-dashboard p-6 space-y-8">
-    <h1 class="text-3xl font-heading text-primary-800 mb-8">Admin Dashboard</h1>
+  <div class="admin-dashboard p-6 space-y-8 max-w-7xl mx-auto">
+    <h1 class="text-3xl font-heading text-primary-800 mb-8 text-center">SaverSonic Admin Dashboard</h1>
     
     <!-- Analytics Section -->
-    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div v-for="(stat, index) in stats" :key="index" 
-           :class="`bg-gradient-to-br from-${stat.color}-100 to-${stat.color}-200 p-6 rounded-xl shadow-md`">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-heading text-gray-800">{{ stat.title }}</h3>
-          <i :class="`fas fa-${stat.icon} text-${stat.color}-500 text-2xl`"></i>
+    <section>
+      <h2 class="text-2xl font-heading text-gray-800 mb-4">Overview</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-for="(stat, index) in stats" :key="index" 
+             :class="`bg-gradient-to-br from-${stat.color}-100 to-${stat.color}-200 p-6 rounded-xl shadow-md`">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-heading text-gray-800">{{ stat.title }}</h3>
+            <i :class="`fas fa-${stat.icon} text-${stat.color}-500 text-2xl`"></i>
+          </div>
+          <p class="text-3xl font-bold text-gray-900 mt-2">{{ stat.value }}</p>
         </div>
-        <p class="text-3xl font-bold text-gray-900 mt-2">{{ stat.value }}</p>
       </div>
     </section>
     
     <!-- Charts Section -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div v-for="chart in charts" :key="chart.title" class="bg-white rounded-xl shadow-md p-6">
-        <h3 class="text-xl font-heading text-gray-800 mb-4">{{ chart.title }}</h3>
-        <div class="chart-container">
-          <canvas :ref="chart.ref"></canvas>
+    <section>
+      <h2 class="text-2xl font-heading text-gray-800 mb-4">Analytics Charts</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div v-for="chart in charts" :key="chart.title" class="bg-white rounded-xl shadow-md p-6">
+          <h3 class="text-xl font-heading text-gray-800 mb-4">{{ chart.title }}</h3>
+          <div class="chart-container">
+            <canvas :ref="chart.ref"></canvas>
+          </div>
         </div>
       </div>
     </section>
     
     <!-- Affiliate Statistics Section -->
-    <section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <div class="bg-gradient-to-br from-success-100 to-success-200 p-6 rounded-xl shadow-md">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-heading text-gray-800">Total Affiliate Clicks</h3>
-          <i class="fas fa-mouse-pointer text-success-500 text-2xl"></i>
+    <section>
+      <h2 class="text-2xl font-heading text-gray-800 mb-4">Affiliate Statistics</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="bg-gradient-to-br from-success-100 to-success-200 p-6 rounded-xl shadow-md">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-heading text-gray-800">Total Affiliate Clicks</h3>
+            <i class="fas fa-mouse-pointer text-success-500 text-2xl"></i>
+          </div>
+          <p class="text-3xl font-bold text-gray-900 mt-2">{{ affiliateStats.totalClicks }}</p>
         </div>
-        <p class="text-3xl font-bold text-gray-900 mt-2">{{ affiliateStats.totalClicks }}</p>
-      </div>
-      <div class="bg-gradient-to-br from-warning-100 to-warning-200 p-6 rounded-xl shadow-md">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-heading text-gray-800">Amazon Clicks</h3>
-          <i class="fab fa-amazon text-warning-500 text-2xl"></i>
+        <div class="bg-gradient-to-br from-warning-100 to-warning-200 p-6 rounded-xl shadow-md">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-heading text-gray-800">Amazon Clicks</h3>
+            <i class="fab fa-amazon text-warning-500 text-2xl"></i>
+          </div>
+          <p class="text-3xl font-bold text-gray-900 mt-2">{{ affiliateStats.amazonClicks }}</p>
         </div>
-        <p class="text-3xl font-bold text-gray-900 mt-2">{{ affiliateStats.amazonClicks }}</p>
-      </div>
-      <div class="bg-gradient-to-br from-info-100 to-info-200 p-6 rounded-xl shadow-md">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-heading text-gray-800">AliExpress Clicks</h3>
-          <i class="fas fa-shopping-bag text-info-500 text-2xl"></i>
+        <div class="bg-gradient-to-br from-info-100 to-info-200 p-6 rounded-xl shadow-md">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-heading text-gray-800">AliExpress Clicks</h3>
+            <i class="fas fa-shopping-bag text-info-500 text-2xl"></i>
+          </div>
+          <p class="text-3xl font-bold text-gray-900 mt-2">{{ affiliateStats.aliexpressClicks }}</p>
         </div>
-        <p class="text-3xl font-bold text-gray-900 mt-2">{{ affiliateStats.aliexpressClicks }}</p>
       </div>
-      <div class="bg-white rounded-xl shadow-md p-6 lg:col-span-1">
+      <div class="bg-white rounded-xl shadow-md p-6">
         <h3 class="text-xl font-heading text-gray-800 mb-4">Clicks Over Time</h3>
         <div class="chart-container">
           <canvas ref="clicksOverTimeChartRef"></canvas>
@@ -56,45 +65,48 @@
     </section>
     
     <!-- Data Tables Section -->
-    <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <div v-for="table in tables" :key="table.title" 
-           :class="{'xl:col-span-2': table.title === 'Users'}"
-           class="bg-white rounded-xl shadow-md p-6">
-        <h3 class="text-xl font-heading text-gray-800 mb-4">{{ table.title }}</h3>
-        <div class="overflow-x-auto max-h-96">
-          <table class="w-full">
-            <thead>
-              <tr class="bg-gray-100">
-                <th v-for="column in table.columns" :key="column.key" class="p-2 text-left">{{ column.label }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in table.data" :key="item._id" class="border-b border-gray-200">
-                <td v-for="column in table.columns" :key="column.key" class="p-2">
-                  <template v-if="column.type === 'image'">
-                    <img :src="getFullImageUrl(item[column.key])" :alt="item.title" class="w-16 h-16 object-cover rounded">
-                  </template>
-                  <template v-else-if="column.type === 'date'">
-                    {{ formatDate(getNestedValue(item, column.key)) }}
-                  </template>
-                  <template v-else-if="column.type === 'actions'">
-                    <button 
-                      v-for="action in column.actions" 
-                      :key="action"
-                      @click="handleAction(action, item._id)"
-                      class="btn btn-sm mr-2"
-                      :class="`btn-${getActionColor(action)}`"
-                    >
-                      {{ action }}
-                    </button>
-                  </template>
-                  <template v-else>
-                    {{ getNestedValue(item, column.key) }}
-                  </template>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+    <section>
+      <h2 class="text-2xl font-heading text-gray-800 mb-4">Data Tables</h2>
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div v-for="table in tables" :key="table.title" 
+             :class="{'xl:col-span-2': table.title === 'Users'}"
+             class="bg-white rounded-xl shadow-md p-6">
+          <h3 class="text-xl font-heading text-gray-800 mb-4">{{ table.title }}</h3>
+          <div class="overflow-x-auto max-h-96">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th v-for="column in table.columns" :key="column.key" class="p-2 text-left">{{ column.label }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in table.data" :key="item._id" class="border-b border-gray-200">
+                  <td v-for="column in table.columns" :key="column.key" class="p-2">
+                    <template v-if="column.type === 'image'">
+                      <img :src="getFullImageUrl(item[column.key])" :alt="item.title" class="w-16 h-16 object-cover rounded">
+                    </template>
+                    <template v-else-if="column.type === 'date'">
+                      {{ formatDate(getNestedValue(item, column.key)) }}
+                    </template>
+                    <template v-else-if="column.type === 'actions'">
+                      <button 
+                        v-for="action in column.actions" 
+                        :key="action"
+                        @click="handleAction(action, item._id)"
+                        class="btn btn-sm mr-2"
+                        :class="`btn-${getActionColor(action)}`"
+                      >
+                        {{ action }}
+                      </button>
+                    </template>
+                    <template v-else>
+                      {{ getNestedValue(item, column.key) }}
+                    </template>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
@@ -548,5 +560,12 @@ onMounted(async () => {
 
 .btn-info {
   @apply bg-cyan-500 text-white hover:bg-cyan-700;
+}
+
+/* Add this new style for centering the content */
+.admin-dashboard {
+  max-width: 1280px; /* Adjust this value as needed */
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>
