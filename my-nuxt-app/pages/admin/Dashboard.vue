@@ -164,51 +164,6 @@
         </div>
       </div>
     </div>
-    
-    <!-- Users Table -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <h3 class="text-xl font-heading text-gray-800 mb-4">Users</h3>
-      <div class="overflow-x-auto max-h-96">
-        <table class="w-full">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="p-2 text-left">Username</th>
-              <th class="p-2 text-left">Email</th>
-              <th class="p-2 text-left">Created At</th>
-              <th class="p-2 text-left">Verification Status</th>
-              <th class="p-2 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="user in users" :key="user._id" class="border-b border-gray-200">
-              <td class="p-2">{{ user.username }}</td>
-              <td class="p-2">{{ user.email }}</td>
-              <td class="p-2">{{ formatDate(user.createdAt) }}</td>
-              <td class="p-2">
-                <span :class="user.isVerified ? 'text-green-600' : 'text-red-600'">
-                  {{ user.isVerified ? 'Verified' : 'Not Verified' }}
-                </span>
-              </td>
-              <td class="p-2">
-                <button 
-                  v-if="!user.isVerified"
-                  @click="verifyUser(user._id)"
-                  class="btn btn-sm btn-primary mr-2"
-                >
-                  Verify
-                </button>
-                <button 
-                  @click="deleteUser(user._id)"
-                  class="btn btn-sm btn-danger"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -398,8 +353,12 @@ const handleAction = async (action, itemId) => {
                     pendingDeals.value.find(deal => deal._id === itemId))
       break
     case 'delete':
-      if (confirm('Are you sure you want to delete this user?')) {
-        await deleteUser(itemId)
+      if (confirm('Are you sure you want to delete this item?')) {
+        if (users.value.find(user => user._id === itemId)) {
+          await deleteUser(itemId)
+        } else {
+          await deleteDeal(itemId)
+        }
       }
       break
     case 'verify':
