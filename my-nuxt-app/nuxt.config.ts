@@ -19,7 +19,8 @@ export default defineNuxtConfig({
       socketUrl: process.env.NUXT_PUBLIC_SOCKET_URL || 
         (process.env.NODE_ENV === 'production'
           ? 'https://saversonic.com'
-          : 'http://localhost:5000')
+          : 'http://localhost:5000'),
+      googleAnalyticsId: 'G-FC8GTR1HMP'
     }
   },
 
@@ -30,7 +31,9 @@ export default defineNuxtConfig({
     '~/plugins/userAvatar.js',
     '~/plugins/fontawesome.js',
     '~/plugins/socket.js',
-    { src: '~/plugins/vue-toastification.js', mode: 'client' }
+    { src: '~/plugins/vue-toastification.js', mode: 'client' },
+    '~/plugins/analytics.js',
+    '~/plugins/router.client.js'
   ],
   ssr: true,
   build: {
@@ -51,6 +54,12 @@ export default defineNuxtConfig({
       meta: [
         { name: 'theme-color', content: '#ffffff' },
       ],
+      script: [
+        {
+          src: `https://www.googletagmanager.com/gtag/js?id=G-FC8GTR1HMP`,
+          async: true
+        }
+      ]
     },
   },
 })
