@@ -355,7 +355,7 @@ function generateVerificationEmailHTML(username, verificationCode) {
         <p>This code will expire in 15 minutes.</p>
         <p>For your convenience, you can click the button below to go to our verification page. There, you'll be able to enter this code to verify your email:</p>
         <p style="text-align: center;">
-          <a href="https://saversonic.com/verify-email" class="btn btn-primary">Go to Verification Page</a>
+          <a href="https://saversonic.com/verify-email" class="btn btn-primary" style="color: #ffffff;">Go to Verification Page</a>
         </p>
         <p>On the verification page, simply enter the code shown above to complete your account setup.</p>
         <p>At SaverSonic, you'll be able to:</p>
