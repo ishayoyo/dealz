@@ -279,25 +279,28 @@ function generateVerificationEmailHTML(username, verificationCode) {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Verify Your SaverSonic Account</title>
+      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
       <style>
         body {
-          font-family: 'Arial', sans-serif;
+          font-family: 'Roboto', sans-serif;
           line-height: 1.6;
-          color: #333;
+          color: #1f2937;
           max-width: 600px;
           margin: 0 auto;
           padding: 20px;
-          background-color: #f4f4f4;
+          background: linear-gradient(to bottom right, #eef2ff, #f5f3ff);
         }
         .container {
           background-color: #ffffff;
-          border-radius: 8px;
+          border-radius: 12px;
           padding: 30px;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         h1 {
-          color: #2c3e50;
+          font-family: 'Poppins', sans-serif;
+          color: #312e81;
           font-size: 28px;
+          font-weight: 700;
           margin-bottom: 20px;
         }
         .logo {
@@ -311,16 +314,31 @@ function generateVerificationEmailHTML(username, verificationCode) {
           font-size: 32px;
           font-weight: bold;
           color: #ffffff;
-          background-color: #3498db;
+          background: linear-gradient(to right, #6366f1, #8b5cf6);
           padding: 10px 20px;
-          border-radius: 5px;
+          border-radius: 9999px;
           display: inline-block;
           margin: 20px 0;
+        }
+        .btn {
+          font-weight: 600;
+          padding: 12px 24px;
+          border-radius: 9999px;
+          text-decoration: none;
+          display: inline-block;
+          transition: all 0.3s ease;
+        }
+        .btn-primary {
+          background: linear-gradient(to right, #6366f1, #8b5cf6);
+          color: #ffffff;
+        }
+        .btn-primary:hover {
+          background: linear-gradient(to right, #4f46e5, #7c3aed);
         }
         .footer {
           margin-top: 30px;
           font-size: 14px;
-          color: #7f8c8d;
+          color: #6b7280;
           text-align: center;
         }
       </style>
@@ -328,7 +346,6 @@ function generateVerificationEmailHTML(username, verificationCode) {
     <body>
       <div class="container">
         <div class="logo">
-          <!-- Replace with your actual logo -->
           <img src="https://saversonic.com/images/logo.png" alt="SaverSonic Logo">
         </div>
         <h1>Welcome to SaverSonic, ${username}!</h1>
@@ -336,11 +353,11 @@ function generateVerificationEmailHTML(username, verificationCode) {
         <p>To complete your registration and start discovering amazing deals, please use the following verification code:</p>
         <p class="verification-code">${verificationCode}</p>
         <p>This code will expire in 15 minutes.</p>
-        <p>For your convenience, you can also verify your email by clicking the button below:</p>
+        <p>For your convenience, you can click the button below to go to our verification page. There, you'll be able to enter this code to verify your email:</p>
         <p style="text-align: center;">
-          <a href="https://saversonic.com/verify-email" style="background-color: #3498db; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-top: 10px;">Verify Email</a>
+          <a href="https://saversonic.com/verify-email" class="btn btn-primary">Go to Verification Page</a>
         </p>
-        <p>If you didn't request this code, please ignore this email.</p>
+        <p>On the verification page, simply enter the code shown above to complete your account setup.</p>
         <p>At SaverSonic, you'll be able to:</p>
         <ul>
           <li>Discover and share the best deals</li>
