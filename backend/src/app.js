@@ -6,9 +6,6 @@ const routes = require('./routes/api/v1');
 
 const app = express();
 
-// Set trust proxy before other middleware
-app.set('trust proxy', 1);
-
 app.use(cors({
   origin: ["https://saversonic.com", "http://localhost:3000"],
   credentials: true
