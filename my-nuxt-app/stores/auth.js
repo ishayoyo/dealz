@@ -357,24 +357,22 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async verifyEmail(code) {
-      const config = useRuntimeConfig()
       try {
-        const response = await $fetch('/users/verify-email', {
-          method: 'POST',
-          body: { code },
-          baseURL: config.public.apiBase
-        })
-        if (response.status === 'success') {
-          return { success: true }
+        const response = await api.post('/users/verify-email', { code });
+        if (response.data.status === 'success') {
+          if (this.user) {
+            this.user.isVerified = true;
+          }
+          return { success: true };
         } else {
-          return { success: false, error: response.message }
+          return { success: false, error: response.data.message };
         }
       } catch (error) {
-        console.error('Email verification failed:', error)
-        return { success: false, error: error.message || 'Verification failed' }
+        console.error('Email verification failed:', error);
+        return { success: false, error: error.response?.data?.message || 'Verification failed' };
       }
     },
-
+    
     async resendVerificationEmail() {
       try {
         const response = await api.post('/users/resend-verification');
