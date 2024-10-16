@@ -10,6 +10,7 @@ console.log('MONGODB_URI:', process.env.MONGODB_URI);
 console.log('Current working directory:', process.cwd());
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
+// Create the server after setting trust proxy in app.js
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
@@ -65,4 +66,11 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch(err => {
     console.error('Could not connect to MongoDB', err);
     console.error('Connection string used:', process.env.MONGODB_URI);
+    process.exit(1);
   });
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
+  server.close(() => process.exit(1));
+});
