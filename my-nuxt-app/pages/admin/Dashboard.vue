@@ -92,12 +92,18 @@
                       <button 
                         v-for="action in column.actions" 
                         :key="action"
+                        v-show="action !== 'verify' || !item.isVerified"
                         @click="handleAction(action, item._id)"
                         class="btn btn-sm mr-2"
                         :class="`btn-${getActionColor(action)}`"
                       >
                         {{ action }}
                       </button>
+                    </template>
+                    <template v-else-if="column.key === 'isVerified'">
+                      <span :class="item.isVerified ? 'text-green-600' : 'text-red-600'">
+                        {{ item.isVerified ? 'Verified' : 'Not Verified' }}
+                      </span>
                     </template>
                     <template v-else>
                       {{ getNestedValue(item, column.key) }}
@@ -156,6 +162,51 @@
             </div>
           </form>
         </div>
+      </div>
+    </div>
+    
+    <!-- Users Table -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <h3 class="text-xl font-heading text-gray-800 mb-4">Users</h3>
+      <div class="overflow-x-auto max-h-96">
+        <table class="w-full">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="p-2 text-left">Username</th>
+              <th class="p-2 text-left">Email</th>
+              <th class="p-2 text-left">Created At</th>
+              <th class="p-2 text-left">Verification Status</th>
+              <th class="p-2 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="user in users" :key="user._id" class="border-b border-gray-200">
+              <td class="p-2">{{ user.username }}</td>
+              <td class="p-2">{{ user.email }}</td>
+              <td class="p-2">{{ formatDate(user.createdAt) }}</td>
+              <td class="p-2">
+                <span :class="user.isVerified ? 'text-green-600' : 'text-red-600'">
+                  {{ user.isVerified ? 'Verified' : 'Not Verified' }}
+                </span>
+              </td>
+              <td class="p-2">
+                <button 
+                  v-if="!user.isVerified"
+                  @click="verifyUser(user._id)"
+                  class="btn btn-sm btn-primary mr-2"
+                >
+                  Verify
+                </button>
+                <button 
+                  @click="deleteUser(user._id)"
+                  class="btn btn-sm btn-danger"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -242,7 +293,8 @@ const tables = computed(() => [
       { key: 'username', label: 'Username' },
       { key: 'email', label: 'Email' },
       { key: 'createdAt', label: 'Created At', type: 'date' },
-      { key: 'actions', label: 'Actions', type: 'actions', actions: ['delete'] }
+      { key: 'isVerified', label: 'Verification Status' },
+      { key: 'actions', label: 'Actions', type: 'actions', actions: ['verify', 'delete'] }
     ]
   }
 ])
@@ -346,14 +398,12 @@ const handleAction = async (action, itemId) => {
                     pendingDeals.value.find(deal => deal._id === itemId))
       break
     case 'delete':
-      if (confirm('Are you sure you want to delete this item?')) {
-        // Check if it's a user or a deal
-        if (users.value.find(user => user._id === itemId)) {
-          await deleteUser(itemId)
-        } else {
-          await deleteDeal(itemId)
-        }
+      if (confirm('Are you sure you want to delete this user?')) {
+        await deleteUser(itemId)
       }
+      break
+    case 'verify':
+      await verifyUser(itemId)
       break
   }
 }
@@ -527,6 +577,17 @@ onMounted(async () => {
     toast.error('Failed to fetch chart data');
   }
 })
+
+const verifyUser = async (userId) => {
+  try {
+    await api.patch(`/admin/users/${userId}/verify`);
+    await fetchUsers();
+    toast.success('User verified successfully');
+  } catch (error) {
+    console.error('Error verifying user:', error);
+    toast.error('Failed to verify user: ' + (error.response?.data?.message || error.message));
+  }
+};
 </script>
 
 <style scoped>

@@ -24,7 +24,10 @@ const userSchema = new mongoose.Schema({
   profilePicture: String,
   bio: String,
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  isVerified: { type: Boolean, default: false },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
   verificationCode: String,
   verificationCodeExpires: Date,
   resetPasswordToken: String,

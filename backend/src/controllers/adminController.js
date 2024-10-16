@@ -7,7 +7,7 @@ const Comment = require('../models/Comment.Model');
 const AffiliateClick = require('../models/AffiliateClick.Model');
 
 exports.getUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find().select('-password');
+  const users = await User.find().select('username email createdAt isVerified');
   res.status(200).json({
     status: 'success',
     data: { users }
@@ -330,3 +330,22 @@ exports.getAffiliateStats = async (req, res) => {
     res.status(500).json({ message: 'Error fetching affiliate statistics', error: error.message });
   }
 };
+
+exports.verifyUser = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const user = await User.findByIdAndUpdate(
+    id,
+    { isVerified: true },
+    { new: true, runValidators: true }
+  );
+
+  if (!user) {
+    return next(new AppError('No user found with that ID', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: { user }
+  });
+});

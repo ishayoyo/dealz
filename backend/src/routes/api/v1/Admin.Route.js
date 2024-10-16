@@ -25,4 +25,6 @@ router.patch('/deals/:id', adminController.editDeal);
 
 router.get('/affiliate-stats', auth, isAdmin, adminController.getAffiliateStats);
 
+router.patch('/users/:id/verify', adminController.verifyUser);
+
 module.exports = router;
