@@ -90,12 +90,13 @@
     isLoading.value = true
     try {
       const response = await api.get(`/users/profile/${route.params.id}`)
+      console.log('API Response:', response.data)
       if (response.data && response.data.data) {
-        profile.value = response.data.data.user
-        deals.value = response.data.data.deals.map(deal => ({
+        profile.value = response.data.data.user || {}
+        deals.value = response.data.data.deals ? response.data.data.deals.map(deal => ({
           ...deal,
           user: { username: profile.value.username }
-        })) || []
+        })) : []
       } else {
         error.value = 'Unexpected data format received from server'
       }
@@ -135,3 +136,4 @@
     fetchProfile()
   })
   </script>
+

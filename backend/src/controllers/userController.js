@@ -28,11 +28,22 @@ exports.getUser = catchAsync(async (req, res, next) => {
 });
 
 exports.getUserProfile = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id).select('username profilePicture');
+  const user = await User.findById(req.params.id).select('username profilePicture bio followerCount followingCount');
   if (!user) {
     return next(new AppError('No user found with that ID', 404));
   }
-  res.status(200).json({ status: 'success', data: { user } });
+
+  const deals = await Deal.find({ user: req.params.id, status: 'approved' })
+    .sort('-createdAt')
+    .limit(10); // Limit to 10 most recent deals, adjust as needed
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user,
+      deals
+    }
+  });
 });
 
 exports.uploadProfilePicture = catchAsync(async (req, res, next) => {
