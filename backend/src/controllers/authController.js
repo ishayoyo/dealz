@@ -329,13 +329,18 @@ function generateVerificationEmailHTML(username, verificationCode) {
       <div class="container">
         <div class="logo">
           <!-- Replace with your actual logo -->
-          <img src="https://yourdomain.com/path-to-your-logo.png" alt="SaverSonic Logo">
+          <img src="https://saversonic.com/images/logo.png" alt="SaverSonic Logo">
         </div>
         <h1>Welcome to SaverSonic, ${username}!</h1>
         <p>Thank you for joining our social shopping community. We're excited to have you on board!</p>
         <p>To complete your registration and start discovering amazing deals, please use the following verification code:</p>
         <p class="verification-code">${verificationCode}</p>
-        <p>This code will expire in 15 minutes. If you didn't request this code, please ignore this email.</p>
+        <p>This code will expire in 15 minutes.</p>
+        <p>For your convenience, you can also verify your email by clicking the button below:</p>
+        <p style="text-align: center;">
+          <a href="https://saversonic.com/verify-email" style="background-color: #3498db; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-top: 10px;">Verify Email</a>
+        </p>
+        <p>If you didn't request this code, please ignore this email.</p>
         <p>At SaverSonic, you'll be able to:</p>
         <ul>
           <li>Discover and share the best deals</li>
