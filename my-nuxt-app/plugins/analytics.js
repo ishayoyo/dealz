@@ -7,7 +7,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     }
   }
 
-  nuxtApp.vueApp.provide('analytics', {
+  const analytics = {
     pageView(pageTitle, pageLocation, pagePath) {
       if (process.client) {
         gtag('event', 'page_view', {
@@ -26,7 +26,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         })
       }
     }
-  })
+  }
 
   if (process.client) {
     window.dataLayer = window.dataLayer || []
@@ -34,12 +34,9 @@ export default defineNuxtPlugin((nuxtApp) => {
     gtag('config', runtimeConfig.public.googleAnalyticsId)
   }
 
-  // If you need to do something only on initial server-side render:
-  if (process.server) {
-    const event = useRequestEvent()
-    if (event) {
-      // You can access server-side request data here if needed
-      // For example: event.node.req.headers
+  return {
+    provide: {
+      analytics
     }
   }
 })
