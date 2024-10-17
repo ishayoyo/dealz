@@ -56,24 +56,19 @@ exports.getUserProfile = catchAsync(async (req, res, next) => {
 
 exports.changeAvatar = async (req, res) => {
   try {
-    const user = req.user;
-    // Generate a new random seed
-    user.avatarSeed = Math.random().toString(36).substring(2, 15);
-    await user.save();
-
+    const newSeed = Math.random().toString(36).substring(2, 15);
+    const user = await User.findByIdAndUpdate(req.user.id, { avatarSeed: newSeed }, { new: true });
+    
     res.status(200).json({
-      success: true,
+      status: 'success',
       data: {
         avatarSeed: user.avatarSeed
-      },
-      message: 'Avatar changed successfully'
+      }
     });
   } catch (error) {
-    console.error('Error changing avatar:', error);
     res.status(500).json({
-      success: false,
-      error: 'Server Error',
-      message: 'Failed to change avatar'
+      status: 'error',
+      message: 'An error occurred while changing the avatar'
     });
   }
 };
@@ -115,5 +110,22 @@ exports.getUserRecentDeals = async (req, res) => {
     res.status(500).json({ message: 'Error fetching recent deals' });
   }
 };
+
+exports.getUserAvatar = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.params.id).select('avatarSeed');
+  if (!user) {
+    return next(new AppError('No user found with that ID', 404));
+  }
+  
+  // Generate avatar URL using the avatarSeed
+  const avatarUrl = `https://api.dicebear.com/6.x/avataaars/svg?seed=${user.avatarSeed}`;
+  
+  res.status(200).json({
+    status: 'success',
+    data: {
+      avatarUrl
+    }
+  });
+});
 
 module.exports = exports;

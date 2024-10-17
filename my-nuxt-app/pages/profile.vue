@@ -202,10 +202,12 @@ const fetchFollowing = async () => {
 const fetchFollowers = async () => {
   try {
     const response = await api.get('/users/me/followers')
-    followers.value = response.data.data.followers
+    // Filter out any null or undefined followers
+    followers.value = response.data.data.followers.filter(follower => follower && follower._id)
   } catch (error) {
     console.error('Error fetching followers:', error)
-    throw error
+    toast.error('Failed to fetch followers')
+    followers.value = [] // Set to empty array in case of error
   }
 }
 

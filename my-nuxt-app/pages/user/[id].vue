@@ -13,7 +13,7 @@
           <!-- Profile Header -->
           <div class="bg-white shadow-lg rounded-xl p-8 mb-8 animate-float">
             <div class="flex flex-col sm:flex-row items-center">
-              <UserAvatar :name="profile.username" :src="profile.profilePicture" :size="120" class="mb-4 sm:mb-0 sm:mr-8" />
+              <img :src="avatarUrl" :alt="profile.username" class="w-32 h-32 rounded-full mb-4 sm:mb-0 sm:mr-8" />
               <div class="text-center sm:text-left">
                 <h1 class="text-3xl font-bold text-primary-800 mb-2">{{ profile.username }}</h1>
                 <!-- Only show bio if it exists -->
@@ -52,7 +52,7 @@
               <DealCard 
                 v-for="deal in deals" 
                 :key="deal['_id']" 
-                :deal="deal"
+                :deal="{ ...deal, user: { ...deal.user, avatarUrl: avatarUrl } }"
                 :username="profile.username"
                 @open-modal="openDealModal" 
                 class="deal-card cursor-pointer transition duration-300 transform hover:scale-105"
@@ -85,6 +85,18 @@
   const isFollowing = computed(() => {
     return authStore.user && profile.value && authStore.user.following && authStore.user.following.includes(profile.value.id)
   })
+  const avatarUrl = ref('')
+
+  const fetchAvatar = async (userId) => {
+    try {
+      const response = await api.get(`/users/${userId}/avatar`)
+      avatarUrl.value = response.data.data.avatarUrl
+    } catch (error) {
+      console.error('Error fetching avatar:', error)
+      // Set a default avatar URL in case of error
+      avatarUrl.value = 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
+    }
+  }
 
   const fetchProfile = async () => {
     isLoading.value = true
@@ -92,12 +104,16 @@
       const response = await api.get(`/users/profile/${route.params.id}`)
       if (response.data && response.data.data) {
         profile.value = response.data.data.user || {}
+        // Fetch the avatar after setting the profile
+        await fetchAvatar(profile.value.id)
         deals.value = response.data.data.deals ? response.data.data.deals.map(deal => ({
           ...deal,
-          user: { username: profile.value.username }
+          user: { 
+            username: profile.value.username,
+            _id: profile.value.id,
+            avatarUrl: avatarUrl.value
+          }
         })) : []
-        // The follower count should now be included in the profile data
-        // If it's not, you may need to update your backend to include it
       } else {
         error.value = 'Unexpected data format received from server'
       }
@@ -150,4 +166,3 @@
     }
   })
   </script>
-

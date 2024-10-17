@@ -71,7 +71,7 @@
               
               <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 md:p-6 rounded-lg shadow-sm">
                 <div class="flex items-center">
-                  <UserAvatar :name="dealUserName" :size="40" class="mr-3 md:mr-4" />
+                  <img :src="avatarUrl" :alt="dealUserName" class="w-10 h-10 rounded-full mr-3 md:mr-4" />
                   <div>
                     <span class="text-sm text-gray-500">Posted by:</span>
                     <NuxtLink :to="`/user/${deal.user._id}`" class="font-semibold ml-1 text-text text-base md:text-lg hover:text-primary-600 hover:underline">
@@ -509,6 +509,25 @@ const discountPercentage = computed(() => {
     return Math.round((1 - props.deal.price / props.deal.listPrice) * 100)
   }
   return 0
+})
+
+const avatarUrl = ref('')
+
+const fetchAvatar = async () => {
+  try {
+    const response = await api.get(`/users/${props.deal.user._id}/avatar`)
+    avatarUrl.value = response.data.data.avatarUrl
+  } catch (error) {
+    console.error('Error fetching avatar:', error)
+    // Set a default avatar URL in case of error
+    avatarUrl.value = 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
+  }
+}
+
+onMounted(() => {
+  if (props.deal.user && props.deal.user._id) {
+    fetchAvatar()
+  }
 })
 
 onMounted(async () => {

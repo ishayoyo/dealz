@@ -43,7 +43,7 @@
         <span class="text-sm text-gray-500">{{ formattedShipping }}</span>
       </div>
       <div class="flex items-center">
-        <UserAvatar :name="dealUsername" :size="24" class="mr-2" />
+        <img :src="avatarUrl" :alt="dealUsername" class="w-6 h-6 rounded-full mr-2" />
         <span class="text-sm text-gray-600">{{ dealUsername }}</span>
       </div>
     </div>
@@ -51,10 +51,11 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRuntimeConfig, useRouter } from '#app'
 import { formatDistanceToNow } from 'date-fns'
 import UserAvatar from './UserAvatar.vue'
+import api from '~/services/api'
 
 const config = useRuntimeConfig()
 const router = useRouter()
@@ -172,6 +173,25 @@ const discountPercentage = computed(() => {
     return Math.round((1 - props.deal.price / props.deal.listPrice) * 100)
   }
   return 0
+})
+
+const avatarUrl = ref('')
+
+const fetchAvatar = async () => {
+  try {
+    const response = await api.get(`/users/${props.deal.user._id}/avatar`)
+    avatarUrl.value = response.data.data.avatarUrl
+  } catch (error) {
+    console.error('Error fetching avatar:', error)
+    // Set a default avatar URL in case of error
+    avatarUrl.value = 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
+  }
+}
+
+onMounted(() => {
+  if (props.deal.user && props.deal.user._id) {
+    fetchAvatar()
+  }
 })
 </script>
 

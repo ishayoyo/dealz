@@ -13,7 +13,7 @@ router.post('/logout', auth, authController.logout);
 router.post('/refresh-token', authController.refreshToken);
 router.get('/check-auth', auth, authController.checkAuth);
 router.post('/change-avatar', auth, userController.changeAvatar);
-
+router.get('/:id/avatar', userController.getUserAvatar);
 
 // Password reset routes
 router.post('/forgot-password', authController.forgotPassword);
