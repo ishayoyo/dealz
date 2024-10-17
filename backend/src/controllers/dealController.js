@@ -446,19 +446,17 @@ exports.followDeal = catchAsync(async (req, res, next) => {
 
   const user = await User.findById(req.user.id);
   if (!user.followedDeals.includes(deal._id)) {
-    user.followedDeals.push(deal._id);
-    await user.save();
-    deal.followCount += 1;
-    await deal.save();
+    await User.findByIdAndUpdate(req.user.id, { $addToSet: { followedDeals: deal._id } });
+    await Deal.findByIdAndUpdate(req.params.id, { $inc: { followCount: 1 } });
 
-    // Add this code to create a notification with the user's name
+    // Create notification
     if (deal.user.toString() !== req.user.id) {
       const notificationService = new NotificationService(req.app.get('io'));
       await notificationService.createDealFollowNotification(
         req.user.id, 
         deal.user, 
         deal._id,
-        `${user.username} followed your deal: ${deal.title}` // Include user's name and deal title
+        `${user.username} followed your deal: ${deal.title}`
       );
     }
   }
@@ -468,7 +466,7 @@ exports.followDeal = catchAsync(async (req, res, next) => {
     message: 'Deal followed successfully',
     data: {
       isFollowing: true,
-      followCount: deal.followCount
+      followCount: deal.followCount + 1
     }
   });
 });
@@ -479,20 +477,15 @@ exports.unfollowDeal = catchAsync(async (req, res, next) => {
     return next(new AppError('No deal found with that ID', 404));
   }
 
-  const user = await User.findById(req.user.id);
-  if (user.followedDeals.includes(deal._id)) {
-    user.followedDeals = user.followedDeals.filter(id => id.toString() !== deal._id.toString());
-    await user.save();
-    deal.followCount = Math.max(0, deal.followCount - 1);
-    await deal.save();
-  }
+  await User.findByIdAndUpdate(req.user.id, { $pull: { followedDeals: deal._id } });
+  await Deal.findByIdAndUpdate(req.params.id, { $inc: { followCount: -1 } });
 
   res.status(200).json({
     status: 'success',
     message: 'Deal unfollowed successfully',
     data: {
       isFollowing: false,
-      followCount: deal.followCount
+      followCount: Math.max(0, deal.followCount - 1)
     }
   });
 });

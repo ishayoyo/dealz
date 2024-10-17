@@ -28,25 +28,27 @@ exports.getUser = catchAsync(async (req, res, next) => {
 });
 
 exports.getUserProfile = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id).select('username profilePicture bio');
+  const user = await User.findById(req.params.id)
+    .select('username profilePicture bio followers following avatarSeed')
+    .populate('followers', 'username avatarSeed')
+    .populate('following', 'username avatarSeed');
+
   if (!user) {
     return next(new AppError('No user found with that ID', 404));
   }
 
-  const followerCount = await Follow.countDocuments({ followed: req.params.id });
-  const followingCount = await Follow.countDocuments({ follower: req.params.id });
-
   const deals = await Deal.find({ user: req.params.id, status: 'approved' })
     .sort('-createdAt')
-    .limit(10);
+    .limit(10)
+    .populate('category', 'name');
 
   res.status(200).json({
     status: 'success',
     data: {
       user: {
         ...user.toObject(),
-        followerCount,
-        followingCount
+        followersCount: user.followers.length,
+        followingCount: user.following.length
       },
       deals
     }
