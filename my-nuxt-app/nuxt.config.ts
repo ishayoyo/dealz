@@ -20,7 +20,9 @@ export default defineNuxtConfig({
         (process.env.NODE_ENV === 'production'
           ? 'https://saversonic.com'
           : 'http://localhost:5000'),
-      googleAnalyticsId: 'G-FC8GTR1HMP'
+      googleAnalyticsId: process.env.NODE_ENV === 'production'
+        ? 'G-T0NCYQB1MT'  // Production GA ID
+        : 'G-FC8GTR1HMP'  // Development GA ID
     }
   },
 
@@ -56,7 +58,9 @@ export default defineNuxtConfig({
       ],
       script: [
         {
-          src: `https://www.googletagmanager.com/gtag/js?id=G-FC8GTR1HMP`,
+          src: process.env.NODE_ENV === 'production'
+            ? `https://www.googletagmanager.com/gtag/js?id=G-T0NCYQB1MT`
+            : `https://www.googletagmanager.com/gtag/js?id=G-FC8GTR1HMP`,
           async: true
         },
         {
@@ -64,7 +68,7 @@ export default defineNuxtConfig({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-FC8GTR1HMP');
+            gtag('config', '${process.env.NODE_ENV === 'production' ? 'G-T0NCYQB1MT' : 'G-FC8GTR1HMP'}');
           `,
           type: 'text/javascript'
         }
