@@ -259,7 +259,7 @@ const sendVerificationEmail = async (user) => {
   sendSmtpEmail.to = [{ email: user.email, name: user.username }];
   sendSmtpEmail.subject = "Verify Your Email";
   sendSmtpEmail.htmlContent = generateVerificationEmailHTML(user.username, user.verificationCode);
-  sendSmtpEmail.sender = { name: "Verify Your SaverSonic Account", email: "saversonic.com@gmail.com" };
+  sendSmtpEmail.sender = { name: "Verify Your SaverSonic Account", email: "ishay@saversonic.com" };
 
   try {
     await apiInstance.sendTransacEmail(sendSmtpEmail);
