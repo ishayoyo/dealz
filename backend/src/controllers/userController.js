@@ -54,42 +54,29 @@ exports.getUserProfile = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.uploadProfilePicture = catchAsync(async (req, res, next) => {
-  if (!req.file) {
-    return next(new AppError('No file uploaded', 400));
+exports.changeAvatar = async (req, res) => {
+  try {
+    const user = req.user;
+    // Generate a new random seed
+    user.avatarSeed = Math.random().toString(36).substring(2, 15);
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        avatarSeed: user.avatarSeed
+      },
+      message: 'Avatar changed successfully'
+    });
+  } catch (error) {
+    console.error('Error changing avatar:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server Error',
+      message: 'Failed to change avatar'
+    });
   }
-
-  const filename = `user-${req.user.id}-${Date.now()}.jpeg`;
-  const filepath = path.join(__dirname, '..', '..', 'public', 'images', 'users', filename);
-
-  await sharp(req.file.buffer)
-    .resize(200, 200)
-    .toFormat('jpeg')
-    .jpeg({ quality: 90 })
-    .toFile(filepath);
-
-  const user = await User.findByIdAndUpdate(
-    req.user.id,
-    { profilePicture: `/images/users/${filename}` },
-    { new: true, runValidators: true }
-  );
-
-  if (!user) {
-    return next(new AppError('No user found with that ID', 404));
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        profilePicture: user.profilePicture
-      }
-    }
-  });
-});
+};
 
 exports.checkUserStatus = catchAsync(async (req, res, next) => {
   const targetUserId = req.params.id;

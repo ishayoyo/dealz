@@ -1,13 +1,15 @@
 <!-- components/UserAvatar.vue -->
 <template>
   <div :class="avatarClasses" :style="avatarStyle">
-    <span v-if="!imageLoaded" class="text-white">{{ initials }}</span>
-    <img v-if="src" :src="src" @load="onImageLoad" @error="onImageError" class="w-full h-full object-cover" :alt="name">
+    <img :src="avatarUrl" class="w-full h-full object-cover" :alt="name">
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
+import { useAuthStore } from '~/stores/auth';
+
+const authStore = useAuthStore();
 
 const props = defineProps({
   name: {
@@ -18,26 +20,15 @@ const props = defineProps({
     type: Number,
     default: 40
   },
-  src: {
+  seed: {
     type: String,
-    default: ''
+    required: false
   }
-});
-
-const imageLoaded = ref(false);
-
-const initials = computed(() => {
-  return props.name
-    .split(' ')
-    .map(word => word[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 });
 
 const avatarClasses = computed(() => {
   return [
-    'flex items-center justify-center rounded-full overflow-hidden bg-primary-500 text-white',
+    'rounded-full overflow-hidden',
     `w-${props.size / 4} h-${props.size / 4}`
   ];
 });
@@ -46,15 +37,12 @@ const avatarStyle = computed(() => {
   return {
     width: `${props.size}px`,
     height: `${props.size}px`,
-    fontSize: `${props.size / 2.5}px`
   };
 });
 
-const onImageLoad = () => {
-  imageLoaded.value = true;
-};
-
-const onImageError = () => {
-  imageLoaded.value = false;
-};
+const avatarUrl = computed(() => {
+  // Use the seed from props if provided, otherwise use the one from the auth store
+  const seedToUse = props.seed || authStore.user?.avatarSeed || 'default';
+  return `https://api.dicebear.com/6.x/avataaars/svg?seed=${seedToUse}`;
+});
 </script>

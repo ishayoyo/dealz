@@ -5,14 +5,6 @@ const authController = require('../../../controllers/authController');
 const socialController = require('../../../controllers/socialController');
 const auth = require('../../../middleware/auth');
 const rateLimit = require('../../../middleware/rateLimit');
-const multer = require('multer');
-
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024 // limit file size to 5MB
-  }
-});
 
 // Auth routes
 router.post('/register', rateLimit.register, authController.register);
@@ -20,6 +12,8 @@ router.post('/login', rateLimit.login, authController.login);
 router.post('/logout', auth, authController.logout);
 router.post('/refresh-token', authController.refreshToken);
 router.get('/check-auth', auth, authController.checkAuth);
+router.post('/change-avatar', auth, userController.changeAvatar);
+
 
 // Password reset routes
 router.post('/forgot-password', authController.forgotPassword);
@@ -32,7 +26,6 @@ router.put('/me', auth, userController.updateCurrentUser);
 
 // Profile routes
 router.get('/profile/:id', userController.getUserProfile);
-router.post('/upload-profile-picture', auth, upload.single('image'), userController.uploadProfilePicture);
 
 // Social routes
 router.get('/me/following', auth, socialController.getCurrentUserFollowing);

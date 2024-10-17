@@ -11,15 +11,13 @@
             <UserAvatar 
               :name="getUserName" 
               :size="80" 
-              :src="fullProfilePictureUrl" 
+              :seed="profile.avatarSeed || authStore.user?.avatarSeed"
             />
-            <button @click="triggerFileInput" class="absolute bottom-0 right-0 bg-primary-500 text-white rounded-full p-2 hover:bg-primary-600">
+            <button @click="changeAvatar" class="absolute bottom-0 right-0 bg-primary-500 text-white rounded-full p-2 hover:bg-primary-600">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
-            <input type="file" ref="fileInput" @change="handleFileChange" class="hidden" accept="image/*">
           </div>
           <div class="text-center">
             <h3 class="text-xl font-semibold">{{ getUserName }}</h3>
@@ -256,22 +254,17 @@ const isFollowing = (userId) => {
   return followingUsers.value.some(user => user._id === userId)
 }
 
-const handleFileChange = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const formData = new FormData()
-    formData.append('image', file)
-    try {
-      const response = await api.post('/users/upload-profile-picture', formData)
-      profile.value.profilePicture = response.data.data.user.profilePicture
-    } catch (error) {
-      console.error('Error uploading profile picture:', error)
-    }
+const changeAvatar = async () => {
+  try {
+    const response = await api.post('/users/change-avatar')
+    profile.value.avatarSeed = response.data.data.avatarSeed
+    // Update the auth store with the new avatar seed
+    authStore.updateUser({ avatarSeed: response.data.data.avatarSeed })
+    toast.success('Avatar changed successfully')
+  } catch (error) {
+    console.error('Error changing avatar:', error)
+    toast.error('Failed to change avatar')
   }
-}
-
-const triggerFileInput = () => {
-  fileInput.value.click()
 }
 
 watch(currentTab, async (newTab) => {

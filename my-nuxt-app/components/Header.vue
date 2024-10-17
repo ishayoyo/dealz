@@ -32,12 +32,12 @@
             <button @click="$emit('open-post-deal-modal')" class="btn btn-secondary hidden md:block md:text-lg md:px-6">Post a Deal</button>
             
             <NuxtLink to="/profile" class="relative group">
-              <img v-if="profilePictureUrl" :src="profilePictureUrl" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-primary-300 group-hover:border-primary-500 transition-all duration-300 transform group-hover:scale-110">
-              <div v-else class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-500 group-hover:bg-primary-200 transition-colors duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
+              <UserAvatar 
+                :name="user?.username || ''"
+                :size="40"
+                :seed="user?.avatarSeed"
+                class="border-2 border-primary-300 group-hover:border-primary-500 transition-all duration-300 transform group-hover:scale-110"
+              />
             </NuxtLink>
             <NuxtLink 
               v-if="user && user.role === 'admin'" 
@@ -72,6 +72,7 @@ import { useNotificationStore } from '~/stores/notification'
 import { useDealsStore } from '~/stores/deals'
 import { storeToRefs } from 'pinia'
 import NotificationList from '~/components/NotificationList.vue'
+import UserAvatar from '~/components/UserAvatar.vue'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
 
@@ -151,15 +152,6 @@ const toggleNotifications = () => {
 const closeNotifications = () => {
   showNotifications.value = false
 }
-
-const profilePictureUrl = computed(() => {
-  if (user.value?.profilePicture) {
-    return user.value.profilePicture.startsWith('http')
-      ? user.value.profilePicture
-      : `http://localhost:5000${user.value.profilePicture}`
-  }
-  return null
-})
 
 // Watch for changes in authentication status
 watch(isAuthenticated, (newValue) => {

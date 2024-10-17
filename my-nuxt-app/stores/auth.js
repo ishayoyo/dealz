@@ -392,5 +392,11 @@ export const useAuthStore = defineStore('auth', {
         this.user.followerCount = count
       }
     },
+
+    updateUser(userData) {
+      if (this.user) {
+        this.user = { ...this.user, ...userData }
+      }
+    },
   },
 })

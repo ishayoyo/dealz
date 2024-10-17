@@ -67,6 +67,10 @@ const userSchema = new mongoose.Schema({
   favoritePriceRanges: [String],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   followers: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
+  avatarSeed: {
+    type: String,
+    default: () => Math.random().toString(36).substring(2, 15) // Generate a random seed by default
+  },
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },
