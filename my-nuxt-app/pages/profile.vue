@@ -192,22 +192,22 @@ const fetchUserDeals = async () => {
 const fetchFollowing = async () => {
   try {
     const response = await api.get('/users/me/following')
-    followingUsers.value = response.data.data.following
+    followingUsers.value = response.data.data.following.filter(user => user && user._id && user.avatarSeed)
   } catch (error) {
     console.error('Error fetching following users:', error)
-    throw error
+    toast.error('Failed to fetch following users')
+    followingUsers.value = []
   }
 }
 
 const fetchFollowers = async () => {
   try {
     const response = await api.get('/users/me/followers')
-    // Filter out any null or undefined followers
-    followers.value = response.data.data.followers.filter(follower => follower && follower._id)
+    followers.value = response.data.data.followers.filter(follower => follower && follower._id && follower.avatarSeed)
   } catch (error) {
     console.error('Error fetching followers:', error)
     toast.error('Failed to fetch followers')
-    followers.value = [] // Set to empty array in case of error
+    followers.value = []
   }
 }
 
