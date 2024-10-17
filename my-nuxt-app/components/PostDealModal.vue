@@ -231,17 +231,32 @@ const submitDeal = async () => {
   try {
     const imageBaseUrl = getImageBaseUrl()
     const dealData = {
-      ...dealDetails,
-      price: parseFloat(dealDetails.price).toFixed(2),
-      shipping: dealDetails.shipping === 'FREE' ? 'FREE' : parseFloat(dealDetails.shipping).toFixed(2),
+      title: dealDetails.title.trim(),
+      description: dealDetails.description.trim(),
+      price: parseFloat(dealDetails.price),
+      listPrice: parseFloat(dealDetails.listPrice),
+      category: dealDetails.category.trim(),
+      shipping: dealDetails.shipping === 'FREE' ? 'FREE' : parseFloat(dealDetails.shipping),
       imageUrl: dealImage.value ? dealImage.value.replace(imageBaseUrl, '') : '',
-      link: dealLink.value
+      url: dealLink.value.trim()
     }
 
     console.log('Submitting deal data:', dealData)
 
-    if (!dealData.imageUrl) {
-      throw new Error('No image URL provided')
+    // Validate all required fields
+    const requiredFields = ['title', 'description', 'price', 'listPrice', 'category', 'url', 'imageUrl']
+    for (const field of requiredFields) {
+      if (!dealData[field] && dealData[field] !== 0) {
+        throw new Error(`${field} is required`)
+      }
+    }
+
+    // Validate numeric fields
+    const numericFields = ['price', 'listPrice']
+    for (const field of numericFields) {
+      if (isNaN(dealData[field])) {
+        throw new Error(`${field} must be a valid number`)
+      }
     }
 
     const response = await api.post('/deals', dealData)
@@ -255,7 +270,7 @@ const submitDeal = async () => {
     if (error.response) {
       console.error('Error response:', error.response.data)
     }
-    let errorMessage = 'Failed to submit deal. Please try again.'
+    let errorMessage = error.message || 'Failed to submit deal. Please try again.'
     if (error.response && error.response.data && error.response.data.message) {
       errorMessage = error.response.data.message
     }

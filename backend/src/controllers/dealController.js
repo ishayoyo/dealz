@@ -78,118 +78,49 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.createDeal = catchAsync(async (req, res, next) => {
-  let { title, description, price, listPrice, imageUrl, link, category, shipping } = req.body;
-
-  // Sanitize inputs
-  title = validator.trim(title);
-  description = validator.trim(description);
-  link = validator.trim(link);
-  category = validator.trim(category);
-
-  // Validate inputs
-  if (!validator.isLength(title, { min: 1, max: 100 })) {
-    return next(new AppError('Title must be between 1 and 100 characters', 400));
-  }
-
-  if (!validator.isLength(description, { min: 1, max: 1000 })) {
-    return next(new AppError('Description must be between 1 and 1000 characters', 400));
-  }
-
-  if (!validator.isNumeric(price.toString())) {
-    return next(new AppError('Price must be a number', 400));
-  }
-
-  if (!validator.isURL(link)) {
-    return next(new AppError('Invalid deal link', 400));
-  }
-
-  // Add validation for listPrice
-  if (!validator.isNumeric(listPrice.toString())) {
-    return next(new AppError('List price must be a number', 400));
-  }
-
-  // Validate category
-  const validCategories = [
-    "Electronics",
-    "Home",
-    "Fashion",
-    "Beauty",
-    "Sports",
-    "Books",
-    "Toys",
-    "Travel",
-    "Food",
-    "Auto",
-    "DIY",
-    "Pets",
-    "Other"
-  ];
-  if (!validCategories.includes(category)) {
-    return next(new AppError('Invalid category', 400));
-  }
-
-  // Handle image URL
-  if (imageUrl) {
-    imageUrl = validator.trim(imageUrl);
-    if (!validator.isURL(imageUrl) && !imageUrl.startsWith('/images/deals/')) {
-      return next(new AppError('Invalid image URL. It should be a valid URL or start with /images/deals/', 400));
-    }
-  } else {
-    return next(new AppError('Image URL is required', 400));
-  }
-
-  // Validate shipping
-  if (shipping !== 'FREE' && isNaN(parseFloat(shipping))) {
-    return next(new AppError('Invalid shipping value. Use "FREE" or a number.', 400));
-  }
-
-  const deal = await Deal.create({
-    title,
-    description,
+  // Destructure and provide default values for all fields
+  const {
+    title = '',
+    description = '',
     price,
     listPrice,
-    imageUrl,
-    url: link,
-    category,
-    shipping,
-    status: 'pending',
-    user: req.user.id
-  });
+    category = '',
+    shipping = 'FREE',
+    imageUrl = '',
+    url = ''
+  } = req.body;
 
-  // Automatically follow the deal
-  await User.findByIdAndUpdate(req.user.id, { $addToSet: { followedDeals: deal._id } });
-  deal.followCount = 1;
-  await deal.save();
-
-  // Get the user's followers
-  const user = await User.findById(req.user.id);
-  const followers = await User.find({ _id: { $in: user.followers } });
-
-  // Create notifications for followers
-  const notificationService = new NotificationService(req.app.get('io'));
-  for (let follower of followers) {
-    await notificationService.createNotification({
-      recipient: follower._id,
-      type: 'NEW_DEAL',
-      content: `${user.username} posted a new deal: ${deal.title}`,
-      relatedUser: user._id,
-      relatedDeal: deal._id
-    });
+  // Validate required fields
+  if (!title || !description || !price || !listPrice || !category || !url || !imageUrl) {
+    return next(new AppError('Please provide all required fields', 400));
   }
 
-  // Populate the user field
-  await deal.populate('user', 'username profilePicture');
+  // Trim string fields
+  const trimmedTitle = validator.trim(title);
+  const trimmedDescription = validator.trim(description);
+  const trimmedCategory = validator.trim(category);
+  const trimmedUrl = validator.trim(url);
 
-  // Emit socket event for new deal
-  const io = req.app.get('io');
-  // Emit to admin room
-  io.to('admin').emit('newDeal', { deal, isAdmin: true });
-  // Emit to the deal creator
-  io.to(req.user.id.toString()).emit('newDeal', { deal, isCreator: true });
+  // Create the deal object
+  const dealData = {
+    title: trimmedTitle,
+    description: trimmedDescription,
+    price: parseFloat(price),
+    listPrice: parseFloat(listPrice),
+    category: trimmedCategory,
+    shipping: shipping === 'FREE' ? 'FREE' : parseFloat(shipping),
+    imageUrl,
+    url: trimmedUrl,
+    user: req.user._id
+  };
+
+  const deal = await Deal.create(dealData);
 
   res.status(201).json({
     status: 'success',
-    data: { deal }
+    data: {
+      deal
+    }
   });
 });
 
