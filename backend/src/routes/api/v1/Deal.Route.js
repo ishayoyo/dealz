@@ -20,8 +20,6 @@ router.get('/categories', dealController.getCategories);
 router.get('/stores', dealController.getStores);
 router.get('/trending', dealController.getTrendingDeals);
 router.get('/expiring-soon', dealController.getExpiringSoonDeals);
-router.get('/:id', dealController.getDeal);
-router.get('/:id/comments', commentController.getComments);
 
 // Routes that require authentication
 router.use(auth);
@@ -30,7 +28,11 @@ router.get('/followed', dealController.getFollowedDeals);
 router.post('/', dealController.createDeal);
 router.post('/fetch-image', dealController.fetchImage);
 router.post('/upload-image', upload.single('image'), dealController.uploadImage);
+router.get('/check-image-uploads', dealController.checkImageUploads);
 
+// Routes with :id parameter
+router.get('/:id', dealController.getDeal);
+router.get('/:id/comments', commentController.getComments);
 router.get('/:id/status', dealController.checkDealStatus);
 router.delete('/:id', dealController.deleteDeal);
 router.post('/:id/buy', dealController.markAsBought);

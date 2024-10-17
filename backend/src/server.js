@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const http = require('http');
 const socketIo = require('socket.io');
 const app = require('./app'); // Import the Express app from app.js
+const cron = require('node-cron');
+const { cleanupUnusedImages } = require('./controllers/dealController'); // Add this line
 
 const PORT = process.env.PORT || 5000;
 
@@ -61,6 +63,13 @@ mongoose.connect(process.env.MONGODB_URI)
     console.log('Connected to database:', mongoose.connection.name);
     server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+    });
+
+    // Schedule the cleanup task to run every hour
+    cron.schedule('0 * * * *', () => {
+      console.log('Cron job triggered at:', new Date().toISOString());
+      console.log('Running unused image cleanup task');
+      cleanupUnusedImages();
     });
   })
   .catch(err => {

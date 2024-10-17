@@ -13,6 +13,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const NotificationService = require('../services/NotificationService');
 const validator = require('validator');
+const ImageUpload = require('../models/ImageUpload.Model'); // You'll need to create this model
 
 exports.getDeals = catchAsync(async (req, res, next) => {
   // Build query
@@ -115,6 +116,14 @@ exports.createDeal = catchAsync(async (req, res, next) => {
   };
 
   const deal = await Deal.create(dealData);
+
+  console.log('Marking image as used:', dealData.imageUrl);
+  const updatedImage = await ImageUpload.findOneAndUpdate(
+    { imageUrl: dealData.imageUrl },
+    { used: true },
+    { new: true }
+  );
+  console.log('Updated image:', updatedImage);
 
   res.status(201).json({
     status: 'success',
@@ -504,6 +513,16 @@ exports.fetchImage = catchAsync(async (req, res, next) => {
     return next(new AppError('Unable to fetch image for the provided URL', 404));
   }
 
+  // Create an ImageUpload document
+  const imageUpload = await ImageUpload.create({
+    user: req.user.id,
+    filename: path.basename(imageUrl),
+    imageUrl: imageUrl,
+    uploadedAt: new Date()
+  });
+
+  console.log('Created ImageUpload document:', imageUpload);
+
   res.status(200).json({
     status: 'success',
     data: { imageUrl }
@@ -525,6 +544,16 @@ exports.uploadImage = catchAsync(async (req, res, next) => {
     .toFile(filepath);
 
   const imageUrl = `/images/deals/${filename}`;
+
+  // Create an ImageUpload document
+  const imageUpload = await ImageUpload.create({
+    user: req.user.id,
+    filename: filename,
+    imageUrl: imageUrl,
+    uploadedAt: new Date()
+  });
+
+  console.log('Created ImageUpload document:', imageUpload);
 
   res.status(200).json({
     status: 'success',
@@ -558,6 +587,50 @@ exports.moderateDeal = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: { deal }
+  });
+});
+
+const cleanupUnusedImages = async () => {
+  console.log('Starting cleanup process at:', new Date().toISOString());
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 60 minutes * 60 seconds * 1000 milliseconds
+  console.log('Searching for images older than:', oneHourAgo.toISOString());
+  
+  const unusedImages = await ImageUpload.find({
+    uploadedAt: { $lt: oneHourAgo },
+    used: false
+  });
+  console.log(`Found ${unusedImages.length} unused images`);
+
+  for (const image of unusedImages) {
+    const filepath = path.join(__dirname, '..', '..', 'public', image.imageUrl);
+    console.log('Attempting to delete file:', filepath);
+    try {
+      await fs.unlink(filepath);
+      await ImageUpload.findByIdAndDelete(image._id);
+      console.log(`Deleted unused image: ${image.filename}`);
+    } catch (error) {
+      console.error(`Error deleting image ${image.filename}:`, error);
+    }
+  }
+};
+
+exports.cleanupUnusedImages = cleanupUnusedImages;
+
+exports.checkUnusedImages = catchAsync(async (req, res) => {
+  const allImages = await ImageUpload.find();
+  const unusedImages = allImages.filter(img => !img.used);
+  res.json({
+    totalImages: allImages.length,
+    unusedImages: unusedImages.length,
+    unusedImageDetails: unusedImages
+  });
+});
+
+exports.checkImageUploads = catchAsync(async (req, res) => {
+  const imageUploads = await ImageUpload.find();
+  res.json({
+    totalUploads: imageUploads.length,
+    uploads: imageUploads
   });
 });
 
