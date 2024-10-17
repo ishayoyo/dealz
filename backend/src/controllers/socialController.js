@@ -1,6 +1,5 @@
 const User = require('../models/User.Model');
 const Deal = require('../models/Deal.Model');
-const Follow = require('../models/Follow.Model');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const NotificationService = require('../services/NotificationService');
@@ -21,8 +20,6 @@ exports.followUser = catchAsync(async (req, res, next) => {
     return next(new AppError('You are already following this user', 400));
   }
 
-  await Follow.create({ follower: currentUser._id, followed: userToFollow._id });
-
   currentUser.following.push(userToFollow._id);
   await currentUser.save();
 
@@ -36,7 +33,7 @@ exports.followUser = catchAsync(async (req, res, next) => {
     `${currentUser.username} started following you`
   );
 
-  const followerCount = await Follow.countDocuments({ followed: userToFollow._id });
+  const followerCount = userToFollow.followers.length;
   
   // Emit the follower count update
   req.app.get('io').to(userToFollow._id.toString()).emit('followerCountUpdate', {
@@ -47,7 +44,15 @@ exports.followUser = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: 'User followed successfully',
-    data: { followerCount }
+    data: { 
+      followerCount,
+      isFollowing: true,
+      followedUser: {
+        _id: userToFollow._id,
+        username: userToFollow.username,
+        avatarSeed: userToFollow.avatarSeed
+      }
+    }
   });
 });
 
@@ -57,24 +62,19 @@ exports.unfollowUser = catchAsync(async (req, res, next) => {
     return next(new AppError('User not found', 404));
   }
 
-  const existingFollow = await Follow.findOneAndDelete({ 
-    follower: req.user._id, 
-    followed: userToUnfollow._id 
-  });
+  const currentUser = await User.findById(req.user._id);
 
-  if (!existingFollow) {
+  if (!currentUser.following.includes(userToUnfollow._id)) {
     return next(new AppError('You are not following this user', 400));
   }
 
-  await User.findByIdAndUpdate(req.user._id, {
-    $pull: { following: userToUnfollow._id }
-  });
+  currentUser.following.pull(userToUnfollow._id);
+  await currentUser.save();
 
-  await User.findByIdAndUpdate(userToUnfollow._id, {
-    $pull: { followers: req.user._id }
-  });
+  userToUnfollow.followers.pull(currentUser._id);
+  await userToUnfollow.save();
 
-  const followerCount = await Follow.countDocuments({ followed: userToUnfollow._id });
+  const followerCount = userToUnfollow.followers.length;
   
   // Emit the follower count update
   req.app.get('io').to(userToUnfollow._id.toString()).emit('followerCountUpdate', {
@@ -85,28 +85,37 @@ exports.unfollowUser = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: 'User unfollowed successfully',
-    data: { followerCount }
+    data: { 
+      followerCount,
+      isFollowing: false
+    }
   });
 });
 
 exports.getUserFollowers = catchAsync(async (req, res, next) => {
-  const followers = await Follow.find({ followed: req.params.id }).populate('follower', 'username profilePicture');
+  const user = await User.findById(req.params.id).populate('followers', 'username profilePicture avatarSeed');
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
   res.status(200).json({
     status: 'success',
-    data: { followers: followers.map(f => f.follower) }
+    data: { followers: user.followers }
   });
 });
 
 exports.getUserFollowing = catchAsync(async (req, res, next) => {
-  const following = await Follow.find({ follower: req.params.id }).populate('followed', 'username profilePicture');
+  const user = await User.findById(req.params.id).populate('following', 'username profilePicture avatarSeed');
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
   res.status(200).json({
     status: 'success',
-    data: { following: following.map(f => f.followed) }
+    data: { following: user.following }
   });
 });
 
 exports.getCurrentUserFollowing = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.user._id).populate('following', 'username profilePicture');
+  const user = await User.findById(req.user._id).populate('following', 'username profilePicture avatarSeed');
   res.status(200).json({
     status: 'success',
     data: { following: user.following }
@@ -114,14 +123,12 @@ exports.getCurrentUserFollowing = catchAsync(async (req, res, next) => {
 });
 
 exports.getCurrentUserFollowers = catchAsync(async (req, res, next) => {
-  const followers = await Follow.find({ followed: req.user._id })
-    .populate('follower', 'username profilePicture');
-  
+  const user = await User.findById(req.user._id).populate('followers', 'username profilePicture avatarSeed');
   res.status(200).json({
     status: 'success',
     data: { 
-      followers: followers.map(f => f.follower),
-      count: followers.length
+      followers: user.followers,
+      count: user.followers.length
     }
   });
 });

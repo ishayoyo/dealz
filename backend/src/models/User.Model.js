@@ -66,7 +66,7 @@ const userSchema = new mongoose.Schema({
   collections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Collection' }],
   favoritePriceRanges: [String],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  followers: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   avatarSeed: {
     type: String,
     default: () => Math.random().toString(36).substring(2, 15) // Generate a random seed by default
@@ -80,18 +80,13 @@ const userSchema = new mongoose.Schema({
 // Add this index for efficient user search
 userSchema.index({ username: 'text', email: 'text' });
 
-userSchema.virtual('followersCount', {
-  ref: 'Follow',
-  localField: '_id',
-  foreignField: 'followed',
-  count: true
+// Remove the Follow model references and add methods to get counts
+userSchema.virtual('followersCount').get(function() {
+  return this.followers ? this.followers.length : 0;
 });
 
-userSchema.virtual('followingCount', {
-  ref: 'Follow',
-  localField: '_id',
-  foreignField: 'follower',
-  count: true
+userSchema.virtual('followingCount').get(function() {
+  return this.following ? this.following.length : 0;
 });
 
 userSchema.virtual('dealsCount', {
@@ -109,6 +104,15 @@ userSchema.pre('save', async function(next) {
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Add methods to check if a user is following another user
+userSchema.methods.isFollowing = function(userId) {
+  return this.following ? this.following.includes(userId) : false;
+};
+
+userSchema.methods.isFollowedBy = function(userId) {
+  return this.followers ? this.followers.includes(userId) : false;
 };
 
 const User = mongoose.model('User', userSchema);

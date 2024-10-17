@@ -5,7 +5,6 @@ const AppError = require('../utils/appError');
 const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
-const Follow = require('../models/Follow.Model');
 
 exports.getCurrentUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id);
