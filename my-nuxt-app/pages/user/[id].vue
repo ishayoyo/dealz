@@ -65,7 +65,7 @@
 </template>
   
   <script setup>
-  import { ref, computed, onMounted } from 'vue'
+  import { ref, computed, onMounted, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useToastification } from '~/composables/useToastification'
   import { useAuthStore } from '~/stores/auth'
@@ -90,13 +90,14 @@
     isLoading.value = true
     try {
       const response = await api.get(`/users/profile/${route.params.id}`)
-      console.log('API Response:', response.data)
       if (response.data && response.data.data) {
         profile.value = response.data.data.user || {}
         deals.value = response.data.data.deals ? response.data.data.deals.map(deal => ({
           ...deal,
           user: { username: profile.value.username }
         })) : []
+        // The follower count should now be included in the profile data
+        // If it's not, you may need to update your backend to include it
       } else {
         error.value = 'Unexpected data format received from server'
       }
@@ -121,7 +122,7 @@
     }
     const result = await authStore.followUser(profile.value.id)
     if (result.success) {
-      profile.value.followerCount = result.followerCount !== undefined ? result.followerCount : (profile.value.followerCount + (result.isFollowing ? 1 : -1))
+      profile.value.followerCount = result.followerCount
       toast.success(result.isFollowing ? 'User followed successfully' : 'User unfollowed successfully')
     } else {
       toast.error(result.error || 'An error occurred while following/unfollowing the user')
@@ -134,6 +135,19 @@
 
   onMounted(() => {
     fetchProfile()
+  })
+
+  // Add this watch to refetch the profile when the route changes
+  watch(() => route.params.id, () => {
+    fetchProfile()
+  })
+
+  // Listen for follower count updates
+  const { $socket } = useNuxtApp()
+  $socket.on('followerCountUpdate', (data) => {
+    if (profile.value && profile.value.id === data.userId) {
+      profile.value.followerCount = data.count
+    }
   })
   </script>
 

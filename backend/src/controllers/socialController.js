@@ -36,9 +36,18 @@ exports.followUser = catchAsync(async (req, res, next) => {
     `${currentUser.username} started following you`
   );
 
+  const followerCount = await Follow.countDocuments({ followed: userToFollow._id });
+  
+  // Emit the follower count update
+  req.app.get('io').to(userToFollow._id.toString()).emit('followerCountUpdate', {
+    userId: userToFollow._id,
+    count: followerCount
+  });
+
   res.status(200).json({
     status: 'success',
-    message: 'User followed successfully'
+    message: 'User followed successfully',
+    data: { followerCount }
   });
 });
 
@@ -65,9 +74,18 @@ exports.unfollowUser = catchAsync(async (req, res, next) => {
     $pull: { followers: req.user._id }
   });
 
+  const followerCount = await Follow.countDocuments({ followed: userToUnfollow._id });
+  
+  // Emit the follower count update
+  req.app.get('io').to(userToUnfollow._id.toString()).emit('followerCountUpdate', {
+    userId: userToUnfollow._id,
+    count: followerCount
+  });
+
   res.status(200).json({
     status: 'success',
-    message: 'User unfollowed successfully'
+    message: 'User unfollowed successfully',
+    data: { followerCount }
   });
 });
 

@@ -2,7 +2,7 @@
   <div class="container mx-auto px-4 py-8 pt-24">
     <div v-if="loading" class="text-center py-8">Loading user data...</div>
     <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
-    <div v-else-if="!user" class="text-center py-8 text-red-500">User data not available. Please try logging in again.</div>
+    <div v-else-if="!profile" class="text-center py-8 text-red-500">User data not available. Please try logging in again.</div>
     <div v-else class="bg-white shadow-lg rounded-lg overflow-hidden max-w-3xl mx-auto">
       <div class="p-4 sm:p-6">
         <!-- User Info Section -->
@@ -23,8 +23,8 @@
           </div>
           <div class="text-center">
             <h3 class="text-xl font-semibold">{{ getUserName }}</h3>
-            <p class="text-gray-600">{{ user.email }}</p>
-            <p class="text-sm text-gray-500 mt-1">{{ followersCount }} followers</p>
+            <p class="text-gray-600">{{ profile.email }}</p>
+            <p class="text-sm text-gray-500 mt-1">{{ authStore.user?.followerCount || 0 }} followers</p>
           </div>
         </div>
 
@@ -65,7 +65,7 @@
           <div v-if="currentTab === 'info'" class="space-y-4">
             <div v-for="field in userFields" :key="field.key" class="flex flex-col">
               <label :for="field.key" class="text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
-              <input :id="field.key" v-model="user[field.key]" :type="field.type" class="input-field">
+              <input :id="field.key" v-model="profile[field.key]" :type="field.type" class="input-field">
             </div>
             <div>
               <button @click="saveChanges" class="btn btn-primary w-full">Save Changes</button>
@@ -112,12 +112,13 @@ import FollowersList from '~/components/FollowersList.vue'
 import UserDeals from '~/components/UserDeals.vue'
 import UserAvatar from '~/components/UserAvatar.vue'
 import { useToastification } from '~/composables/useToastification'
+import { useAuthStore } from '~/stores/auth'
 
 const config = useRuntimeConfig()
 const fileInput = ref(null)
 const loading = ref(true)
 const error = ref(null)
-const user = ref(null)
+const profile = ref(null)
 const followingUsers = ref([])
 const followers = ref([])
 const userDeals = ref([])
@@ -139,12 +140,8 @@ onMounted(async () => {
   try {
     loading.value = true
     const response = await api.get('/users/me')
-    user.value = response.data.data.user
-    await Promise.all([
-      fetchFollowedDeals(),
-      fetchUserDeals(),
-      fetchFollowersCount()
-    ])
+    profile.value = response.data.data.user
+    await fetchFollowersCount()
   } catch (err) {
     error.value = 'Failed to load user data'
     console.error(err)
@@ -154,17 +151,17 @@ onMounted(async () => {
 })
 
 const getUserName = computed(() => {
-  if (!user.value) return ''
-  return user.value.firstName && user.value.lastName
-    ? `${user.value.firstName} ${user.value.lastName}`
-    : user.value.username || ''
+  if (!profile.value) return ''
+  return profile.value.firstName && profile.value.lastName
+    ? `${profile.value.firstName} ${profile.value.lastName}`
+    : profile.value.username || ''
 })
 
 const fullProfilePictureUrl = computed(() => {
-  if (!user.value || !user.value.profilePicture) return ''
-  return user.value.profilePicture.startsWith('http') 
-    ? user.value.profilePicture 
-    : `${config.public.apiBase}${user.value.profilePicture}`
+  if (!profile.value || !profile.value.profilePicture) return ''
+  return profile.value.profilePicture.startsWith('http') 
+    ? profile.value.profilePicture 
+    : `${config.public.apiBase}${profile.value.profilePicture}`
 })
 
 const getFullProfilePictureUrl = (profilePicture) => {
@@ -216,18 +213,12 @@ const fetchFollowers = async () => {
 
 const fetchFollowersCount = async () => {
   try {
-    console.log('Fetching followers...')
     const response = await api.get('/users/me/followers')
-    console.log('Followers response:', response.data)
     if (response.data && response.data.data) {
-      followersCount.value = response.data.data.count
-      console.log('Followers count:', followersCount.value)
-    } else {
-      console.error('Unexpected response structure:', response.data)
+      profile.value.followerCount = response.data.data.count
     }
   } catch (error) {
-    console.error('Error fetching followers:', error)
-    toast.error('Failed to fetch followers count')
+    console.error('Error fetching followers count:', error)
   }
 }
 
@@ -272,7 +263,7 @@ const handleFileChange = async (event) => {
     formData.append('image', file)
     try {
       const response = await api.post('/users/upload-profile-picture', formData)
-      user.value.profilePicture = response.data.data.user.profilePicture
+      profile.value.profilePicture = response.data.data.user.profilePicture
     } catch (error) {
       console.error('Error uploading profile picture:', error)
     }
@@ -315,8 +306,8 @@ const passwordFields = [
 
 const saveChanges = async () => {
   try {
-    const response = await api.put('/users/me', user.value)
-    user.value = response.data.data.user
+    const response = await api.put('/users/me', profile.value)
+    profile.value = response.data.data.user
     toast.success('User data updated successfully')
   } catch (error) {
     console.error('Error updating user data:', error)
@@ -358,6 +349,8 @@ const selectTab = (tabId) => {
   currentTab.value = tabId
   isMobileMenuOpen.value = false
 }
+
+const authStore = useAuthStore()
 </script>
 
 <style scoped>

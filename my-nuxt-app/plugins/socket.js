@@ -80,5 +80,13 @@ export default defineNuxtPlugin((nuxtApp) => {
         console.log('Ignoring unapproved deal for non-admin user')
       }
     })
+
+    socket.on('followerCountUpdate', (data) => {
+      console.log('Received follower count update:', data)
+      const authStore = useAuthStore()
+      if (authStore.user && authStore.user.id === data.userId) {
+        authStore.updateFollowerCount(data.count)
+      }
+    })
   }
 })

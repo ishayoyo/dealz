@@ -385,6 +385,12 @@ export const useAuthStore = defineStore('auth', {
         console.error('Resend verification email error:', error);
         return { success: false, error: error.response?.data?.message || 'An error occurred while resending the verification email' };
       }
-    }
+    },
+
+    updateFollowerCount(count) {
+      if (this.user) {
+        this.user.followerCount = count
+      }
+    },
   },
 })

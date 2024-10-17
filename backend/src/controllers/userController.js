@@ -5,6 +5,7 @@ const AppError = require('../utils/appError');
 const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
+const Follow = require('../models/Follow.Model');
 
 exports.getCurrentUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id);
@@ -28,19 +29,26 @@ exports.getUser = catchAsync(async (req, res, next) => {
 });
 
 exports.getUserProfile = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id).select('username profilePicture bio followerCount followingCount');
+  const user = await User.findById(req.params.id).select('username profilePicture bio');
   if (!user) {
     return next(new AppError('No user found with that ID', 404));
   }
 
+  const followerCount = await Follow.countDocuments({ followed: req.params.id });
+  const followingCount = await Follow.countDocuments({ follower: req.params.id });
+
   const deals = await Deal.find({ user: req.params.id, status: 'approved' })
     .sort('-createdAt')
-    .limit(10); // Limit to 10 most recent deals, adjust as needed
+    .limit(10);
 
   res.status(200).json({
     status: 'success',
     data: {
-      user,
+      user: {
+        ...user.toObject(),
+        followerCount,
+        followingCount
+      },
       deals
     }
   });
