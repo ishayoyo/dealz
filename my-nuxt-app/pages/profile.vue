@@ -192,7 +192,9 @@ const fetchUserDeals = async () => {
 const fetchFollowing = async () => {
   try {
     const response = await api.get('/users/me/following')
-    followingUsers.value = response.data.data.following.filter(user => user && user._id && user.avatarSeed)
+    console.log('Following response:', response.data)
+    followingUsers.value = response.data.data.following.filter(user => user && user._id)
+    console.log('Filtered following users:', followingUsers.value)
   } catch (error) {
     console.error('Error fetching following users:', error)
     toast.error('Failed to fetch following users')
@@ -203,7 +205,9 @@ const fetchFollowing = async () => {
 const fetchFollowers = async () => {
   try {
     const response = await api.get('/users/me/followers')
-    followers.value = response.data.data.followers.filter(follower => follower && follower._id && follower.avatarSeed)
+    console.log('Followers response:', response.data)
+    followers.value = response.data.data.followers.filter(follower => follower && follower._id)
+    console.log('Filtered followers:', followers.value)
   } catch (error) {
     console.error('Error fetching followers:', error)
     toast.error('Failed to fetch followers')
