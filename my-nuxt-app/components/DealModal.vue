@@ -108,7 +108,7 @@
                         :key="comment.id" 
                         :comment="comment" 
                         class="bg-white p-3 md:p-4 rounded shadow-sm"
-                        :show-delete="isAdmin || (authStore.user && comment.user.id === authStore.user.id)"
+                        :show-delete="isAdmin || (authStore.user && comment.user._id === authStore.user._id)"
                         @delete-comment="handleDeleteComment"
                       />
                     </div>
@@ -255,7 +255,13 @@ const fetchDealData = async () => {
       isAuthenticated.value && props.deal.user ? api.get(`/users/${props.deal.user._id || props.deal.user.id}/status`) : Promise.resolve({ data: { data: { isFollowing: false } } })
     ])
     
-    comments.value = commentsResponse.data.data.comments
+    comments.value = commentsResponse.data.data.comments.map(comment => ({
+      ...comment,
+      user: {
+        ...comment.user,
+        _id: comment.user._id || comment.user.id // Ensure we have a consistent _id property
+      }
+    }))
     isFollowing.value = statusResponse.data.data.isFollowing
     isFollowingUser.value = userStatusResponse.data.data.isFollowing
   } catch (err) {

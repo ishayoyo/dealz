@@ -3,7 +3,12 @@
     <div>
       <div class="flex items-center mb-2">
         <UserAvatar :name="comment.user.username" :size="32" class="mr-2" />
-        <span class="font-semibold">{{ comment.user.username }}</span>
+        <NuxtLink 
+          :to="`/user/${comment.user._id}`"
+          class="font-semibold text-primary-600 hover:text-primary-800 transition duration-300"
+        >
+          {{ comment.user.username }}
+        </NuxtLink>
       </div>
       <p class="text-gray-700">{{ comment.content }}</p>
       <span class="text-sm text-gray-500">{{ formatDate(comment.createdAt) }}</span>
@@ -50,6 +55,9 @@ const handleDelete = () => {
 const formatDate = (date) => {
   return formatDistanceToNow(new Date(date), { addSuffix: true })
 }
+
+// Add this computed property to ensure we have a valid user ID
+const userId = computed(() => props.comment.user._id || props.comment.user.id)
 </script>
 
 <style scoped>
