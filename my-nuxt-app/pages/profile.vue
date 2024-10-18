@@ -30,15 +30,15 @@
             <p class="text-gray-600">{{ profile.email }}</p>
             <div class="flex justify-center sm:justify-start space-x-6 mt-4">
               <div class="flex flex-col items-center sm:items-start">
-                <span class="font-bold text-primary-600 text-xl">{{ profile.followerCount || 0 }}</span>
+                <span class="font-bold text-primary-600 text-xl">{{ profile?.followerCount || 0 }}</span>
                 <span class="text-gray-500">Followers</span>
               </div>
               <div class="flex flex-col items-center sm:items-start">
-                <span class="font-bold text-primary-600 text-xl">{{ followingUsers.length }}</span>
+                <span class="font-bold text-primary-600 text-xl">{{ followingCount }}</span>
                 <span class="text-gray-500">Following</span>
               </div>
               <div class="flex flex-col items-center sm:items-start">
-                <span class="font-bold text-primary-600 text-xl">{{ userDeals.length }}</span>
+                <span class="font-bold text-primary-600 text-xl">{{ dealsCount }}</span>
                 <span class="text-gray-500">Deals</span>
               </div>
             </div>
@@ -184,14 +184,18 @@ const tabs = [
   { id: 'followedDeals', name: 'Followed Deals' }
 ]
 
-const followersCount = ref(0)
+const followingCount = ref(0)
+const dealsCount = ref(0)
 
 onMounted(async () => {
   try {
     loading.value = true
-    const response = await api.get('/users/me')
-    profile.value = response.data.data.user
-    await fetchFollowersCount()
+    await Promise.all([
+      fetchUserProfile(),
+      fetchFollowersCount(),
+      fetchFollowingCount(),
+      fetchDealsCount()
+    ])
   } catch (err) {
     error.value = 'Failed to load user data'
     console.error(err)
@@ -199,6 +203,41 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+const fetchUserProfile = async () => {
+  const response = await api.get('/users/me')
+  profile.value = response.data.data.user
+}
+
+const fetchFollowersCount = async () => {
+  try {
+    const response = await api.get('/users/me/followers')
+    if (response.data && response.data.data) {
+      profile.value.followerCount = response.data.data.count || response.data.data.followers.length
+      authStore.updateUser({ followerCount: profile.value.followerCount })
+    }
+  } catch (error) {
+    console.error('Error fetching followers count:', error)
+  }
+}
+
+const fetchFollowingCount = async () => {
+  try {
+    const response = await api.get('/users/me/following')
+    followingCount.value = response.data.data.following.length
+  } catch (error) {
+    console.error('Error fetching following count:', error)
+  }
+}
+
+const fetchDealsCount = async () => {
+  try {
+    const response = await api.get('/users/me/deals')
+    dealsCount.value = response.data.data.deals.length
+  } catch (error) {
+    console.error('Error fetching deals count:', error)
+  }
+}
 
 const getUserName = computed(() => {
   if (!profile.value) return ''
@@ -272,20 +311,6 @@ const fetchFollowers = async () => {
     console.error('Error fetching followers:', error)
     toast.error('Failed to fetch followers')
     followers.value = []
-  }
-}
-
-const fetchFollowersCount = async () => {
-  try {
-    const response = await api.get('/users/me/followers')
-    if (response.data && response.data.data) {
-      // Assuming the API returns the count in the response
-      profile.value.followerCount = response.data.data.count || response.data.data.followers.length
-      // Update the auth store with the new follower count
-      authStore.updateUser({ followerCount: profile.value.followerCount })
-    }
-  } catch (error) {
-    console.error('Error fetching followers count:', error)
   }
 }
 
