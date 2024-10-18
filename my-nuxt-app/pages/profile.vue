@@ -219,6 +219,7 @@ const fetchUserProfile = async () => {
   }
 }
 
+// Add this new function to fetch only the follower count
 const fetchFollowersCount = async () => {
   try {
     const response = await api.get('/users/me/followers')
@@ -327,7 +328,7 @@ const followUser = async (userId) => {
     if (followedUser) {
       followedUser.isFollowing = true
     }
-    await fetchUserProfile() // Refresh the entire profile including follower count
+    await fetchFollowersCount() // Replace fetchUserProfile with this
     await fetchFollowingCount()
   } catch (error) {
     console.error('Error following user:', error)
@@ -343,7 +344,7 @@ const unfollowUser = async (userId) => {
       unfollowedUser.isFollowing = false
     }
     followingUsers.value = followingUsers.value.filter(user => user._id !== userId)
-    await fetchUserProfile() // Refresh the entire profile including follower count
+    await fetchFollowersCount() // Replace fetchUserProfile with this
     await fetchFollowingCount()
   } catch (error) {
     console.error('Error unfollowing user:', error)
@@ -377,14 +378,17 @@ const changeAvatar = async () => {
   }
 }
 
+// Modify the watch function
 watch(currentTab, async (newTab) => {
   if (newTab === 'following') {
     await fetchFollowing()
+    await fetchFollowersCount() // Add this line
   } else if (newTab === 'followedDeals') {
     await fetchFollowedDeals()
   } else if (newTab === 'followers') {
-    await fetchFollowing() // Fetch following users first
-    await fetchFollowers() // Then fetch followers
+    await fetchFollowing()
+    await fetchFollowers()
+    await fetchFollowersCount() // Add this line
   } else if (newTab === 'deals') {
     await fetchUserDeals()
   }
