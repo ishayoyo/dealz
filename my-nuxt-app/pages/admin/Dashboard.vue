@@ -2,10 +2,13 @@
   <div class="admin-dashboard p-6 space-y-8 max-w-7xl mx-auto">
     <h1 class="text-3xl font-heading text-primary-800 mb-8 text-center">SaverSonic Admin Dashboard</h1>
     
-    <!-- Add this button -->
-    <div class="text-center">
+    <!-- Add these buttons -->
+    <div class="text-center space-x-4">
       <button @click="clearCache" class="btn btn-primary">
         Clear Cache
+      </button>
+      <button @click="deleteUnusedImages" class="btn btn-warning">
+        Delete Unused Images
       </button>
     </div>
     
@@ -564,6 +567,32 @@ const clearCache = async () => {
     toast.error('Failed to clear cache')
   }
 }
+
+// Add this function in the <script setup> section
+const deleteUnusedImages = async () => {
+  try {
+    // First, get the count of unused images
+    const countResponse = await api.get('/deals/unused-images-count');
+    const unusedCount = countResponse.data.data.unusedCount;
+
+    if (unusedCount === 0) {
+      toast.info('No unused images to delete.');
+      return;
+    }
+
+    if (confirm(`Are you sure you want to delete ${unusedCount} unused images? This action cannot be undone.`)) {
+      const response = await api.delete('/deals/delete-unused-images');
+      console.log('Delete unused images response:', response.data);
+      toast.success(`Operation complete. ${response.data.message}`);
+      if (response.data.details) {
+        console.log(`Deleted: ${response.data.details.deletedCount}, Skipped: ${response.data.details.skippedCount}, Errors: ${response.data.details.errorCount}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error deleting unused images:', error);
+    toast.error('Failed to delete unused images: ' + (error.response?.data?.message || error.message));
+  }
+};
 </script>
 
 <style scoped>

@@ -651,4 +651,87 @@ exports.clearDealsCache = catchAsync(async (req, res, next) => {
   res.status(200).json({ message: 'Deals cache cleared' });
 });
 
+exports.deleteUnusedImages = catchAsync(async (req, res, next) => {
+  console.log('Starting deleteUnusedImages operation');
+
+  // Get all deals
+  const deals = await Deal.find({}, 'imageUrl');
+  console.log(`Found ${deals.length} deals`);
+
+  // Create a Set of used image filenames
+  const usedImageFilenames = new Set(deals.map(deal => {
+    // Extract filename from imageUrl
+    return deal.imageUrl.split('/').pop();
+  }));
+  console.log(`${usedImageFilenames.size} unique image filenames in use`);
+
+  // Get all files in the deals image directory
+  const imageDirectory = path.join(__dirname, '..', '..', 'public', 'images', 'deals');
+  const files = await fs.readdir(imageDirectory);
+  console.log(`Found ${files.length} files in the image directory`);
+
+  let deletedCount = 0;
+  let skippedCount = 0;
+  let errorCount = 0;
+
+  for (const file of files) {
+    if (!usedImageFilenames.has(file)) {
+      try {
+        // Delete the file
+        const filepath = path.join(imageDirectory, file);
+        console.log(`Attempting to delete file: ${filepath}`);
+        await fs.unlink(filepath);
+
+        deletedCount++;
+        console.log(`Deleted unused image: ${file}`);
+      } catch (error) {
+        errorCount++;
+        console.error(`Error deleting image ${file}:`, error);
+      }
+    } else {
+      skippedCount++;
+      console.log(`Image in use, not deleting: ${file}`);
+    }
+  }
+
+  console.log(`Operation complete. Deleted: ${deletedCount}, Skipped: ${skippedCount}, Errors: ${errorCount}`);
+
+  res.status(200).json({
+    status: 'success',
+    message: `Deleted ${deletedCount} unused images. Skipped ${skippedCount} files in use. Encountered ${errorCount} errors.`,
+    details: { deletedCount, skippedCount, errorCount }
+  });
+});
+
+exports.getUnusedImagesCount = catchAsync(async (req, res, next) => {
+  // Fetch all deals, but only select the imageUrl field
+  const deals = await Deal.find({}, 'imageUrl').lean();
+
+  // Create a Set of used image filenames, handling potential undefined or invalid imageUrls
+  const usedImageFilenames = new Set(
+    deals
+      .map(deal => deal.imageUrl)
+      .filter(url => url && typeof url === 'string')
+      .map(url => url.split('/').pop())
+  );
+
+  console.log('Used image filenames:', usedImageFilenames);
+
+  // Get all files in the deals image directory
+  const imageDirectory = path.join(__dirname, '..', '..', 'public', 'images', 'deals');
+  const files = await fs.readdir(imageDirectory);
+
+  console.log('All files in directory:', files);
+
+  // Count unused files
+  const unusedCount = files.filter(file => !usedImageFilenames.has(file)).length;
+
+  console.log('Unused count:', unusedCount);
+
+  res.status(200).json({
+    status: 'success',
+    data: { unusedCount }
+  });
+});
+
 module.exports = exports;
