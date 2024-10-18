@@ -192,7 +192,6 @@ onMounted(async () => {
     loading.value = true
     await Promise.all([
       fetchUserProfile(),
-      fetchFollowersCount(),
       fetchFollowingCount(),
       fetchDealsCount()
     ])
@@ -205,8 +204,19 @@ onMounted(async () => {
 })
 
 const fetchUserProfile = async () => {
-  const response = await api.get('/users/me')
-  profile.value = response.data.data.user
+  try {
+    const response = await api.get('/users/me')
+    profile.value = response.data.data.user
+    
+    // Fetch follower count along with the profile
+    const followerResponse = await api.get('/users/me/followers')
+    if (followerResponse.data && followerResponse.data.data) {
+      profile.value.followerCount = followerResponse.data.data.count || followerResponse.data.data.followers.length
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error)
+    toast.error('Failed to fetch user profile')
+  }
 }
 
 const fetchFollowersCount = async () => {
@@ -214,7 +224,6 @@ const fetchFollowersCount = async () => {
     const response = await api.get('/users/me/followers')
     if (response.data && response.data.data) {
       profile.value.followerCount = response.data.data.count || response.data.data.followers.length
-      authStore.updateUser({ followerCount: profile.value.followerCount })
     }
   } catch (error) {
     console.error('Error fetching followers count:', error)
@@ -283,13 +292,11 @@ const fetchUserDeals = async () => {
 const fetchFollowing = async () => {
   try {
     const response = await api.get('/users/me/following')
-    console.log('Following response:', response.data)
     followingUsers.value = response.data.data.following.filter(user => user && user._id).map(user => ({
       _id: user._id,
       username: user.username,
-      avatarSeed: user.avatarSeed // Make sure this property is returned from the API
+      avatarSeed: user.avatarSeed
     }))
-    console.log('Filtered following users:', followingUsers.value)
   } catch (error) {
     console.error('Error fetching following users:', error)
     toast.error('Failed to fetch following users')
@@ -300,13 +307,12 @@ const fetchFollowing = async () => {
 const fetchFollowers = async () => {
   try {
     const response = await api.get('/users/me/followers')
-    console.log('Followers response:', response.data)
     followers.value = response.data.data.followers.filter(follower => follower && follower._id).map(user => ({
       _id: user._id,
       username: user.username,
-      avatarSeed: user.avatarSeed // Make sure this property is returned from the API
+      avatarSeed: user.avatarSeed,
+      isFollowing: followingUserIds.value.includes(user._id)
     }))
-    console.log('Filtered followers:', followers.value)
   } catch (error) {
     console.error('Error fetching followers:', error)
     toast.error('Failed to fetch followers')
@@ -319,19 +325,29 @@ const followUser = async (userId) => {
     await api.post(`/users/${userId}/follow`)
     const followedUser = followers.value.find(user => user._id === userId)
     if (followedUser) {
-      followingUsers.value.push(followedUser)
+      followedUser.isFollowing = true
     }
+    await fetchUserProfile() // Refresh the entire profile including follower count
+    await fetchFollowingCount()
   } catch (error) {
     console.error('Error following user:', error)
+    toast.error('Failed to follow user')
   }
 }
 
 const unfollowUser = async (userId) => {
   try {
     await api.delete(`/users/${userId}/follow`)
+    const unfollowedUser = followers.value.find(user => user._id === userId)
+    if (unfollowedUser) {
+      unfollowedUser.isFollowing = false
+    }
     followingUsers.value = followingUsers.value.filter(user => user._id !== userId)
+    await fetchUserProfile() // Refresh the entire profile including follower count
+    await fetchFollowingCount()
   } catch (error) {
     console.error('Error unfollowing user:', error)
+    toast.error('Failed to unfollow user')
   }
 }
 
@@ -367,7 +383,8 @@ watch(currentTab, async (newTab) => {
   } else if (newTab === 'followedDeals') {
     await fetchFollowedDeals()
   } else if (newTab === 'followers') {
-    await fetchFollowers()
+    await fetchFollowing() // Fetch following users first
+    await fetchFollowers() // Then fetch followers
   } else if (newTab === 'deals') {
     await fetchUserDeals()
   }

@@ -1,37 +1,34 @@
 <template>
-  <div class="space-y-4">
-    <div v-if="followers.length === 0" class="text-center text-gray-500 py-4">
-      You don't have any followers yet.
-    </div>
-    <div v-else v-for="user in followers" :key="user._id" 
-         class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 p-4 flex items-center justify-between">
-      <div class="flex items-center">
-        <UserAvatar 
-          :name="user.username" 
-          :size="40" 
-          :seed="user.avatarSeed"
-        />
-        <h4 class="font-medium text-sm ml-3 truncate">{{ user.username }}</h4>
+  <div>
+    <h2 class="text-2xl font-semibold mb-6 text-primary-800">Followers</h2>
+    <div v-if="followers.length > 0" class="space-y-4">
+      <div v-for="follower in followers" :key="follower._id" class="flex items-center justify-between bg-white p-4 rounded-lg shadow">
+        <div class="flex items-center">
+          <UserAvatar :name="follower.username" :size="40" :seed="follower.avatarSeed" />
+          <span class="ml-4 font-medium">{{ follower.username }}</span>
+        </div>
+        <button 
+          @click="follower.isFollowing ? $emit('unfollow', follower._id) : $emit('follow', follower._id)"
+          class="btn btn-sm"
+          :class="follower.isFollowing ? 'btn-outline-primary' : 'btn-primary'"
+        >
+          {{ follower.isFollowing ? 'Following' : 'Follow Back' }}
+        </button>
       </div>
-      <button v-if="!isFollowing(user._id)" @click="$emit('follow', user._id)" 
-              class="btn btn-sm btn-secondary">
-        Follow Back
-      </button>
-      <button v-else @click="$emit('unfollow', user._id)" 
-              class="btn btn-sm btn-primary">
-        Unfollow
-      </button>
     </div>
+    <p v-else class="text-center text-gray-500 py-8">You don't have any followers yet.</p>
   </div>
 </template>
 
 <script setup>
-import UserAvatar from '~/components/UserAvatar.vue'
+import UserAvatar from './UserAvatar.vue'
 
-const props = defineProps(['followers', 'followingIds'])
-const emit = defineEmits(['follow', 'unfollow'])
+defineProps({
+  followers: {
+    type: Array,
+    required: true
+  }
+})
 
-const isFollowing = (userId) => {
-  return props.followingIds.includes(userId)
-}
+defineEmits(['follow', 'unfollow'])
 </script>
