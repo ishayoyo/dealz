@@ -24,11 +24,11 @@
                     <span class="text-gray-500">Followers</span>
                   </div>
                   <div class="flex flex-col items-center sm:items-start">
-                    <span class="font-bold text-primary-600 text-xl">{{ profile.followingCount || 0 }}</span>
+                    <span class="font-bold text-primary-600 text-xl">{{ followingCount }}</span>
                     <span class="text-gray-500">Following</span>
                   </div>
                   <div class="flex flex-col items-center sm:items-start">
-                    <span class="font-bold text-primary-600 text-xl">{{ deals.length }}</span>
+                    <span class="font-bold text-primary-600 text-xl">{{ dealsCount }}</span>
                     <span class="text-gray-500">Deals</span>
                   </div>
                 </div>
@@ -86,6 +86,8 @@
     return authStore.user && profile.value && authStore.user.following && authStore.user.following.includes(profile.value.id)
   })
   const avatarUrl = ref('')
+  const followingCount = ref(0)
+  const dealsCount = ref(0)
 
   const fetchAvatar = async (userId) => {
     try {
@@ -104,16 +106,12 @@
       const response = await api.get(`/users/profile/${route.params.id}`)
       if (response.data && response.data.data) {
         profile.value = response.data.data.user || {}
-        // Fetch the avatar after setting the profile
-        await fetchAvatar(profile.value.id)
-        deals.value = response.data.data.deals ? response.data.data.deals.map(deal => ({
-          ...deal,
-          user: { 
-            username: profile.value.username,
-            _id: profile.value.id,
-            avatarUrl: avatarUrl.value
-          }
-        })) : []
+        await Promise.all([
+          fetchAvatar(profile.value.id),
+          fetchFollowersCount(),
+          fetchFollowingCount(),
+          fetchDealsCount()
+        ])
       } else {
         error.value = 'Unexpected data format received from server'
       }
@@ -165,4 +163,42 @@
       profile.value.followerCount = data.count
     }
   })
+
+  const fetchFollowersCount = async () => {
+    try {
+      const response = await api.get(`/users/${profile.value.id}/followers`)
+      if (response.data && response.data.data) {
+        profile.value.followerCount = response.data.data.count || response.data.data.followers.length
+      }
+    } catch (error) {
+      console.error('Error fetching followers count:', error)
+    }
+  }
+
+  const fetchFollowingCount = async () => {
+    try {
+      const response = await api.get(`/users/${profile.value.id}/following`)
+      followingCount.value = response.data.data.following.length
+    } catch (error) {
+      console.error('Error fetching following count:', error)
+    }
+  }
+
+  const fetchDealsCount = async () => {
+    try {
+      const response = await api.get(`/users/${profile.value.id}/deals`)
+      dealsCount.value = response.data.data.deals.length
+      deals.value = response.data.data.deals.map(deal => ({
+        ...deal,
+        user: { 
+          username: profile.value.username,
+          _id: profile.value.id,
+          avatarUrl: avatarUrl.value
+        }
+      }))
+    } catch (error) {
+      console.error('Error fetching deals count:', error)
+    }
+  }
   </script>
+
