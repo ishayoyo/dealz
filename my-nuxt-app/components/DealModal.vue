@@ -53,26 +53,28 @@
                 </div>
               </div>
               
-              <a :href="getOutgoingLink(deal.url)" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full mb-4">
-                GET THIS DEAL
-              </a>
-              
-              <div class="flex items-center justify-between mb-6">
-                <button @click="handleFollowDeal" class="btn btn-outline-secondary flex-1 mr-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                  </svg>
-                  {{ isFollowing ? 'Following' : 'Follow Deal' }}
-                  <span class="ml-2 bg-primary-100 text-primary-800 rounded-full px-2 py-1 text-xs">
-                    {{ formattedFollowCount }}
-                  </span>
-                </button>
-                <button @click="handleShareDeal" class="btn btn-outline-secondary flex-1 ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                  </svg>
-                  Share
-                </button>
+              <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
+                <a :href="getOutgoingLink(deal.url)" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full sm:w-auto mb-2 sm:mb-0">
+                  GET THIS DEAL
+                </a>
+                
+                <div class="flex w-full sm:w-auto">
+                  <button @click="handleFollowDeal" class="btn btn-outline-secondary flex-1 mr-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                    </svg>
+                    {{ isFollowing ? 'Following' : 'Follow Deal' }}
+                    <span class="ml-2 bg-primary-100 text-primary-800 rounded-full px-2 py-1 text-xs">
+                      {{ formattedFollowCount }}
+                    </span>
+                  </button>
+                  <button @click="handleShareDeal" class="btn btn-outline-secondary flex-1 ml-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                    </svg>
+                    Share
+                  </button>
+                </div>
               </div>
               
               <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 md:p-6 rounded-lg shadow-sm">
@@ -539,7 +541,7 @@ const fetchAvatar = async () => {
 }
 
 const handleShareDeal = async () => {
-  const dealUrl = `${window.location.origin}/deal/${props.deal._id}`
+  const dealUrl = `${window.location.origin}/deals/${props.deal._id}`
   
   if (navigator.share) {
     try {
