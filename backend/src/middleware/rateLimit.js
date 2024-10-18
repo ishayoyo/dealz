@@ -93,21 +93,6 @@ const rateLimitMiddleware = {
         attemptsLeft: 0
       });
     },
-  }),
-
-  vote: rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 50, // 50 votes per IP
-    message: 'Too many votes. Please try again after 15 minutes.',
-    standardHeaders: true,
-    legacyHeaders: false,
-    handler: (req, res) => {
-      res.status(429).json({
-        status: 'error',
-        message: 'Too many votes. Please try again after 15 minutes.',
-        attemptsLeft: 0
-      });
-    },
   })
 };
 

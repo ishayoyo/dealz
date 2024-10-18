@@ -5,6 +5,7 @@ const userController = require('../../../controllers/userController');
 const auth = require('../../../middleware/auth');
 const multer = require('multer');
 const commentController = require('../../../controllers/commentController');
+const rateLimitMiddleware = require('../../../middleware/rateLimit');
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -36,7 +37,7 @@ router.get('/:id/comments', commentController.getComments);
 router.use(auth);
 
 router.get('/followed', dealController.getFollowedDeals);
-router.post('/', dealController.createDeal);
+router.post('/', rateLimitMiddleware.createDeal, dealController.createDeal);
 router.post('/fetch-image', dealController.fetchImage);
 router.post('/upload-image', upload.single('image'), dealController.uploadImage);
 router.get('/check-image-uploads', dealController.checkImageUploads);
