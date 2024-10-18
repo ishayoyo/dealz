@@ -2,7 +2,11 @@
   <div class="comment flex justify-between items-start">
     <div>
       <div class="flex items-center mb-2">
-        <UserAvatar :name="comment.user.username" :size="32" class="mr-2" />
+        <img 
+          :src="avatarUrl" 
+          :alt="comment.user.username" 
+          class="w-8 h-8 rounded-full mr-2"
+        />
         <NuxtLink 
           :to="`/user/${comment.user._id}`"
           class="font-semibold text-primary-600 hover:text-primary-800 transition duration-300"
@@ -26,8 +30,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { formatDistanceToNow } from 'date-fns'
+import api from '~/services/api'
 
 const props = defineProps({
   comment: {
@@ -58,6 +63,23 @@ const formatDate = (date) => {
 
 // Add this computed property to ensure we have a valid user ID
 const userId = computed(() => props.comment.user._id || props.comment.user.id)
+
+const avatarUrl = ref('')
+
+const fetchAvatar = async () => {
+  try {
+    const response = await api.get(`/users/${userId.value}/avatar`)
+    avatarUrl.value = response.data.data.avatarUrl
+  } catch (error) {
+    console.error('Error fetching avatar:', error)
+    // Set a default avatar URL in case of error
+    avatarUrl.value = 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
+  }
+}
+
+onMounted(() => {
+  fetchAvatar()
+})
 </script>
 
 <style scoped>
