@@ -13,6 +13,15 @@ const upload = multer({
   }
 });
 
+// Middleware to check if user is admin
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied. Admin only.' });
+  }
+};
+
 // Public routes
 router.get('/', dealController.getDeals);
 router.get('/search', dealController.searchDeals);
@@ -43,5 +52,8 @@ router.post('/:id/comments', commentController.createComment);
 // Uncomment if you implement these routes in the future
 // router.put('/:id', dealController.updateDeal);
 // router.get('/:id/mentionable-users', dealController.getMentionableUsers);
+
+// Add a route to clear the cache (protect this route with admin authentication)
+router.post('/clear-cache', auth, isAdmin, dealController.clearDealsCache);
 
 module.exports = router;

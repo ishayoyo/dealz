@@ -4,7 +4,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const app = require('./app'); // Import the Express app from app.js
 const cron = require('node-cron');
-const { cleanupUnusedImages } = require('./controllers/dealController'); // Add this line
+const { cleanupUnusedImages, dealCache } = require('./controllers/dealController'); // Add this line
 
 const PORT = process.env.PORT || 5000;
 
@@ -49,6 +49,30 @@ io.on('connection', (socket) => {
   socket.on('testConnection', (data) => {
     console.log('Received test connection from client', socket.id, data);
     socket.emit('testResponse', { message: 'Connection successful!' });
+  });
+
+  socket.on('newDeal', async (data) => {
+    // ... existing newDeal logic ...
+
+    // Clear the deals cache
+    dealCache.flushAll();
+    console.log('Deals cache cleared after new deal creation via socket');
+  });
+
+  socket.on('updateDeal', async (data) => {
+    // ... existing updateDeal logic ...
+
+    // Clear the deals cache
+    dealCache.flushAll();
+    console.log('Deals cache cleared after deal update via socket');
+  });
+
+  socket.on('deleteDeal', async (data) => {
+    // ... existing deleteDeal logic ...
+
+    // Clear the deals cache
+    dealCache.flushAll();
+    console.log('Deals cache cleared after deal deletion via socket');
   });
 });
 

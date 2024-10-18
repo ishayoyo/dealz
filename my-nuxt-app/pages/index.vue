@@ -75,6 +75,11 @@ onMounted(async () => {
       await dealsStore.fetchDeals()
     }
 
+    // If deals are empty (potential cache miss), fetch again
+    if (dealsStore.deals.length === 0) {
+      await dealsStore.fetchDeals({ bypassCache: true })
+    }
+
     // Check authentication status silently
     if (!isAuthenticated.value) {
       await authStore.checkAuth()

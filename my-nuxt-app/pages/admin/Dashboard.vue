@@ -2,6 +2,13 @@
   <div class="admin-dashboard p-6 space-y-8 max-w-7xl mx-auto">
     <h1 class="text-3xl font-heading text-primary-800 mb-8 text-center">SaverSonic Admin Dashboard</h1>
     
+    <!-- Add this button -->
+    <div class="text-center">
+      <button @click="clearCache" class="btn btn-primary">
+        Clear Cache
+      </button>
+    </div>
+    
     <!-- Analytics Section -->
     <section>
       <h2 class="text-2xl font-heading text-gray-800 mb-4">Overview</h2>
@@ -547,6 +554,16 @@ const verifyUser = async (userId) => {
     toast.error('Failed to verify user: ' + (error.response?.data?.message || error.message));
   }
 };
+
+const clearCache = async () => {
+  try {
+    await api.post('/deals/clear-cache')
+    toast.success('Cache cleared successfully')
+  } catch (error) {
+    console.error('Error clearing cache:', error)
+    toast.error('Failed to clear cache')
+  }
+}
 </script>
 
 <style scoped>

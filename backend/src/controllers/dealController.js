@@ -12,18 +12,37 @@ const fs = require('fs').promises;
 const NotificationService = require('../services/NotificationService');
 const validator = require('validator');
 const ImageUpload = require('../models/ImageUpload.Model'); // You'll need to create this model
+const NodeCache = require('node-cache');
+const dealCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
 exports.getDeals = catchAsync(async (req, res, next) => {
+  console.time('getDeals');
+  
+  const cacheKey = JSON.stringify(req.query);
+  const cachedDeals = dealCache.get(cacheKey);
+
+  if (cachedDeals) {
+    console.log('Cache hit');
+    console.timeEnd('getDeals');
+    return res.status(200).json({
+      status: 'success',
+      results: cachedDeals.length,
+      data: { deals: cachedDeals }
+    });
+  }
+
+  console.log('Cache miss');
+
   // Build query
   const queryObj = { ...req.query, status: 'approved' };
   const excludedFields = ['page', 'sort', 'limit', 'fields'];
   excludedFields.forEach(el => delete queryObj[el]);
 
   // Validate query parameters
-  const allowedFields = ['title', 'price', 'category', 'store']; // Add all allowed fields
+  const allowedFields = ['title', 'price', 'category', 'store'];
   Object.keys(queryObj).forEach(key => {
     if (!allowedFields.includes(key)) {
-      delete queryObj[key]; // Remove any fields that aren't in the allowed list
+      delete queryObj[key];
     }
   });
 
@@ -36,7 +55,7 @@ exports.getDeals = catchAsync(async (req, res, next) => {
   // Sorting
   if (req.query.sort) {
     const sortBy = req.query.sort.split(',').join(' ');
-    const allowedSortFields = ['createdAt', 'price', 'title']; // Add all allowed sort fields
+    const allowedSortFields = ['createdAt', 'price', 'title'];
     const sanitizedSortBy = sortBy.split(' ').filter(field => allowedSortFields.includes(field.replace('-', ''))).join(' ');
     query = query.sort(sanitizedSortBy || '-createdAt');
   } else {
@@ -46,7 +65,7 @@ exports.getDeals = catchAsync(async (req, res, next) => {
   // Field limiting
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
-    const allowedFields = ['title', 'description', 'price', 'imageUrl', 'store', 'category', 'createdAt']; // Add all allowed fields
+    const allowedFields = ['title', 'description', 'price', 'imageUrl', 'store', 'category', 'createdAt'];
     const sanitizedFields = fields.split(' ').filter(field => allowedFields.includes(field)).join(' ');
     query = query.select(sanitizedFields);
   } else {
@@ -63,16 +82,20 @@ exports.getDeals = catchAsync(async (req, res, next) => {
   // Execute query
   const deals = await query.populate('user', 'username profilePicture');
 
-  // Send response
+  const dealsData = deals.map(deal => ({
+    ...deal.toObject(),
+    commentCount: deal.commentCount || 0
+  }));
+
+  dealCache.set(cacheKey, dealsData);
+
+  console.timeEnd('getDeals');
+  console.log(`Fetched ${deals.length} deals`);
+
   res.status(200).json({
     status: 'success',
     results: deals.length,
-    data: {
-      deals: deals.map(deal => ({
-        ...deal.toObject(),
-        commentCount: deal.commentCount || 0
-      }))
-    }
+    data: { deals: dealsData }
   });
 });
 
@@ -113,20 +136,16 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     user: req.user._id
   };
 
-  const deal = await Deal.create(dealData);
+  const newDeal = await Deal.create(dealData);
 
-  console.log('Marking image as used:', dealData.imageUrl);
-  const updatedImage = await ImageUpload.findOneAndUpdate(
-    { imageUrl: dealData.imageUrl },
-    { used: true },
-    { new: true }
-  );
-  console.log('Updated image:', updatedImage);
+  // Clear the entire deals cache
+  dealCache.flushAll();
+  console.log('Deals cache cleared after new deal creation');
 
   res.status(201).json({
     status: 'success',
     data: {
-      deal
+      deal: newDeal
     }
   });
 });
@@ -623,6 +642,13 @@ exports.checkImageUploads = catchAsync(async (req, res) => {
     totalUploads: imageUploads.length,
     uploads: imageUploads
   });
+});
+
+// Add a method to clear the cache
+exports.clearDealsCache = catchAsync(async (req, res, next) => {
+  dealCache.flushAll();
+  console.log('Deals cache cleared');
+  res.status(200).json({ message: 'Deals cache cleared' });
 });
 
 module.exports = exports;
