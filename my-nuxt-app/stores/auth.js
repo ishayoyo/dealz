@@ -22,7 +22,7 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async login(email, password) {
-      if (this.isLoginRateLimited) {
+      if (this.loginCountdown > 0) {
         return { success: false, error: `Rate limited. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.` };
       }
 
@@ -30,19 +30,33 @@ export const useAuthStore = defineStore('auth', {
         const response = await api.post('/users/login', { email, password });
         if (response.data.status === 'success') {
           this.setUser(response.data.data.user);
+          this.loginAttemptsLeft = 5; // Reset attempts on successful login
           return { success: true };
         } else if (response.data.requiresVerification) {
           return { success: false, requiresVerification: true, message: response.data.message };
         } else {
-          console.error('Unexpected response from server:', response.data);
-          return { success: false, error: 'An unexpected error occurred' };
+          this.loginAttemptsLeft = response.data.attemptsLeft;
+          return { 
+            success: false, 
+            error: response.data.message || 'An unexpected error occurred',
+            attemptsLeft: this.loginAttemptsLeft
+          };
         }
       } catch (error) {
-        console.error('Login error:', error);
-        if (error.response?.status === 403 && error.response.data.requiresVerification) {
-          return { success: false, requiresVerification: true, message: error.response.data.message };
+        if (error.response?.status === 429) {
+          this.handleLoginRateLimiting(error);
+          return { 
+            success: false, 
+            error: 'Too many login attempts. Please try again later.',
+            attemptsLeft: 0
+          };
         }
-        return { success: false, error: error.response?.data?.message || error.message || 'An error occurred during login' };
+        this.loginAttemptsLeft = error.response?.data?.attemptsLeft || Math.max(this.loginAttemptsLeft - 1, 0);
+        return { 
+          success: false, 
+          error: error.response?.data?.message || error.message || 'An error occurred during login',
+          attemptsLeft: this.loginAttemptsLeft
+        };
       }
     },
 
@@ -107,6 +121,7 @@ export const useAuthStore = defineStore('auth', {
         console.error('Error during logout:', error);
       } finally {
         this.user = null;
+        this.loginAttemptsLeft = 5; // Reset attempts on logout
         console.log('Logout successful');
       }
     },
@@ -269,7 +284,7 @@ export const useAuthStore = defineStore('auth', {
       if (retryAfter) {
         this.startLoginCountdown(parseInt(retryAfter));
       } else {
-        this.startLoginCountdown(180); // 3 minutes
+        this.startLoginCountdown(300); // 5 minutes
       }
       this.loginAttemptsLeft = 0;
     },
@@ -279,7 +294,7 @@ export const useAuthStore = defineStore('auth', {
       if (retryAfter) {
         this.startSignupCountdown(parseInt(retryAfter));
       } else {
-        this.startSignupCountdown(180); // 3 minutes
+        this.startSignupCountdown(300); // 5 minutes
       }
       this.signupAttemptsLeft = 0;
     },

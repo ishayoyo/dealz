@@ -227,9 +227,16 @@ const handleLogin = async () => {
       emit('close')
     } else if (result.requiresVerification) {
       toast.info(result.message)
-      // You might want to show a UI element here to allow users to resend the verification email
+      showVerificationForm.value = true
     } else {
-      error.value = result.error || 'Login failed. Please check your credentials and try again.'
+      error.value = result.error
+      if (result.attemptsLeft !== undefined) {
+        if (result.attemptsLeft > 0) {
+          error.value += ` You have ${result.attemptsLeft} ${result.attemptsLeft === 1 ? 'attempt' : 'attempts'} left.`
+        } else {
+          error.value = 'Too many login attempts. Please try again later.'
+        }
+      }
       toast.error(error.value)
     }
   } catch (err) {

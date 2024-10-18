@@ -101,9 +101,12 @@ exports.login = catchAsync(async (req, res, next) => {
     const user = await User.findOne({ email }).select('+password');
     
     if (!user || !(await user.comparePassword(password))) {
-      res.clearCookie('accessToken');
-      res.clearCookie('refreshToken');
-      return next(new AppError('Incorrect email or password', 401));
+      const attemptsLeft = Math.max(4 - req.rateLimit.current, 0);
+      return res.status(401).json({
+        status: 'fail',
+        message: 'Incorrect email or password',
+        attemptsLeft: attemptsLeft
+      });
     }
 
     if (user.isVerified === false) {
@@ -133,6 +136,9 @@ exports.login = catchAsync(async (req, res, next) => {
     });
 
     user.password = undefined;
+
+    // Reset the rate limiter for this IP on successful login
+    req.rateLimit.resetKey(req.ip);
 
     res.status(200).json({ 
       status: 'success', 

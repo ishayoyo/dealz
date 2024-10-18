@@ -1,5 +1,22 @@
 const rateLimit = require('express-rate-limit');
 
+const createRateLimiter = (options) => {
+  const limiter = rateLimit({
+    ...options,
+    keyGenerator: (req) => req.body.email || req.ip,
+  });
+  return (req, res, next) => {
+    limiter(req, res, (err) => {
+      if (err) return next(err);
+      req.rateLimit = {
+        current: req.rateLimit.current,
+        resetKey: (key) => limiter.resetKey(key)
+      };
+      next();
+    });
+  };
+};
+
 const rateLimitMiddleware = {
   register: rateLimit({
     windowMs: 3 * 60 * 1000, // 3 minutes
@@ -17,18 +34,18 @@ const rateLimitMiddleware = {
     },
   }),
 
-  login: rateLimit({
-    windowMs: 3 * 60 * 1000, // 3 minutes
-    max: 5, // 5 attempts per IP
-    message: 'Too many login attempts. Please try again after 3 minutes.',
+  login: createRateLimiter({
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 5, // 5 attempts
+    message: 'Too many login attempts. Please try again after 5 minutes.',
     standardHeaders: true,
     legacyHeaders: false,
-    handler: (req, res, next, options) => {
-      const attemptsLeft = Math.max(options.max - req.rateLimit.current, 0);
+    handler: (req, res) => {
+      res.setHeader('Retry-After', 300); // 5 minutes in seconds
       res.status(429).json({
         status: 'error',
-        message: `Too many login attempts. You have ${attemptsLeft} attempts left.`,
-        attemptsLeft: attemptsLeft
+        message: 'Too many login attempts. Please try again after 5 minutes.',
+        attemptsLeft: 0
       });
     },
   }),
