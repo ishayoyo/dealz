@@ -1,29 +1,62 @@
 <template>
-  <div class="container mx-auto px-4 py-8 pt-24">
-    <div v-if="loading" class="text-center py-8">Loading user data...</div>
-    <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
-    <div v-else-if="!profile" class="text-center py-8 text-red-500">User data not available. Please try logging in again.</div>
-    <div v-else class="bg-white shadow-lg rounded-lg overflow-hidden max-w-3xl mx-auto">
-      <div class="p-4 sm:p-6">
-        <!-- User Info Section -->
-        <div class="flex flex-col items-center mb-6">
-          <div class="relative mb-4">
+  <div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <div v-if="loading" class="container mx-auto">
+      <UserProfileSkeleton />
+      <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <DealCardSkeleton v-for="i in 6" :key="i" />
+      </div>
+    </div>
+    <div v-else-if="error" class="container mx-auto px-4 py-8 text-center text-accent-600">
+      {{ error }}
+    </div>
+    <div v-else-if="profile" class="container mx-auto">
+      <!-- Profile Header -->
+      <div class="bg-white shadow-lg rounded-xl p-8 mb-8 animate-float">
+        <div class="flex flex-col sm:flex-row items-center">
+          <div class="relative mb-4 sm:mb-0 sm:mr-8">
             <UserAvatar 
               :name="getUserName" 
-              :size="80" 
+              :size="128" 
               :seed="profile.avatarSeed || authStore.user?.avatarSeed"
             />
             <button @click="changeAvatar" class="absolute bottom-0 right-0 bg-primary-500 text-white rounded-full p-2 hover:bg-primary-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
           </div>
-          <div class="text-center">
-            <h3 class="text-xl font-semibold">{{ getUserName }}</h3>
+          <div class="text-center sm:text-left">
+            <h1 class="text-3xl font-bold text-primary-800 mb-2">{{ getUserName }}</h1>
             <p class="text-gray-600">{{ profile.email }}</p>
-            <p class="text-sm text-gray-500 mt-1">{{ profile.followerCount || 0 }} followers</p>
+            <div class="flex justify-center sm:justify-start space-x-6 mt-4">
+              <div class="flex flex-col items-center sm:items-start">
+                <span class="font-bold text-primary-600 text-xl">{{ profile.followerCount || 0 }}</span>
+                <span class="text-gray-500">Followers</span>
+              </div>
+              <div class="flex flex-col items-center sm:items-start">
+                <span class="font-bold text-primary-600 text-xl">{{ followingUsers.length }}</span>
+                <span class="text-gray-500">Following</span>
+              </div>
+              <div class="flex flex-col items-center sm:items-start">
+                <span class="font-bold text-primary-600 text-xl">{{ userDeals.length }}</span>
+                <span class="text-gray-500">Deals</span>
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Tabs and Content -->
+      <div class="bg-white shadow-lg rounded-xl p-8">
+        <!-- Desktop Tabs -->
+        <div class="hidden md:block border-b border-gray-200 mb-6">
+          <nav class="flex">
+            <button v-for="tab in tabs" :key="tab.id" @click="selectTab(tab.id)" 
+                    :class="['mr-4 py-2 px-1 border-b-2 font-medium text-sm', 
+                             currentTab === tab.id ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300']">
+              {{ tab.name }}
+            </button>
+          </nav>
         </div>
 
         <!-- Mobile Menu Toggle -->
@@ -47,20 +80,9 @@
           </div>
         </div>
 
-        <!-- Desktop Tabs -->
-        <div class="hidden md:block border-b border-gray-200 mb-6">
-          <nav class="flex">
-            <button v-for="tab in tabs" :key="tab.id" @click="selectTab(tab.id)" 
-                    :class="['mr-4 py-2 px-1 border-b-2 font-medium text-sm', 
-                             currentTab === tab.id ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300']">
-              {{ tab.name }}
-            </button>
-          </nav>
-        </div>
-
         <!-- Tab content -->
-        <div class="max-w-md mx-auto">
-          <div v-if="currentTab === 'info'" class="space-y-4">
+        <div class="mt-6">
+          <div v-if="currentTab === 'info'" class="max-w-md mx-auto space-y-4">
             <div v-for="field in userFields" :key="field.key" class="flex flex-col">
               <label :for="field.key" class="text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
               <input :id="field.key" v-model="profile[field.key]" :type="field.type" class="input-field">
@@ -70,7 +92,7 @@
             </div>
           </div>
 
-          <div v-else-if="currentTab === 'password'" class="space-y-4">
+          <div v-else-if="currentTab === 'password'" class="max-w-md mx-auto space-y-4">
             <div v-for="field in passwordFields" :key="field.key" class="flex flex-col">
               <label :for="field.key" class="text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
               <input :id="field.key" v-model="passwordChange[field.key]" type="password" class="input-field">
@@ -89,11 +111,38 @@
           </div>
 
           <div v-else-if="currentTab === 'deals'">
-            <UserDeals :userDeals="userDeals" @dealClicked="navigateToDeal" />
+            <h2 class="text-2xl font-semibold mb-6 text-primary-800">My Deals</h2>
+            <div v-if="userDeals.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <DealCard 
+                v-for="deal in userDeals" 
+                :key="deal['_id']" 
+                :deal="{ ...deal, user: { ...deal.user, avatarUrl: getAvatarUrl(deal.user._id) } }"
+                :username="getUserName"
+                @open-modal="navigateToDeal" 
+                class="deal-card cursor-pointer transition duration-300 transform hover:scale-105"
+              />
+            </div>
+            <p v-else class="text-center text-gray-500 py-8">You haven't posted any deals yet.</p>
           </div>
 
           <div v-else-if="currentTab === 'followedDeals'">
-            <UserDeals :userDeals="followedDeals" @dealClicked="navigateToDeal" />
+            <h2 class="text-2xl font-semibold mb-6 text-primary-800">Followed Deals</h2>
+            <div v-if="followedDeals.length > 0" class="space-y-4">
+              <div v-for="deal in followedDeals" :key="deal._id" class="bg-white shadow-md rounded-lg overflow-hidden">
+                <div class="flex items-center p-4">
+                  <img :src="getFullImageUrl(deal.imageUrl)" :alt="deal.title" class="w-20 h-20 object-cover mr-4 rounded-md">
+                  <div class="flex-grow">
+                    <h4 class="font-medium text-lg">{{ deal.title }}</h4>
+                    <p class="text-sm text-gray-600">${{ deal.price }}</p>
+                    <p class="text-xs text-gray-500 mt-1">Posted by: {{ deal.user.username }}</p>
+                  </div>
+                  <button @click="unfollowDeal(deal._id)" class="btn btn-outline-primary btn-sm">
+                    Unfollow
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p v-else class="text-center text-gray-500 py-8">You're not following any deals yet.</p>
           </div>
         </div>
       </div>
@@ -111,6 +160,9 @@ import UserDeals from '~/components/UserDeals.vue'
 import UserAvatar from '~/components/UserAvatar.vue'
 import { useToastification } from '~/composables/useToastification'
 import { useAuthStore } from '~/stores/auth'
+import UserProfileSkeleton from '~/components/UserProfileSkeleton.vue'
+import DealCardSkeleton from '~/components/DealCardSkeleton.vue'
+import DealCard from '~/components/DealCard.vue'
 
 const config = useRuntimeConfig()
 const fileInput = ref(null)
@@ -365,13 +417,29 @@ const authStore = useAuthStore()
 const getAvatarUrl = (userId) => {
   return `${config.public.apiBase}/api/v1/users/${userId}/avatar`
 }
+
+const getFullImageUrl = (imageUrl) => {
+  if (!imageUrl) return ''
+  return imageUrl.startsWith('http') 
+    ? imageUrl 
+    : `${config.public.apiBase}${imageUrl}`
+}
 </script>
 
 <style scoped>
-@media (max-width: 640px) {
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translatey(0px);
+  }
+  50% {
+    transform: translatey(-10px);
+  }
+  100% {
+    transform: translatey(0px);
   }
 }
 </style>
