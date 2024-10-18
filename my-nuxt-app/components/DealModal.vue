@@ -33,39 +33,45 @@
               <h2 class="text-2xl md:text-3xl font-bold mb-4 text-text">{{ deal.title }}</h2>
               <p class="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">{{ deal.description }}</p>
               
-              <!-- Add this section to display both prices -->
-              <div class="flex items-center justify-between mb-6">
-                <div class="flex flex-col">
-                  <span class="text-gray-500 line-through text-sm">{{ formattedListPrice }}</span>
-                  <span class="font-bold text-accent text-3xl md:text-4xl">{{ formattedDealPrice }}</span>
+              <!-- Add this section to display prices and shipping -->
+              <div class="mb-6 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                <div class="p-4 bg-primary-50">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="font-bold text-primary-700 text-3xl md:text-4xl">{{ formattedDealPrice }}</span>
+                    <span class="bg-primary-600 text-white font-semibold text-lg px-3 py-1 rounded-full">{{ discountPercentage }}% OFF</span>
+                  </div>
+                  <div class="flex items-center text-sm text-gray-600">
+                    <span class="line-through mr-2">{{ formattedListPrice }}</span>
+                    <span class="font-medium text-green-600">
+                      {{ deal.shipping === 'FREE' ? 'FREE Shipping' : `+$${deal.shipping} Shipping` }}
+                    </span>
+                  </div>
                 </div>
-                <span class="text-green-600 font-semibold text-xl">{{ discountPercentage }}% OFF</span>
-              </div>
-              
-              <!-- Add this section to display the category -->
-              <div class="mb-4">
-                <span class="font-semibold text-gray-700">Category:</span>
-                <span class="ml-2 text-primary-600">{{ deal.category }}</span>
-              </div>
-              
-              <div class="flex items-center justify-between mb-6">
-                <div>
-                  <span class="font-bold text-accent text-3xl md:text-4xl">${{ formattedPrice }}</span>
-                  <span class="text-gray-600 text-sm ml-2">
-                    + {{ deal.shipping === 'FREE' ? 'FREE Shipping' : `$${deal.shipping} Shipping` }}
-                  </span>
+                
+                <div class="p-4 flex items-center justify-between border-t border-gray-200">
+                  <span class="text-sm font-medium text-gray-600">Category: <span class="text-primary-600">{{ deal.category }}</span></span>
                 </div>
-                <a :href="getOutgoingLink(deal.url)" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
-                  GET THIS DEAL
-                </a>
               </div>
               
+              <a :href="getOutgoingLink(deal.url)" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full mb-4">
+                GET THIS DEAL
+              </a>
+              
               <div class="flex items-center justify-between mb-6">
-                <button @click="handleFollowDeal" class="btn btn-outline-secondary">
-                  <span>{{ isFollowing ? 'Unfollow Deal' : 'Follow Deal' }}</span>
-                  <span class="ml-2 bg-gray-200 text-gray-700 rounded-full px-2 py-1 text-xs">
+                <button @click="handleFollowDeal" class="btn btn-outline-secondary flex-1 mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                  </svg>
+                  {{ isFollowing ? 'Following' : 'Follow Deal' }}
+                  <span class="ml-2 bg-primary-100 text-primary-800 rounded-full px-2 py-1 text-xs">
                     {{ formattedFollowCount }}
                   </span>
+                </button>
+                <button @click="handleShareDeal" class="btn btn-outline-secondary flex-1 ml-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                  </svg>
+                  Share
                 </button>
               </div>
               
@@ -157,6 +163,7 @@ import Comment from '~/components/Comment.vue'
 import UserMentionAutocomplete from '~/components/UserMentionAutocomplete.vue'
 import { useUserFollow } from '~/composables/useUserFollow'
 import DealModalSkeleton from '~/components/DealModalSkeleton.vue'
+import { useClipboard } from '@vueuse/core'
 
 const props = defineProps({
   deal: {
@@ -180,6 +187,7 @@ const authStore = useAuthStore()
 const dealsStore = useDealsStore()
 const toast = useToastification()
 const { followUser } = useUserFollow()
+const { copy } = useClipboard()
 
 const comments = ref([])
 const newComment = ref('')
@@ -521,6 +529,30 @@ const fetchAvatar = async () => {
     console.error('Error fetching avatar:', error)
     // Set a default avatar URL in case of error
     avatarUrl.value = 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
+  }
+}
+
+const handleShareDeal = async () => {
+  const dealUrl = `${window.location.origin}/deal/${props.deal._id}`
+  
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: props.deal.title,
+        text: 'Check out this great deal!',
+        url: dealUrl,
+      })
+      toast.success('Deal shared successfully!')
+    } catch (error) {
+      console.error('Error sharing:', error)
+      // Fall back to copying the link if sharing fails
+      await copy(dealUrl)
+      toast.success('Deal link copied to clipboard!')
+    }
+  } else {
+    // If Web Share API is not supported, just copy the link
+    await copy(dealUrl)
+    toast.success('Deal link copied to clipboard!')
   }
 }
 
