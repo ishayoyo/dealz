@@ -22,7 +22,7 @@
           <div class="text-center">
             <h3 class="text-xl font-semibold">{{ getUserName }}</h3>
             <p class="text-gray-600">{{ profile.email }}</p>
-            <p class="text-sm text-gray-500 mt-1">{{ authStore.user?.followerCount || 0 }} followers</p>
+            <p class="text-sm text-gray-500 mt-1">{{ profile.followerCount || 0 }} followers</p>
           </div>
         </div>
 
@@ -193,7 +193,11 @@ const fetchFollowing = async () => {
   try {
     const response = await api.get('/users/me/following')
     console.log('Following response:', response.data)
-    followingUsers.value = response.data.data.following.filter(user => user && user._id)
+    followingUsers.value = response.data.data.following.filter(user => user && user._id).map(user => ({
+      _id: user._id,
+      username: user.username,
+      avatarSeed: user.avatarSeed // Make sure this property is returned from the API
+    }))
     console.log('Filtered following users:', followingUsers.value)
   } catch (error) {
     console.error('Error fetching following users:', error)
@@ -206,7 +210,11 @@ const fetchFollowers = async () => {
   try {
     const response = await api.get('/users/me/followers')
     console.log('Followers response:', response.data)
-    followers.value = response.data.data.followers.filter(follower => follower && follower._id)
+    followers.value = response.data.data.followers.filter(follower => follower && follower._id).map(user => ({
+      _id: user._id,
+      username: user.username,
+      avatarSeed: user.avatarSeed // Make sure this property is returned from the API
+    }))
     console.log('Filtered followers:', followers.value)
   } catch (error) {
     console.error('Error fetching followers:', error)
@@ -219,7 +227,10 @@ const fetchFollowersCount = async () => {
   try {
     const response = await api.get('/users/me/followers')
     if (response.data && response.data.data) {
-      profile.value.followerCount = response.data.data.count
+      // Assuming the API returns the count in the response
+      profile.value.followerCount = response.data.data.count || response.data.data.followers.length
+      // Update the auth store with the new follower count
+      authStore.updateUser({ followerCount: profile.value.followerCount })
     }
   } catch (error) {
     console.error('Error fetching followers count:', error)
@@ -350,6 +361,10 @@ const selectTab = (tabId) => {
 }
 
 const authStore = useAuthStore()
+
+const getAvatarUrl = (userId) => {
+  return `${config.public.apiBase}/api/v1/users/${userId}/avatar`
+}
 </script>
 
 <style scoped>

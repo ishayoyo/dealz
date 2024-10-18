@@ -6,7 +6,11 @@
     <div v-else v-for="user in followers" :key="user._id" 
          class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 p-4 flex items-center justify-between">
       <div class="flex items-center">
-        <UserAvatar :name="user.username" :size="40" :seed="user.avatarSeed || user.username" />
+        <UserAvatar 
+          :name="user.username" 
+          :size="40" 
+          :seed="user.avatarSeed"
+        />
         <h4 class="font-medium text-sm ml-3 truncate">{{ user.username }}</h4>
       </div>
       <button v-if="!isFollowing(user._id)" @click="$emit('follow', user._id)" 
@@ -22,6 +26,8 @@
 </template>
 
 <script setup>
+import UserAvatar from '~/components/UserAvatar.vue'
+
 const props = defineProps(['followers', 'followingIds'])
 const emit = defineEmits(['follow', 'unfollow'])
 
