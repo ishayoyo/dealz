@@ -8,111 +8,117 @@
         </svg>
       </button>
       
-      <!-- Modal title -->
-      <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-center text-primary-600">
-        {{ isLogin ? 'Welcome Back!' : 'Join the Savings Squad!' }}
-      </h2>
-      
-      <!-- Modal subtitle -->
-      <p class="text-center text-gray-600 mb-6">
-        {{ isLogin ? 'Your fellow shoppers are waiting for your amazing deals!' : 'Unlock a world of incredible deals and start saving today!' }}
-      </p>
-
       <!-- Auth form -->
-      <form @submit.prevent="handleSubmit" class="space-y-4">
-        <!-- Username input (only for signup) -->
-        <div v-if="!isLogin">
-          <label for="username" class="block text-gray-700 text-sm font-bold mb-2">Username</label>
-          <input 
-            type="text" 
-            id="username" 
-            v-model="form.username" 
-            @input="validateUsername"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
-            :class="{'border-red-500': usernameError, 'border-green-500': isUsernameValid && form.username.length > 0}"
-            required
-          >
-          <p v-if="!isLogin && form.username.length > 0" class="text-sm mt-1" :class="isUsernameValid ? 'text-green-500' : 'text-red-500'">
-            {{ usernameFeedback }}
-          </p>
-        </div>
+      <div v-if="!showForgotPassword">
+        <!-- Modal title -->
+        <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-center text-primary-600">
+          {{ isLogin ? 'Welcome Back!' : 'Join the Savings Squad!' }}
+        </h2>
         
-        <!-- Email input -->
-        <div>
-          <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
-          <input 
-            type="email" 
-            id="email" 
-            v-model="form.email" 
-            @input="validateEmail"
-            autocomplete="username"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
-            :class="{'border-red-500': emailError, 'border-green-500': isEmailValid && form.email.length > 0}" 
-            required
-          >
-          <p v-if="!isLogin && form.email.length > 0" class="text-sm mt-1" :class="isEmailValid ? 'text-green-500' : 'text-red-500'">
-            {{ emailFeedback }}
-          </p>
-        </div>
-        
-        <!-- Password input -->
-        <div>
-          <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-          <input 
-            type="password" 
-            id="password" 
-            v-model="form.password" 
-            @input="validatePassword"
-            autocomplete="current-password" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
-            :class="{'border-red-500': passwordError, 'border-green-500': isPasswordValid && form.password.length > 0}" 
-            required
-          >
-          <p v-if="!isLogin && form.password.length > 0" class="text-sm mt-1" :class="isPasswordValid ? 'text-green-500' : 'text-red-500'">
-            {{ passwordFeedback }}
-          </p>
-        </div>
-        
-        <!-- Error messages -->
-        <div v-if="isLogin && authStore.loginCountdown > 0" class="mt-4 text-red-500 text-center">
-          Too many login attempts. Please try again in {{ formatCountdown(authStore.loginCountdown) }}.
-        </div>
-        <div v-else-if="!isLogin && authStore.signupCountdown > 0" class="mt-4 text-red-500 text-center">
-          Too many signup attempts. Please try again in {{ formatCountdown(authStore.signupCountdown) }}.
-        </div>
-        <div v-else-if="isLogin && authStore.loginAttemptsLeft > 0 && authStore.loginAttemptsLeft < 5" class="mt-4 text-yellow-500 text-center">
-          You have {{ authStore.loginAttemptsLeft }} login {{ authStore.loginAttemptsLeft === 1 ? 'attempt' : 'attempts' }} left.
-        </div>
-        <div v-else-if="error" class="mt-4 text-red-500 text-center">
-          {{ error }}
-        </div>
+        <!-- Modal subtitle -->
+        <p class="text-center text-gray-600 mb-6">
+          {{ isLogin ? 'Your fellow shoppers are waiting for your amazing deals!' : 'Unlock a world of incredible deals and start saving today!' }}
+        </p>
 
-        <!-- Submit button -->
-        <button 
-          type="submit" 
-          class="w-full btn btn-primary"
-          :disabled="!isPasswordValid || !isEmailValid || isSubmitting || (isLogin ? authStore.loginCountdown > 0 : authStore.signupCountdown > 0)"
-        >
-          {{ isSubmitting ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up') }}
-        </button>
-      </form>
-      
-      <!-- Toggle between login and signup -->
-      <p class="mt-4 text-center text-gray-600">
-        {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
-        <a href="#" @click.prevent="toggleAuthMode" class="text-primary-600 hover:underline">
-          {{ isLogin ? 'Sign Up' : 'Log In' }}
-        </a>
-      </p>
+        <form @submit.prevent="handleSubmit" class="space-y-4">
+          <!-- Username input (only for signup) -->
+          <div v-if="!isLogin">
+            <label for="username" class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+            <input 
+              type="text" 
+              id="username" 
+              v-model="form.username" 
+              @input="validateUsername"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
+              :class="{'border-red-500': usernameError, 'border-green-500': isUsernameValid && form.username.length > 0}"
+              required
+            >
+            <p v-if="!isLogin && form.username.length > 0" class="text-sm mt-1" :class="isUsernameValid ? 'text-green-500' : 'text-red-500'">
+              {{ usernameFeedback }}
+            </p>
+          </div>
+          
+          <!-- Email input -->
+          <div>
+            <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+            <input 
+              type="email" 
+              id="email" 
+              v-model="form.email" 
+              @input="validateEmail"
+              autocomplete="username"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
+              :class="{'border-red-500': emailError, 'border-green-500': isEmailValid && form.email.length > 0}" 
+              required
+            >
+            <p v-if="!isLogin && form.email.length > 0" class="text-sm mt-1" :class="isEmailValid ? 'text-green-500' : 'text-red-500'">
+              {{ emailFeedback }}
+            </p>
+          </div>
+          
+          <!-- Password input -->
+          <div>
+            <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+            <input 
+              type="password" 
+              id="password" 
+              v-model="form.password" 
+              @input="validatePassword"
+              autocomplete="current-password" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
+              :class="{'border-red-500': passwordError, 'border-green-500': isPasswordValid && form.password.length > 0}" 
+              required
+            >
+            <p v-if="!isLogin && form.password.length > 0" class="text-sm mt-1" :class="isPasswordValid ? 'text-green-500' : 'text-red-500'">
+              {{ passwordFeedback }}
+            </p>
+          </div>
+          
+          <!-- Error messages -->
+          <div v-if="isLogin && authStore.loginCountdown > 0" class="mt-4 text-red-500 text-center">
+            Too many login attempts. Please try again in {{ formatCountdown(authStore.loginCountdown) }}.
+          </div>
+          <div v-else-if="!isLogin && authStore.signupCountdown > 0" class="mt-4 text-red-500 text-center">
+            Too many signup attempts. Please try again in {{ formatCountdown(authStore.signupCountdown) }}.
+          </div>
+          <div v-else-if="isLogin && authStore.loginAttemptsLeft > 0 && authStore.loginAttemptsLeft < 5" class="mt-4 text-yellow-500 text-center">
+            You have {{ authStore.loginAttemptsLeft }} login {{ authStore.loginAttemptsLeft === 1 ? 'attempt' : 'attempts' }} left.
+          </div>
+          <div v-else-if="error" class="mt-4 text-red-500 text-center">
+            {{ error }}
+          </div>
 
-      <!-- New verification code input -->
-      <div v-if="showVerificationForm">
-        <h2>Verify Your Email</h2>
-        <p>We've sent a verification code to your email. Please enter it below:</p>
-        <input v-model="verificationCode" placeholder="Enter verification code" />
-        <button @click="verifyEmail">Verify</button>
-        <button @click="resendVerificationEmail">Resend Code</button>
+          <!-- Submit button -->
+          <button 
+            type="submit" 
+            class="w-full btn btn-primary"
+            :disabled="!isPasswordValid || !isEmailValid || isSubmitting || (isLogin ? authStore.loginCountdown > 0 : authStore.signupCountdown > 0)"
+          >
+            {{ isSubmitting ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up') }}
+          </button>
+        </form>
+        
+        <!-- Forgot Password link (only for login) -->
+        <p v-if="isLogin" class="mt-2 text-center text-gray-600">
+          <a href="#" @click.prevent="showForgotPassword = true" class="text-primary-600 hover:underline">
+            Forgot Password?
+          </a>
+        </p>
+        
+        <!-- Toggle between login and signup -->
+        <p class="mt-4 text-center text-gray-600">
+          {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
+          <a href="#" @click.prevent="toggleAuthMode" class="text-primary-600 hover:underline">
+            {{ isLogin ? 'Sign Up' : 'Log In' }}
+          </a>
+        </p>
       </div>
+
+      <!-- Forgot Password Modal -->
+      <ForgotPasswordModal 
+        v-if="showForgotPassword"
+        @close="showForgotPassword = false"
+      />
     </div>
   </div>
 </template>
@@ -122,6 +128,7 @@ import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
+import ForgotPasswordModal from './ForgotPasswordModal.vue'
 
 // Initialize composables
 const authStore = useAuthStore()
@@ -160,6 +167,9 @@ const passwordError = ref('')
 const isLogin = ref(props.isLogin)
 const error = ref(null)
 const isSubmitting = ref(false)
+
+// Add this new ref
+const showForgotPassword = ref(false)
 
 // Toggle between login and signup
 const toggleAuthMode = () => {

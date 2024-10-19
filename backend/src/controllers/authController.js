@@ -166,8 +166,92 @@ exports.logout = catchAsync(async (req, res) => {
 });
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
-  // Implement password reset logic here
-  res.status(200).json({ status: 'success', message: 'Password reset email sent' });
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) {
+    return next(new AppError('There is no user with this email address.', 404));
+  }
+
+  // Generate the random reset token
+  const resetToken = user.createPasswordResetToken();
+  await user.save({ validateBeforeSave: false });
+
+  console.log('User after saving reset token:', user.toObject());
+
+  // Send it to user's email
+  try {
+    const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    await sendPasswordResetEmail(user, resetURL);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Token sent to email!'
+    });
+  } catch (err) {
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    return next(new AppError('There was an error sending the email. Try again later!', 500));
+  }
+});
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  const { token } = req.params;
+  const { newPassword, passwordConfirmation } = req.body;
+
+  console.log('Received token:', token);
+
+  // Hash the token
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+
+  console.log('Hashed token:', hashedToken);
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() }
+  });
+
+  console.log('Found user:', user ? user.toObject() : null);
+  console.log('Current time:', new Date());
+  if (user) {
+    console.log('Token expiration time:', user.passwordResetExpires);
+  }
+
+  if (!user) {
+    return next(new AppError('Token is invalid or has expired', 400));
+  }
+
+  user.password = newPassword;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  // Log the user in, send JWT
+  const accessToken = signToken(user._id);
+  const refreshToken = signRefreshToken(user._id);
+
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 15 * 60 * 1000 // 15 minutes
+  });
+
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+
+  res.status(200).json({ 
+    status: 'success',
+    message: 'Password reset successfully'
+  });
 });
 
 exports.verifyEmail = async (req, res) => {
@@ -277,6 +361,23 @@ const sendVerificationEmail = async (user) => {
   }
 };
 
+const sendPasswordResetEmail = async (user, resetURL) => {
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  sendSmtpEmail.to = [{ email: user.email, name: user.username }];
+  sendSmtpEmail.subject = "Reset Your SaverSonic Password";
+  sendSmtpEmail.htmlContent = generatePasswordResetEmailHTML(user.username, resetURL);
+  sendSmtpEmail.sender = { name: "SaverSonic Password Reset", email: "noreply@saversonic.com" };
+
+  try {
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Password reset email sent successfully');
+    return true;
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    return false;
+  }
+};
+
 function generateVerificationEmailHTML(username, verificationCode) {
   return `
     <!DOCTYPE html>
@@ -301,6 +402,7 @@ function generateVerificationEmailHTML(username, verificationCode) {
           border-radius: 12px;
           padding: 30px;
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          text-align: center;
         }
         h1 {
           font-family: 'Poppins', sans-serif;
@@ -310,7 +412,6 @@ function generateVerificationEmailHTML(username, verificationCode) {
           margin-bottom: 20px;
         }
         .logo {
-          text-align: center;
           margin-bottom: 20px;
         }
         .logo img {
@@ -336,7 +437,7 @@ function generateVerificationEmailHTML(username, verificationCode) {
         }
         .btn-primary {
           background: linear-gradient(to right, #6366f1, #8b5cf6);
-          color: #ffffff;
+          color: #ffffff !important;
         }
         .btn-primary:hover {
           background: linear-gradient(to right, #4f46e5, #7c3aed);
@@ -346,6 +447,11 @@ function generateVerificationEmailHTML(username, verificationCode) {
           font-size: 14px;
           color: #6b7280;
           text-align: center;
+        }
+        ul {
+          text-align: left;
+          display: inline-block;
+          margin: 0 auto;
         }
       </style>
     </head>
@@ -360,8 +466,8 @@ function generateVerificationEmailHTML(username, verificationCode) {
         <p class="verification-code">${verificationCode}</p>
         <p>This code will expire in 15 minutes.</p>
         <p>For your convenience, you can click the button below to go to our verification page. There, you'll be able to enter this code to verify your email:</p>
-        <p style="text-align: center;">
-          <a href="https://saversonic.com/verify-email" class="btn btn-primary" style="color: #ffffff;">Go to Verification Page</a>
+        <p>
+          <a href="https://saversonic.com/verify-email" class="btn btn-primary" style="color: #ffffff !important;">Go to Verification Page</a>
         </p>
         <p>On the verification page, simply enter the code shown above to complete your account setup.</p>
         <p>At SaverSonic, you'll be able to:</p>
@@ -376,6 +482,92 @@ function generateVerificationEmailHTML(username, verificationCode) {
         <div class="footer">
           <p>If you have any questions, please contact us at support@saversonic.com</p>
           <p>&copy; 2023 SaverSonic. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+function generatePasswordResetEmailHTML(username, resetURL) {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Reset Your SaverSonic Password</title>
+      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+      <style>
+        body {
+          font-family: 'Roboto', sans-serif;
+          line-height: 1.6;
+          color: #1f2937;
+          background-color: #f3f4f6;
+          margin: 0;
+          padding: 0;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+          background-color: #ffffff;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .content {
+          text-align: center;
+          padding: 20px;
+        }
+        h1 {
+          font-family: 'Poppins', sans-serif;
+          color: #4f46e5;
+          font-size: 24px;
+          margin-bottom: 20px;
+        }
+        .logo {
+          margin-bottom: 20px;
+        }
+        .logo img {
+          max-width: 200px;
+        }
+        .btn {
+          display: inline-block;
+          background-color: #4f46e5;
+          color: #ffffff !important; /* Ensure text color is white */
+          text-decoration: none;
+          padding: 12px 24px;
+          border-radius: 4px;
+          font-weight: 600;
+          margin-top: 20px;
+        }
+        .footer {
+          margin-top: 30px;
+          font-size: 14px;
+          color: #6b7280;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="content">
+          <div class="logo">
+            <img src="https://saversonic.com/images/logo.png" alt="SaverSonic Logo">
+          </div>
+          <h1>Password Reset Request</h1>
+          <p>Hello ${username},</p>
+          <p>We received a request to reset your SaverSonic account password. If you didn't make this request, you can safely ignore this email.</p>
+          <p>To reset your password, click the button below:</p>
+          <a href="${resetURL}" class="btn" style="color: #ffffff !important;">Reset Your Password</a>
+          <p>This link will expire in 1 hour for security reasons.</p>
+          <p>If you're having trouble clicking the button, you can copy and paste the following URL into your browser:</p>
+          <p>${resetURL}</p>
+          <p>If you have any questions or need further assistance, please don't hesitate to contact our support team.</p>
+          <p>Best regards,<br>The SaverSonic Team</p>
+          <div class="footer">
+            <p>If you have any questions, please contact us at support@saversonic.com</p>
+            <p>&copy; 2023 SaverSonic. All rights reserved.</p>
+          </div>
         </div>
       </div>
     </body>

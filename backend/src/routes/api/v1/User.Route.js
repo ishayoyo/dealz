@@ -17,8 +17,7 @@ router.get('/:id/avatar', userController.getUserAvatar);
 
 // Password reset routes
 router.post('/forgot-password', authController.forgotPassword);
-router.post('/verify-email', authController.verifyEmail);
-router.post('/change-password', auth, authController.changePassword);
+router.patch('/reset-password/:token', authController.resetPassword);
 
 // Current user routes
 router.get('/me', auth, userController.getCurrentUser);

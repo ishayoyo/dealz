@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -30,8 +31,8 @@ const userSchema = new mongoose.Schema({
   },
   verificationCode: String,
   verificationCodeExpires: Date,
-  resetPasswordToken: String,
-  resetPasswordExpires: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
   lastLogin: Date,
   preferences: {
     notifications: {
@@ -77,10 +78,8 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Add this index for efficient user search
 userSchema.index({ username: 'text', email: 'text' });
 
-// Remove the Follow model references and add methods to get counts
 userSchema.virtual('followersCount').get(function() {
   return this.followers ? this.followers.length : 0;
 });
@@ -106,13 +105,28 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Add methods to check if a user is following another user
 userSchema.methods.isFollowing = function(userId) {
   return this.following ? this.following.includes(userId) : false;
 };
 
 userSchema.methods.isFollowedBy = function(userId) {
   return this.followers ? this.followers.includes(userId) : false;
+};
+
+userSchema.methods.createPasswordResetToken = function() {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  console.log('Generated reset token:', resetToken);
+  console.log('Hashed reset token:', this.passwordResetToken);
+
+  this.passwordResetExpires = Date.now() + 3600000; // 1 hour
+
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);

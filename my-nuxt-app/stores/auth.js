@@ -413,5 +413,44 @@ export const useAuthStore = defineStore('auth', {
         this.user = { ...this.user, ...userData }
       }
     },
+
+    async forgotPassword(email) {
+      try {
+        const response = await api.post('/users/forgot-password', { email });
+        if (response.data.status === 'success') {
+          return { success: true, message: response.data.message };
+        } else {
+          return { success: false, error: response.data.message || 'An error occurred' };
+        }
+      } catch (error) {
+        console.error('Forgot password error:', error);
+        return { 
+          success: false, 
+          error: error.response?.data?.message || 'An error occurred while processing your request'
+        };
+      }
+    },
+
+    async resetPassword(token, newPassword, passwordConfirmation) {
+      try {
+        console.log('Calling API to reset password')
+        const response = await api.patch(`/users/reset-password/${token}`, { 
+          newPassword,
+          passwordConfirmation
+        })
+        console.log('API response:', response.data)
+        if (response.data.status === 'success') {
+          return { success: true }
+        } else {
+          return { success: false, error: response.data.message || 'Password reset failed' }
+        }
+      } catch (error) {
+        console.error('Error in authStore.resetPassword:', error)
+        return { 
+          success: false, 
+          error: error.response?.data?.message || 'An error occurred while resetting the password'
+        }
+      }
+    },
   },
 })
