@@ -43,10 +43,12 @@
       <div class="mt-6 text-center">
         <button
           @click="resendVerificationEmail"
-          :disabled="isResending"
+          :disabled="!canResend || isResending"
           class="text-indigo-600 hover:text-indigo-500 font-medium"
         >
-          {{ isResending ? 'Resending...' : 'Resend Verification Email' }}
+          {{ isResending ? 'Resending...' : 
+             !canResend ? `Resend in ${resendCooldown}s` : 
+             'Resend Verification Email' }}
         </button>
       </div>
     </div>
@@ -54,7 +56,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from '#app'
@@ -69,6 +71,8 @@ const isVerified = ref(false)
 const error = ref('')
 const isSubmitting = ref(false)
 const isResending = ref(false)
+const resendCooldown = ref(0)
+const canResend = computed(() => resendCooldown.value === 0)
 
 const verifyEmail = async () => {
   isSubmitting.value = true
@@ -95,11 +99,15 @@ const verifyEmail = async () => {
 }
 
 const resendVerificationEmail = async () => {
+  if (!canResend.value) return
+
   isResending.value = true
   try {
     const result = await authStore.resendVerificationEmail()
     if (result.success) {
       toast.success('Verification email resent successfully!')
+      verificationCode.value = '' // Reset the input field
+      startResendCooldown()
     } else {
       toast.error(result.error || 'Failed to resend verification email.')
     }
@@ -108,5 +116,15 @@ const resendVerificationEmail = async () => {
   } finally {
     isResending.value = false
   }
+}
+
+const startResendCooldown = () => {
+  resendCooldown.value = 60 // 60 seconds cooldown
+  const timer = setInterval(() => {
+    resendCooldown.value--
+    if (resendCooldown.value === 0) {
+      clearInterval(timer)
+    }
+  }, 1000)
 }
 </script>
