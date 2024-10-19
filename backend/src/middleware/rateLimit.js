@@ -93,6 +93,21 @@ const rateLimitMiddleware = {
         attemptsLeft: 0
       });
     },
+  }),
+
+  resetPassword: rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // 3 attempts per IP
+    message: 'Too many password reset attempts. Please try again after an hour.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many password reset attempts. Please try again after an hour.',
+        attemptsLeft: 0
+      });
+    },
   })
 };
 
