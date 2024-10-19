@@ -38,7 +38,7 @@ const baseTemplate = (content) => `
             display: inline-block;
             padding: 10px 20px;
             background-color: #4f46e5;
-            color: #ffffff;
+            color: #ffffff !important; /* Ensure text is white */
             text-decoration: none;
             border-radius: 9999px;
             font-weight: 500;
@@ -97,7 +97,7 @@ exports.generatePasswordResetEmailHTML = (username, resetURL) => {
     <p>We received a request to reset your SaverSonic account password. If you didn't make this request, you can safely ignore this email.</p>
     <p>To reset your password, click the button below:</p>
     <p style="text-align: center;">
-        <a href="${resetURL}" class="button">Reset Password</a>
+        <a href="${resetURL}" class="button" style="color: #ffffff;">Reset Password</a>
     </p>
     <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
     <p>${resetURL}</p>
