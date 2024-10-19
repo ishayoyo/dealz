@@ -44,4 +44,11 @@ router.delete('/:id/follow', auth, socialController.unfollowUser);
 router.get('/:id/status', auth, userController.checkUserStatus);
 router.get('/:id/recent-deals', userController.getUserRecentDeals);
 
+// Add this new route for checking email
+router.post('/check-email', rateLimit.checkEmail, authController.checkEmail);
+
+// Email verification routes
+router.post('/verify-email', authController.verifyEmail);
+router.post('/resend-verification', rateLimit.resendVerification, authController.resendVerificationEmail);
+
 module.exports = router;

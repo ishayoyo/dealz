@@ -379,6 +379,8 @@ export const useAuthStore = defineStore('auth', {
             this.user.isVerified = true;
           }
           return { success: true };
+        } else if (response.data.alreadyVerified) {
+          return { success: true, alreadyVerified: true };
         } else {
           return { success: false, error: response.data.message };
         }
@@ -388,17 +390,26 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     
-    async resendVerificationEmail() {
+    async resendVerificationEmail(email) {
       try {
-        const response = await api.post('/users/resend-verification');
+        const response = await api.post('/users/resend-verification', { email });
         if (response.data.status === 'success') {
-          return { success: true };
+          return { 
+            success: true, 
+            message: response.data.message
+          };
         } else {
-          return { success: false, error: response.data.message };
+          return { 
+            success: false, 
+            error: 'An error occurred. Please try again later.'
+          };
         }
       } catch (error) {
         console.error('Resend verification email error:', error);
-        return { success: false, error: error.response?.data?.message || 'An error occurred while resending the verification email' };
+        return { 
+          success: false, 
+          error: 'An error occurred. Please try again later.'
+        };
       }
     },
 
@@ -450,6 +461,16 @@ export const useAuthStore = defineStore('auth', {
           success: false, 
           error: error.response?.data?.message || 'An error occurred while resetting the password'
         }
+      }
+    },
+
+    async checkVerificationStatus(email) {
+      try {
+        const response = await api.post('/users/check-verification', { email });
+        return response.data;
+      } catch (error) {
+        console.error('Error checking verification status:', error);
+        throw error;
       }
     },
   },

@@ -256,6 +256,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
 exports.verifyEmail = async (req, res) => {
   const { code } = req.body;
+  console.log(`[verifyEmail] Attempting to verify email with code: ${code}`);
 
   try {
     const user = await User.findOne({
@@ -264,9 +265,21 @@ exports.verifyEmail = async (req, res) => {
     });
 
     if (!user) {
+      console.log(`[verifyEmail] No user found with valid verification code: ${code}`);
       return res.status(400).json({
         status: 'fail',
         message: 'Invalid or expired verification code'
+      });
+    }
+
+    console.log(`[verifyEmail] User found: ${user.email}`);
+
+    if (user.isVerified) {
+      console.log(`[verifyEmail] User ${user.email} is already verified`);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Email is already verified',
+        alreadyVerified: true
       });
     }
 
@@ -275,11 +288,14 @@ exports.verifyEmail = async (req, res) => {
     user.verificationCodeExpires = undefined;
     await user.save();
 
+    console.log(`[verifyEmail] User ${user.email} has been successfully verified`);
+
     res.status(200).json({
       status: 'success',
       message: 'Email verified successfully'
     });
   } catch (error) {
+    console.error(`[verifyEmail] Error during email verification:`, error);
     res.status(500).json({
       status: 'error',
       message: 'An error occurred during email verification'
@@ -574,5 +590,88 @@ function generatePasswordResetEmailHTML(username, resetURL) {
     </html>
   `;
 }
+
+// Add this new function to the exports object
+
+exports.checkEmail = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email || !validator.isEmail(email)) {
+    return next(new AppError('Please provide a valid email address', 400));
+  }
+
+  const user = await User.findOne({ email });
+
+  res.status(200).json({
+    status: 'success',
+    exists: !!user
+  });
+});
+
+exports.resendVerificationEmail = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
+  console.log(`[resendVerificationEmail] Attempt for email: ${email}`);
+
+  if (!email || !validator.isEmail(email)) {
+    console.log(`[resendVerificationEmail] Invalid email format: ${email}`);
+    return next(new AppError('Please provide a valid email address', 400));
+  }
+
+  const user = await User.findOne({ email });
+
+  // Always return a success message, regardless of whether the user exists or is verified
+  if (!user || user.isVerified) {
+    console.log(`[resendVerificationEmail] No action taken for: ${email}`);
+    return res.status(200).json({
+      status: 'success',
+      message: 'If a verified account exists for this email, no action is needed. Otherwise, please check your email for verification instructions.'
+    });
+  }
+
+  const verificationCode = generateVerificationCode();
+  user.verificationCode = verificationCode;
+  user.verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
+  await user.save();
+
+  console.log(`[resendVerificationEmail] New verification code generated for ${email}`);
+
+  const emailSent = await sendVerificationEmail(user);
+
+  if (!emailSent) {
+    console.error(`[resendVerificationEmail] Failed to send email to ${email}`);
+    // Don't disclose that the email exists in the system
+    return next(new AppError('An error occurred. Please try again later.', 500));
+  }
+
+  console.log(`[resendVerificationEmail] Verification email sent to ${email}`);
+
+  res.status(200).json({
+    status: 'success',
+    message: 'If your email is registered and not verified, a new verification email has been sent. Please check your inbox.'
+  });
+});
+
+exports.checkVerificationStatus = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
+  console.log(`[checkVerificationStatus] Checking verification status for email: ${email}`);
+
+  if (!email || !validator.isEmail(email)) {
+    console.log(`[checkVerificationStatus] Invalid email provided: ${email}`);
+    return next(new AppError('Please provide a valid email address', 400));
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    console.log(`[checkVerificationStatus] No user found for email: ${email}`);
+    return next(new AppError('No user found with this email address', 404));
+  }
+
+  console.log(`[checkVerificationStatus] User found. Verification status: ${user.isVerified}`);
+  res.status(200).json({
+    status: 'success',
+    isVerified: user.isVerified
+  });
+});
 
 module.exports = exports;
