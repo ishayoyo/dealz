@@ -10,7 +10,7 @@ const { generateVerificationEmailHTML, generatePasswordResetEmailHTML } = requir
 
 const signToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '15m'  // Access token expires in 15 minutes
+    expiresIn: '15m'  // Access token expires in 15 minute
   });
 };
 
