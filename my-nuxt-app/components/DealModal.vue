@@ -553,14 +553,23 @@ const handleShareDeal = async () => {
       toast.success('Deal shared successfully!')
     } catch (error) {
       console.error('Error sharing:', error)
-      // Fall back to copying the link if sharing fails
-      await copy(dealUrl)
-      toast.success('Deal link copied to clipboard!')
+      // Only attempt to copy if it's not a user abort
+      if (error.name !== 'AbortError') {
+        await copyToClipboard(dealUrl)
+      }
     }
   } else {
-    // If Web Share API is not supported, just copy the link
-    await copy(dealUrl)
+    await copyToClipboard(dealUrl)
+  }
+}
+
+const copyToClipboard = async (text) => {
+  try {
+    await copy(text)
     toast.success('Deal link copied to clipboard!')
+  } catch (error) {
+    console.error('Error copying to clipboard:', error)
+    toast.error('Unable to copy link. Please try again.')
   }
 }
 
@@ -673,3 +682,4 @@ const isOpen = computed(() => props.isOpen)
   opacity: 1;
 }
 </style>
+
