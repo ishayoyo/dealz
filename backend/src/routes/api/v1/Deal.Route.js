@@ -33,7 +33,7 @@ router.get('/expiring-soon', dealController.getExpiringSoonDeals);
 router.get('/:id', dealController.getDeal);
 router.get('/:id/comments', commentController.getComments);
 
-// Routes that require authentication
+// Routes that require authentications
 router.use(auth);
 
 router.get('/followed', dealController.getFollowedDeals);
