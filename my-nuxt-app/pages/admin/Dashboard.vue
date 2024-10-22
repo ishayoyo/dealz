@@ -133,33 +133,44 @@
         <div class="p-6 space-y-4">
           <h3 class="text-2xl font-heading text-gray-800 mb-4">Edit Deal</h3>
           <form @submit.prevent="submitEditDeal" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
-                <input v-model="editingDeal.title" id="title" type="text" class="input-field" required>
-              </div>
-              <div>
-                <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
-                <input v-model="editingDeal.price" id="price" type="number" step="0.01" class="input-field" required>
-              </div>
+            <div>
+              <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+              <input v-model="editingDeal.title" id="title" type="text" class="input-field" required maxlength="100">
+              <span class="text-gray-500 text-xs">{{ editingDeal.title.length }}/100</span>
             </div>
             <div>
               <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-              <textarea v-model="editingDeal.description" id="description" class="input-field" rows="3" required></textarea>
+              <textarea v-model="editingDeal.description" id="description" class="input-field" rows="3" required maxlength="1000"></textarea>
+              <span class="text-gray-500 text-xs">{{ editingDeal.description.length }}/1000</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
-                <select v-model="editingDeal.category" id="category" class="input-field" required>
-                  <option v-for="category in categories" :key="category" :value="category">
-                    {{ category }}
-                  </option>
-                </select>
+                <label for="price" class="block text-sm font-medium text-gray-700">Deal Price ($)</label>
+                <input v-model="editingDeal.price" id="price" type="number" step="0.01" min="0" class="input-field" required>
               </div>
               <div>
-                <label for="url" class="block text-sm font-medium text-gray-700">URL</label>
-                <input v-model="editingDeal.url" id="url" type="url" class="input-field" required>
+                <label for="listPrice" class="block text-sm font-medium text-gray-700">List Price ($)</label>
+                <input v-model="editingDeal.listPrice" id="listPrice" type="number" step="0.01" min="0" class="input-field" required>
               </div>
+            </div>
+            <div>
+              <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+              <select v-model="editingDeal.category" id="category" class="input-field" required>
+                <option v-for="category in categories" :key="category" :value="category">
+                  {{ category }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label for="shipping" class="block text-sm font-medium text-gray-700">Shipping</label>
+              <input v-model="editingDeal.shipping" id="shipping" type="text" class="input-field" required placeholder="Enter 'FREE' or a number">
+              <p v-if="!isValidShipping" class="text-red-500 text-xs mt-1">
+                Please enter 'FREE' or a valid number for shipping.
+              </p>
+            </div>
+            <div>
+              <label for="url" class="block text-sm font-medium text-gray-700">URL</label>
+              <input v-model="editingDeal.url" id="url" type="url" class="input-field" required>
             </div>
             <div>
               <label for="imageUrl" class="block text-sm font-medium text-gray-700">Image Path</label>
@@ -198,7 +209,16 @@ const dealsChartRef = ref(null)
 const usersChartRef = ref(null)
 
 const showEditModal = ref(false)
-const editingDeal = ref({})
+const editingDeal = ref({
+  title: '',
+  description: '',
+  price: '',
+  listPrice: '',
+  category: '',
+  shipping: '',
+  url: '',
+  imageUrl: ''
+})
 
 const config = useRuntimeConfig()
 
@@ -438,15 +458,31 @@ const closeEditModal = () => {
 }
 
 const submitEditDeal = async () => {
+  if (!isValidShipping.value) {
+    toast.error('Please check the shipping field');
+    return;
+  }
+
   try {
-    await api.patch(`/admin/deals/${editingDeal.value._id}`, editingDeal.value)
-    await fetchAllDeals()
-    await fetchPendingDeals()
-    toast.success('Deal updated successfully')
-    closeEditModal()
+    const dealData = {
+      title: editingDeal.value.title.trim(),
+      description: editingDeal.value.description.trim(),
+      price: parseFloat(editingDeal.value.price),
+      listPrice: parseFloat(editingDeal.value.listPrice),
+      category: editingDeal.value.category.trim(),
+      shipping: editingDeal.value.shipping === 'FREE' ? 'FREE' : parseFloat(editingDeal.value.shipping),
+      url: editingDeal.value.url.trim(),
+      imageUrl: editingDeal.value.imageUrl.trim()
+    };
+
+    await api.patch(`/admin/deals/${editingDeal.value._id}`, dealData);
+    await fetchAllDeals();
+    await fetchPendingDeals();
+    toast.success('Deal updated successfully');
+    closeEditModal();
   } catch (error) {
-    console.error('Error updating deal:', error)
-    toast.error('Failed to update deal')
+    console.error('Error updating deal:', error);
+    toast.error('Failed to update deal');
   }
 }
 
@@ -572,7 +608,7 @@ const clearCache = async () => {
 const deleteUnusedImages = async () => {
   try {
     // First, get the count of unused images
-    const countResponse = await api.get('/deals/unused-images-count');
+    const countResponse = await api.get('/admin/unused-images-count');
     const unusedCount = countResponse.data.data.unusedCount;
 
     if (unusedCount === 0) {
@@ -581,7 +617,7 @@ const deleteUnusedImages = async () => {
     }
 
     if (confirm(`Are you sure you want to delete ${unusedCount} unused images? This action cannot be undone.`)) {
-      const response = await api.delete('/deals/delete-unused-images');
+      const response = await api.delete('/admin/delete-unused-images');
       console.log('Delete unused images response:', response.data);
       toast.success(`Operation complete. ${response.data.message}`);
       if (response.data.details) {
@@ -593,6 +629,11 @@ const deleteUnusedImages = async () => {
     toast.error('Failed to delete unused images: ' + (error.response?.data?.message || error.message));
   }
 };
+
+// Add this computed property
+const isValidShipping = computed(() => {
+  return editingDeal.value.shipping === 'FREE' || (!isNaN(parseFloat(editingDeal.value.shipping)) && isFinite(editingDeal.value.shipping));
+})
 </script>
 
 <style scoped>
@@ -635,3 +676,4 @@ const deleteUnusedImages = async () => {
   margin-right: auto;
 }
 </style>
+

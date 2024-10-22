@@ -27,4 +27,8 @@ router.get('/affiliate-stats', auth, isAdmin, adminController.getAffiliateStats)
 
 router.patch('/users/:id/verify', adminController.verifyUser);
 
+// Add these new routes
+router.get('/unused-images-count', adminController.getUnusedImagesCount);
+router.delete('/delete-unused-images', adminController.deleteUnusedImages);
+
 module.exports = router;

@@ -5,6 +5,8 @@ const catchAsync = require('../utils/catchAsync');
 const NotificationService = require('../services/NotificationService');
 const Comment = require('../models/Comment.Model');
 const AffiliateClick = require('../models/AffiliateClick.Model');
+const fs = require('fs').promises;
+const path = require('path');
 
 exports.getUsers = catchAsync(async (req, res, next) => {
   const users = await User.find().select('username email createdAt isVerified');
@@ -347,5 +349,51 @@ exports.verifyUser = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: { user }
+  });
+});
+
+exports.getUnusedImagesCount = catchAsync(async (req, res, next) => {
+  const deals = await Deal.find({}, 'image');
+  const usedImages = new Set(deals.map(deal => deal.image).filter(Boolean));
+
+  const imageDir = path.join(__dirname, '../../public/images/deals');
+  const files = await fs.readdir(imageDir);
+  const unusedCount = files.filter(file => !usedImages.has(file)).length;
+
+  res.status(200).json({
+    status: 'success',
+    data: { unusedCount }
+  });
+});
+
+exports.deleteUnusedImages = catchAsync(async (req, res, next) => {
+  const deals = await Deal.find({}, 'image');
+  const usedImages = new Set(deals.map(deal => deal.image).filter(Boolean));
+
+  const imageDir = path.join(__dirname, '../../public/images/deals');
+  const files = await fs.readdir(imageDir);
+
+  let deletedCount = 0;
+  let skippedCount = 0;
+  let errorCount = 0;
+
+  for (const file of files) {
+    if (!usedImages.has(file)) {
+      try {
+        await fs.unlink(path.join(imageDir, file));
+        deletedCount++;
+      } catch (error) {
+        console.error(`Error deleting file ${file}:`, error);
+        errorCount++;
+      }
+    } else {
+      skippedCount++;
+    }
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: `Operation complete. ${deletedCount} files deleted.`,
+    details: { deletedCount, skippedCount, errorCount }
   });
 });
