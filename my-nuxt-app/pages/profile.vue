@@ -465,10 +465,14 @@ const getAvatarUrl = (userId) => {
 }
 
 const getFullImageUrl = (imageUrl) => {
-  if (!imageUrl) return ''
-  return imageUrl.startsWith('http') 
-    ? imageUrl 
-    : `${config.public.apiBase}${imageUrl}`
+  if (!imageUrl) return '/default-deal-image.jpg'
+  if (imageUrl.startsWith('http')) return imageUrl
+  
+  // Remove '/api/v1' from the config.public.apiBase if it exists
+  const baseUrl = config.public.apiBase.replace('/api/v1', '')
+  
+  // For paths starting with '/images/', just prepend the modified base URL
+  return `${baseUrl}${imageUrl}`
 }
 </script>
 
@@ -489,3 +493,4 @@ const getFullImageUrl = (imageUrl) => {
   }
 }
 </style>
+
