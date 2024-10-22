@@ -9,33 +9,33 @@ class ImageFetcherService {
     this.imageDir = path.join(__dirname, '..', '..', 'public', 'images', 'deals');
     fs.ensureDirSync(this.imageDir);
     console.log('ImageFetcherService initialized. Image directory:', this.imageDir);
+
+    this.userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:92.0) Gecko/20100101 Firefox/92.0',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 11.6; rv:92.0) Gecko/20100101 Firefox/92.0',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.47',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Safari/605.1.15'
+    ];
+
+    this.lastRequestTime = {};
   }
 
   async fetchAndSaveImage(url) {
     try {
       console.log('Fetching image from URL:', url);
       
-      const userAgents = [
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Safari/605.1.15',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0'
-      ];
-      
-      const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+      // Implement rate limiting
+      await this.rateLimit(url);
+
+      const userAgent = this.getRandomUserAgent();
       
       // Add a delay to mimic human behavior
-      await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+      await this.randomDelay(2000, 5000);
       
-      const pageResponse = await axios.get(url, {
-        headers: {
-          'User-Agent': userAgent,
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-          'Referer': 'https://www.walmart.com/',
-          'DNT': '1',
-          'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1'
-        },
+      const pageResponse = await this.makeRequest(url, {
+        headers: this.getRandomHeaders(userAgent),
         timeout: 15000
       });
       
@@ -83,6 +83,60 @@ class ImageFetcherService {
         console.error('Error response:', error.response.status, error.response.statusText);
       }
       return null;
+    }
+  }
+
+  async rateLimit(url) {
+    const domain = new URL(url).hostname;
+    const now = Date.now();
+    if (this.lastRequestTime[domain]) {
+      const timeSinceLastRequest = now - this.lastRequestTime[domain];
+      const minDelay = 30000; // 30 seconds between requests to the same domain
+      if (timeSinceLastRequest < minDelay) {
+        await new Promise(resolve => setTimeout(resolve, minDelay - timeSinceLastRequest));
+      }
+    }
+    this.lastRequestTime[domain] = now;
+  }
+
+  getRandomUserAgent() {
+    return this.userAgents[Math.floor(Math.random() * this.userAgents.length)];
+  }
+
+  getRandomHeaders(userAgent) {
+    return {
+      'User-Agent': userAgent,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5',
+      'Referer': 'https://www.google.com/',
+      'DNT': Math.random() < 0.5 ? '1' : undefined,
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Cache-Control': Math.random() < 0.5 ? 'max-age=0' : undefined,
+      'TE': Math.random() < 0.5 ? 'Trailers' : undefined,
+      'Pragma': Math.random() < 0.5 ? 'no-cache' : undefined,
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Site': 'cross-site',
+      'Sec-Fetch-User': '?1'
+    };
+  }
+
+  async randomDelay(min, max) {
+    const delay = Math.floor(Math.random() * (max - min + 1) + min);
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+
+  async makeRequest(url, options, retries = 3) {
+    try {
+      return await axios.get(url, options);
+    } catch (error) {
+      if (retries > 0) {
+        console.log(`Request failed, retrying... (${retries} attempts left)`);
+        await this.randomDelay(5000, 10000); // Wait before retrying
+        return this.makeRequest(url, options, retries - 1);
+      } else {
+        throw error;
+      }
     }
   }
 
