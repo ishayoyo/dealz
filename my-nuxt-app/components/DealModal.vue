@@ -33,28 +33,36 @@
               <h2 class="text-2xl md:text-3xl font-bold mb-4 text-text">{{ deal.title }}</h2>
               <p class="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">{{ deal.description }}</p>
               
-              <!-- Add this section to display prices and shipping -->
-              <div class="mb-6 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                <div class="p-4 bg-primary-50">
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="font-bold text-primary-700 text-3xl md:text-4xl">{{ formattedDealPrice }}</span>
-                    <span class="bg-primary-600 text-white font-semibold text-lg px-3 py-1 rounded-full">{{ discountPercentage }}% OFF</span>
+              <!-- Price, shipping, and category information -->
+              <div class="mb-6">
+                <div class="bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg shadow-lg p-4">
+                  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                    <!-- Price and discount -->
+                    <div class="mb-2 sm:mb-0">
+                      <div class="flex items-center flex-wrap">
+                        <span class="font-bold text-primary-800 text-2xl sm:text-3xl md:text-4xl mr-2">{{ formattedDealPrice }}</span>
+                        <span class="bg-primary-600 text-white font-semibold text-xs md:text-sm px-2 py-1 rounded-full">
+                          {{ discountPercentage }}% OFF
+                        </span>
+                      </div>
+                      <span class="text-sm text-gray-600 line-through">{{ formattedListPrice }}</span>
+                    </div>
+                    
+                    <!-- Shipping and category -->
+                    <div class="flex flex-col items-start sm:items-end">
+                      <span class="font-medium text-green-600 text-base sm:text-lg">
+                        {{ deal.shipping === 'FREE' ? 'FREE Shipping' : `+$${deal.shipping} Shipping` }}
+                      </span>
+                      <span class="text-sm font-medium text-gray-600">
+                        Category: <span class="text-primary-600">{{ deal.category }}</span>
+                      </span>
+                    </div>
                   </div>
-                  <div class="flex items-center text-sm text-gray-600">
-                    <span class="line-through mr-2">{{ formattedListPrice }}</span>
-                    <span class="font-medium text-green-600">
-                      {{ deal.shipping === 'FREE' ? 'FREE Shipping' : `+$${deal.shipping} Shipping` }}
-                    </span>
-                  </div>
-                </div>
-                
-                <div class="p-4 flex items-center justify-between border-t border-gray-200">
-                  <span class="text-sm font-medium text-gray-600">Category: <span class="text-primary-600">{{ deal.category }}</span></span>
                 </div>
               </div>
               
               <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
-                <a :href="getOutgoingLink(deal.url)" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full sm:w-auto mb-2 sm:mb-0">
+                <a :href="getOutgoingLink(deal.url)" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">
                   GET THIS DEAL
                 </a>
                 
@@ -77,12 +85,12 @@
                 </div>
               </div>
               
-              <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 md:p-6 rounded-lg shadow-sm">
+              <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 rounded-lg">
                 <div class="flex items-center">
-                  <img :src="avatarUrl" :alt="dealUserName" class="w-10 h-10 rounded-full mr-3 md:mr-4" />
+                  <img :src="avatarUrl" :alt="dealUserName" class="w-10 h-10 rounded-full mr-3" />
                   <div>
                     <span class="text-sm text-gray-500">Posted by:</span>
-                    <NuxtLink :to="`/user/${deal.user._id}`" class="font-semibold ml-1 text-text text-base md:text-lg hover:text-primary-600 hover:underline">
+                    <NuxtLink :to="`/user/${deal.user._id}`" class="font-semibold ml-1 text-text hover:text-primary-600 hover:underline">
                       {{ dealUserName }}
                     </NuxtLink>
                   </div>
@@ -681,5 +689,25 @@ const isOpen = computed(() => props.isOpen)
 .modal-fade-leave-from {
   opacity: 1;
 }
+
+/* Add these styles to your existing <style> section */
+.bg-gradient-to-br {
+  background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+
+.from-primary-100 {
+  --tw-gradient-from: #e0f2fe;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(224, 242, 254, 0));
+}
+
+.to-primary-200 {
+  --tw-gradient-to: #bae6fd;
+}
+
+.hover\:scale-102:hover {
+  transform: scale(1.02);
+}
+
+/* Add any other custom styles you need */
 </style>
 
