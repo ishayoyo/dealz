@@ -29,8 +29,8 @@
       </h3>
       <div class="flex items-center justify-between mb-3">
         <div class="flex flex-col">
-          <span class="text-gray-500 line-through text-sm">{{ formattedListPrice }}</span>
           <span class="font-bold text-accent text-2xl">{{ formattedDealPrice }}</span>
+          <span class="text-gray-500 line-through text-sm">{{ formattedListPrice }}</span>
         </div>
         <div class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
           {{ discountPercentage }}% OFF
