@@ -138,6 +138,12 @@ exports.createDeal = catchAsync(async (req, res, next) => {
 
   const newDeal = await Deal.create(dealData);
 
+  // Update the ImageUpload document
+  await ImageUpload.findOneAndUpdate(
+    { imageUrl: dealData.imageUrl },
+    { used: true }
+  );
+
   // Clear the entire deals cache
   dealCache.flushAll();
   console.log('Deals cache cleared after new deal creation');
@@ -228,6 +234,12 @@ exports.deleteDeal = catchAsync(async (req, res, next) => {
   if (deal.user.toString() !== req.user.id && req.user.role !== 'admin') {
     return next(new AppError('You do not have permission to perform this action', 403));
   }
+
+  // Mark the image as unused
+  await ImageUpload.findOneAndUpdate(
+    { imageUrl: deal.imageUrl },
+    { used: false }
+  );
 
   await deal.deleteOne();
 
@@ -732,6 +744,28 @@ exports.getUnusedImagesCount = catchAsync(async (req, res, next) => {
     status: 'success',
     data: { unusedCount }
   });
+});
+
+exports.updateDeal = catchAsync(async (req, res, next) => {
+  // ... existing code ...
+
+  if (req.body.imageUrl) {
+    // Mark the new image as used
+    await ImageUpload.findOneAndUpdate(
+      { imageUrl: req.body.imageUrl },
+      { used: true }
+    );
+
+    // If the deal previously had a different image, mark it as unused
+    if (deal.imageUrl !== req.body.imageUrl) {
+      await ImageUpload.findOneAndUpdate(
+        { imageUrl: deal.imageUrl },
+        { used: false }
+      );
+    }
+  }
+
+  // ... rest of the update logic ...
 });
 
 module.exports = exports;
