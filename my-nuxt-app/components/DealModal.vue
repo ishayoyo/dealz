@@ -611,11 +611,22 @@ const copyToClipboard = async (text) => {
 
 const handleGetThisDealClick = () => {
   emit('track-event', {
-    eventName: 'getDealClick',
+    eventName: 'GetThisDealClick',
     parameters: {
       dealId: props.deal._id,
       dealTitle: props.deal.title,
       dealPrice: props.deal.price,
+      subid: props.subid
+    }
+  });
+};
+
+const emitDealModalOpenEvent = () => {
+  emit('track-event', {
+    eventName: 'DealModalOpen',
+    parameters: {
+      dealId: props.deal._id,
+      dealTitle: props.deal.title,
       subid: props.subid
     }
   });
@@ -651,11 +662,14 @@ onUnmounted(() => {
 })
 
 watch(() => props.isOpen, async (newIsOpen) => {
-  if (newIsOpen && props.deal && props.deal._id && isAuthenticated.value) {
-    await fetchDealData()
-    await fetchMentionableUsers()
+  if (newIsOpen && props.deal && props.deal._id) {
+    emitDealModalOpenEvent(); // This should be called regardless of authentication
+    await fetchDealData();
+    if (isAuthenticated.value) {
+      await fetchMentionableUsers();
+    }
   }
-}, { immediate: true })
+}, { immediate: true });
 
 watch(comments, (newComments) => {
   console.log('Comments updated:', newComments)
@@ -766,6 +780,11 @@ const subid = computed(() => {
 
 /* Add any other custom styles you need */
 </style>
+
+
+
+
+
 
 
 

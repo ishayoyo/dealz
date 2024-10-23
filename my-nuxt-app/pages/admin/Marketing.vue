@@ -13,7 +13,6 @@
              class="bg-gradient-to-br from-primary-100 to-primary-200 p-6 rounded-xl shadow-md">
           <h3 class="text-lg font-heading text-gray-800 capitalize">{{ formatStatName(key) }}</h3>
           <p class="text-xl font-bold text-gray-900 mt-2">Total: {{ value.totalCount }}</p>
-          <p class="text-lg text-gray-700">Pixel Fired: {{ value.pixelFiredCount }}</p>
         </div>
       </div>
     </section>
@@ -174,11 +173,9 @@ import { useToast } from 'vue-toastification'
 const toast = useToast()
 
 const trackingStats = ref({
-  logins: 0,
-  signups: 0,
-  dealModalClicks: 0,
-  getThisDealClicks: 0,
-  comments: 0
+  SignUp: { totalCount: 0 },
+  DealModalOpen: { totalCount: 0 },
+  GetThisDealClick: { totalCount: 0 }
 })
 
 const trackingEvents = ref([])
@@ -197,8 +194,12 @@ const fetchTrackingStats = async () => {
   try {
     const response = await api.get('/marketing/tracking/stats')
     console.log('Tracking stats response:', response.data)
-    console.log('Tracking stats:', response.data.data.stats)  // Add this line
-    trackingStats.value = response.data.data.stats
+    const stats = response.data.data.stats
+    for (const [key, value] of Object.entries(stats)) {
+      if (trackingStats.value.hasOwnProperty(key)) {
+        trackingStats.value[key].totalCount = value.totalCount
+      }
+    }
   } catch (error) {
     console.error('Error fetching tracking stats:', error)
     toast.error('Failed to fetch tracking stats')
@@ -269,7 +270,7 @@ const createTrackingChart = () => {
 }
 
 const formatStatName = (name) => {
-  return name.split(/(?=[A-Z])/).join(' ').toLowerCase()
+  return name.split(/(?=[A-Z])/).join(' ')
 }
 
 const openEventModal = () => {

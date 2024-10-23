@@ -200,5 +200,26 @@
       console.error('Error fetching deals count:', error)
     }
   }
+
+  // Add this function to handle tracking events
+  const handleTrackEvent = async (eventData) => {
+    console.log('Tracking event:', eventData);
+    try {
+      const response = await api.post('/marketing/tracking/log', eventData);
+      console.log('Tracking event response:', response.data);
+    } catch (error) {
+      console.error('Error tracking event:', error);
+    }
+  };
+
+  // Update the DealModal component to include the track-event handler
+  // Add a computed property for subid
+  const subid = computed(() => {
+    if (process.client) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('subid') || 'organic';
+    }
+    return 'organic';
+  });
   </script>
 

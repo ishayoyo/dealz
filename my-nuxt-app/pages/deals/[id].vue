@@ -180,7 +180,15 @@ async function handleDeleteComment(commentId) {
 const handleTrackEvent = async (eventData) => {
   console.log('Tracking event:', eventData);
   try {
-    const response = await api.post('/tracking/log', eventData);
+    // Include subid in the event data
+    const eventDataWithSubid = {
+      ...eventData,
+      parameters: {
+        ...eventData.parameters,
+        subid: subid.value
+      }
+    };
+    const response = await api.post('/marketing/tracking/log', eventDataWithSubid);
     console.log('Tracking event response:', response.data);
   } catch (error) {
     console.error('Error tracking event:', error);
