@@ -7,6 +7,7 @@ const Comment = require('../models/Comment.Model');
 const AffiliateClick = require('../models/AffiliateClick.Model');
 const fs = require('fs').promises;
 const path = require('path');
+const ImageUpload = require('../models/ImageUpload.Model');
 
 exports.getUsers = catchAsync(async (req, res, next) => {
   const users = await User.find().select('username email createdAt isVerified');
@@ -243,16 +244,49 @@ exports.getPendingDeals = catchAsync(async (req, res, next) => {
 
 exports.editDeal = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const { title, description, price, category, image } = req.body;
+  const {
+    title,
+    description,
+    price,
+    listPrice,
+    category,
+    shipping,
+    url,
+    imageUrl
+  } = req.body;
 
   const deal = await Deal.findByIdAndUpdate(
     id,
-    { title, description, price, category, image },
+    {
+      title,
+      description,
+      price,
+      listPrice,
+      category,
+      shipping,
+      url,
+      imageUrl
+    },
     { new: true, runValidators: true }
   ).populate('user', 'username');
 
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
+  }
+
+  // Handle image update
+  if (imageUrl !== deal.imageUrl) {
+    // Mark the new image as used
+    await ImageUpload.findOneAndUpdate(
+      { imageUrl: imageUrl },
+      { used: true }
+    );
+
+    // Mark the old image as unused
+    await ImageUpload.findOneAndUpdate(
+      { imageUrl: deal.imageUrl },
+      { used: false }
+    );
   }
 
   res.status(200).json({

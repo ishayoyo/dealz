@@ -747,25 +747,59 @@ exports.getUnusedImagesCount = catchAsync(async (req, res, next) => {
 });
 
 exports.updateDeal = catchAsync(async (req, res, next) => {
-  // ... existing code ...
+  const { id } = req.params;
+  const {
+    title,
+    description,
+    price,
+    listPrice,
+    category,
+    shipping,
+    url,
+    imageUrl
+  } = req.body;
 
-  if (req.body.imageUrl) {
+  const deal = await Deal.findById(id);
+
+  if (!deal) {
+    return next(new AppError('No deal found with that ID', 404));
+  }
+
+  // Update deal fields
+  deal.title = title;
+  deal.description = description;
+  deal.price = price;
+  deal.listPrice = listPrice;
+  deal.category = category;
+  deal.shipping = shipping;
+  deal.url = url;
+
+  // Handle image update
+  if (imageUrl !== deal.imageUrl) {
     // Mark the new image as used
     await ImageUpload.findOneAndUpdate(
-      { imageUrl: req.body.imageUrl },
+      { imageUrl: imageUrl },
       { used: true }
     );
 
-    // If the deal previously had a different image, mark it as unused
-    if (deal.imageUrl !== req.body.imageUrl) {
-      await ImageUpload.findOneAndUpdate(
-        { imageUrl: deal.imageUrl },
-        { used: false }
-      );
-    }
+    // Mark the old image as unused
+    await ImageUpload.findOneAndUpdate(
+      { imageUrl: deal.imageUrl },
+      { used: false }
+    );
+
+    deal.imageUrl = imageUrl;
   }
 
-  // ... rest of the update logic ...
+  await deal.save();
+
+  // Clear the deals cache
+  dealCache.flushAll();
+
+  res.status(200).json({
+    status: 'success',
+    data: { deal }
+  });
 });
 
 module.exports = exports;
