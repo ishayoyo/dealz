@@ -129,6 +129,7 @@ import { useAuthStore } from '~/stores/auth'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
 import ForgotPasswordModal from './ForgotPasswordModal.vue'
+import api from '~/services/api'  // Make sure to import your API service
 
 // Initialize composables
 const authStore = useAuthStore()
@@ -273,6 +274,21 @@ const handleSignup = async () => {
       password: form.password
     })
     if (result.success) {
+      // Track the signup event
+      try {
+        await api.post('/marketing/tracking/log', {
+          eventName: 'SignUp',
+          parameters: {
+            username: form.username,
+            email: form.email
+            // Add any other relevant parameters you want to track
+          }
+        })
+      } catch (trackingError) {
+        console.error('Error tracking signup:', trackingError)
+        // Don't throw this error as it shouldn't affect the user experience
+      }
+
       toast.success(result.message || 'Signup successful. Please check your email for the verification code.')
       navigateTo('/verify-email')
       emit('close')

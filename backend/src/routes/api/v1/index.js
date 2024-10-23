@@ -7,6 +7,7 @@ const commentRoutes = require('./Comment.Route');
 const adminRoutes = require('./Admin.Route');
 const notificationRoutes = require('./Notification.Route');
 const linkRoutes = require('./Link.Route');
+const marketingRoutes = require('./Marketing.Route');
 
 router.use('/users', userRoutes);
 router.use('/deals', dealRoutes);
@@ -14,5 +15,6 @@ router.use('/comments', commentRoutes);
 router.use('/admin', adminRoutes);
 router.use('/users/notifications', notificationRoutes);
 router.use('/link', linkRoutes);
+router.use('/marketing', marketingRoutes);
 
 module.exports = router;

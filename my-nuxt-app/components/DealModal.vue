@@ -62,7 +62,13 @@
               </div>
               
               <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
-                <a :href="getOutgoingLink(deal.url)" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">
+                <a 
+                  :href="getOutgoingLink(deal.url)" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  class="btn btn-primary w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2"
+                  @click="handleGetThisDealClick"
+                >
                   GET THIS DEAL
                 </a>
                 
@@ -187,10 +193,14 @@ const props = defineProps({
   isAdmin: {
     type: Boolean,
     default: false
+  },
+  subid: {
+    type: String,
+    default: 'organic'
   }
 })
 
-const emit = defineEmits(['close-modal', 'open-auth-modal', 'update-follow-status', 'follow-deal', 'update:deal', 'delete-comment'])
+const emit = defineEmits(['close-modal', 'open-auth-modal', 'update-follow-status', 'follow-deal', 'update:deal', 'delete-comment', 'track-event'])
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
@@ -348,6 +358,15 @@ const handleFollowDeal = async () => {
     console.error('Error following/unfollowing deal:', error)
     toast.error('An error occurred while following/unfollowing the deal')
   }
+
+  emit('track-event', {
+    eventName: 'followDeal',
+    parameters: {
+      dealId: props.deal._id,
+      dealTitle: props.deal.title,
+      isFollowing: isFollowing.value
+    }
+  });
 }
 
 const handleAddComment = () => {
@@ -569,6 +588,15 @@ const handleShareDeal = async () => {
   } else {
     await copyToClipboard(dealUrl)
   }
+
+  emit('track-event', {
+    eventName: 'shareDeal',
+    parameters: {
+      dealId: props.deal._id,
+      dealTitle: props.deal.title,
+      shareMethod: 'clipboard' // or any other method you implement
+    }
+  });
 }
 
 const copyToClipboard = async (text) => {
@@ -581,10 +609,30 @@ const copyToClipboard = async (text) => {
   }
 }
 
+const handleGetThisDealClick = () => {
+  emit('track-event', {
+    eventName: 'getDealClick',
+    parameters: {
+      dealId: props.deal._id,
+      dealTitle: props.deal.title,
+      dealPrice: props.deal.price,
+      subid: props.subid
+    }
+  });
+};
+
 onMounted(() => {
   if (props.deal.user && props.deal.user._id) {
     fetchAvatar()
   }
+
+  emit('track-event', {
+    eventName: 'viewDealModal',
+    parameters: {
+      dealId: props.deal._id,
+      dealTitle: props.deal.title
+    }
+  });
 })
 
 onMounted(async () => {
@@ -615,6 +663,14 @@ watch(comments, (newComments) => {
 
 // Add this computed property
 const isOpen = computed(() => props.isOpen)
+
+const subid = computed(() => {
+  if (process.client) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('subid') || 'organic';
+  }
+  return 'organic';
+});
 </script>
 
 <style scoped>
@@ -710,5 +766,17 @@ const isOpen = computed(() => props.isOpen)
 
 /* Add any other custom styles you need */
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
 
 

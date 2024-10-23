@@ -4,6 +4,7 @@ const adminController = require('../../../controllers/adminController');
 const auth = require('../../../middleware/auth');
 const isAdmin = require('../../../middleware/isAdmin');
 
+// Protected routes
 router.use(auth, isAdmin);
 
 // Existing routes

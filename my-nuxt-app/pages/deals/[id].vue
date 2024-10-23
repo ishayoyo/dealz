@@ -9,11 +9,13 @@
         :isOpen="true"
         :isAuthenticated="isAuthenticated"
         :isAdmin="isAdmin"
+        :subid="subid"
         @close-modal="goBack"
         @update-follow-status="updateFollowStatus"
         @follow-deal="handleFollowDeal"
         @open-auth-modal="openAuthModal"
         @delete-comment="handleDeleteComment"
+        @track-event="handleTrackEvent"
         key="deal-modal"
       />
     </Transition>
@@ -55,6 +57,14 @@ const isLoginMode = ref(true)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.user && authStore.user.role === 'admin')
+
+const subid = computed(() => {
+  if (process.client) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('subid') || 'organic';
+  }
+  return 'organic';
+});
 
 async function fetchDeal() {
   loading.value = true
@@ -166,6 +176,16 @@ async function handleDeleteComment(commentId) {
     }
   }
 }
+
+const handleTrackEvent = async (eventData) => {
+  console.log('Tracking event:', eventData);
+  try {
+    const response = await api.post('/tracking/log', eventData);
+    console.log('Tracking event response:', response.data);
+  } catch (error) {
+    console.error('Error tracking event:', error);
+  }
+};
 </script>
 
 <style scoped>

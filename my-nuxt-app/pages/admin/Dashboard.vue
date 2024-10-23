@@ -6,6 +6,9 @@
       <button @click="clearCache" class="btn btn-primary">
         Clear Cache
       </button>
+      <button @click="navigateToMarketing" class="btn btn-secondary">
+        Marketing
+      </button>
     </div>
     
     <!-- Analytics Section -->
@@ -191,6 +194,7 @@ import Chart from 'chart.js/auto'
 import api from '~/services/api'
 import { formatDistanceToNow } from 'date-fns'
 import { useToast } from 'vue-toastification'
+import { useRouter } from 'vue-router'
 
 const toast = useToast()
 
@@ -604,6 +608,12 @@ const clearCache = async () => {
 const isValidShipping = computed(() => {
   return editingDeal.value.shipping === 'FREE' || (!isNaN(parseFloat(editingDeal.value.shipping)) && isFinite(editingDeal.value.shipping));
 })
+
+const router = useRouter()
+
+const navigateToMarketing = () => {
+  router.push('/admin/marketing')
+}
 </script>
 
 <style scoped>

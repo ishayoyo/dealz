@@ -8,6 +8,9 @@ const AffiliateClick = require('../models/AffiliateClick.Model');
 const fs = require('fs').promises;
 const path = require('path');
 const ImageUpload = require('../models/ImageUpload.Model');
+const TrackingEvent = require('../models/TrackingEvent.Model');
+const TrackingParameter = require('../models/TrackingParameter.Model');
+const TrackingLog = require('../models/TrackingLog.Model');
 
 exports.getUsers = catchAsync(async (req, res, next) => {
   const users = await User.find().select('username email createdAt isVerified');
