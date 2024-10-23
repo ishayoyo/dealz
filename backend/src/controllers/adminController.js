@@ -49,10 +49,29 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteDeal = catchAsync(async (req, res, next) => {
-  const deal = await Deal.findByIdAndDelete(req.params.id);
+  const deal = await Deal.findById(req.params.id);
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
   }
+
+  // Delete the associated image
+  if (deal.imageUrl) {
+    const imagePath = path.join(__dirname, '..', '..', 'public', deal.imageUrl);
+    try {
+      await fs.unlink(imagePath);
+      console.log(`Image deleted: ${imagePath}`);
+    } catch (error) {
+      console.error(`Error deleting image: ${error.message}`);
+      // Decide if you want to stop the process here or continue with deal deletion
+    }
+
+    // Remove the image entry from ImageUpload collection
+    await ImageUpload.findOneAndDelete({ imageUrl: deal.imageUrl });
+  }
+
+  // Delete the deal
+  await Deal.findByIdAndDelete(req.params.id);
+
   res.status(204).json({
     status: 'success',
     data: null
@@ -383,51 +402,5 @@ exports.verifyUser = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: { user }
-  });
-});
-
-exports.getUnusedImagesCount = catchAsync(async (req, res, next) => {
-  const deals = await Deal.find({}, 'image');
-  const usedImages = new Set(deals.map(deal => deal.image).filter(Boolean));
-
-  const imageDir = path.join(__dirname, '../../public/images/deals');
-  const files = await fs.readdir(imageDir);
-  const unusedCount = files.filter(file => !usedImages.has(file)).length;
-
-  res.status(200).json({
-    status: 'success',
-    data: { unusedCount }
-  });
-});
-
-exports.deleteUnusedImages = catchAsync(async (req, res, next) => {
-  const deals = await Deal.find({}, 'image');
-  const usedImages = new Set(deals.map(deal => deal.image).filter(Boolean));
-
-  const imageDir = path.join(__dirname, '../../public/images/deals');
-  const files = await fs.readdir(imageDir);
-
-  let deletedCount = 0;
-  let skippedCount = 0;
-  let errorCount = 0;
-
-  for (const file of files) {
-    if (!usedImages.has(file)) {
-      try {
-        await fs.unlink(path.join(imageDir, file));
-        deletedCount++;
-      } catch (error) {
-        console.error(`Error deleting file ${file}:`, error);
-        errorCount++;
-      }
-    } else {
-      skippedCount++;
-    }
-  }
-
-  res.status(200).json({
-    status: 'success',
-    message: `Operation complete. ${deletedCount} files deleted.`,
-    details: { deletedCount, skippedCount, errorCount }
   });
 });
