@@ -1,51 +1,50 @@
 <template>
-  <div class="marketing-dashboard p-6 space-y-8 max-w-7xl mx-auto">
-    <h1 class="text-3xl font-heading text-primary-800 mb-8 text-center">SaverSonic Marketing Dashboard</h1>
-
-    <!-- Add this button after the main heading -->
-    <button @click="fireTestEvent" class="btn btn-primary">Fire Test Event</button>
+  <div class="marketing-dashboard p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
+    <h1 class="text-2xl sm:text-3xl font-heading text-primary-800 mb-6 sm:mb-8 text-center">SaverSonic Marketing Dashboard</h1>
 
     <!-- Stats Overview -->
     <section>
-      <h2 class="text-2xl font-heading text-gray-800 mb-4">Tracking Stats Overview</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Tracking Stats Overview</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <div v-for="(value, key) in trackingStats" :key="key" 
-             class="bg-gradient-to-br from-primary-100 to-primary-200 p-6 rounded-xl shadow-md">
-          <h3 class="text-lg font-heading text-gray-800 capitalize">{{ formatStatName(key) }}</h3>
-          <p class="text-xl font-bold text-gray-900 mt-2">Total: {{ value.totalCount }}</p>
+             class="bg-gradient-to-br from-primary-100 to-primary-200 p-4 sm:p-6 rounded-xl shadow-md">
+          <h3 class="text-base sm:text-lg font-heading text-gray-800 capitalize">{{ formatStatName(key) }}</h3>
+          <p class="text-lg sm:text-xl font-bold text-gray-900 mt-2">Total: {{ value.totalCount }}</p>
         </div>
       </div>
     </section>
 
-    <!-- Chart -->
-    <section>
-      <h2 class="text-2xl font-heading text-gray-800 mb-4">Event Tracking Chart</h2>
-      <div class="bg-white rounded-xl shadow-md p-6">
-        <canvas ref="trackingChartRef"></canvas>
+    <!-- Simple Bar Chart -->
+    <section class="mt-6 sm:mt-8">
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Event Tracking Overview</h2>
+      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <canvas ref="chartRef" style="max-height: 300px; sm:max-height: 400px;"></canvas>
       </div>
     </section>
 
     <!-- Tracking Events Management -->
-    <section>
-      <h2 class="text-2xl font-heading text-gray-800 mb-4">Tracking Events</h2>
-      <div class="bg-white rounded-xl shadow-md p-6">
+    <section class="mt-6 sm:mt-8">
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Tracking Events</h2>
+      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 overflow-x-auto">
         <button @click="openEventModal" class="btn btn-primary mb-4">Add New Event</button>
-        <table class="w-full">
+        <table class="w-full min-w-max">
           <thead>
             <tr class="bg-gray-100">
               <th class="p-2 text-left">Name</th>
-              <th class="p-2 text-left">Description</th>
-              <th class="p-2 text-left">Pixel URL</th>
+              <th class="p-2 text-left hidden sm:table-cell">Description</th>
+              <th class="p-2 text-left hidden md:table-cell">Pixel URL</th>
               <th class="p-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="event in trackingEvents" :key="event._id" class="border-b border-gray-200">
               <td class="p-2">{{ event.name }}</td>
-              <td class="p-2">{{ event.description }}</td>
-              <td class="p-2">{{ event.pixelUrl }}</td>
+              <td class="p-2 hidden sm:table-cell">{{ event.description }}</td>
+              <td class="p-2 hidden md:table-cell">
+                <span class="truncate block max-w-xs">{{ event.pixelUrl }}</span>
+              </td>
               <td class="p-2">
-                <button @click="editEvent(event)" class="btn btn-sm btn-secondary mr-2">Edit</button>
+                <button @click="editEvent(event)" class="btn btn-sm btn-secondary mr-2 mb-2 sm:mb-0">Edit</button>
                 <button @click="deleteEvent(event._id)" class="btn btn-sm btn-danger">Delete</button>
               </td>
             </tr>
@@ -55,15 +54,15 @@
     </section>
 
     <!-- Tracking Parameters Management -->
-    <section>
-      <h2 class="text-2xl font-heading text-gray-800 mb-4">Tracking Parameters</h2>
-      <div class="bg-white rounded-xl shadow-md p-6">
+    <section class="mt-6 sm:mt-8">
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Tracking Parameters</h2>
+      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 overflow-x-auto">
         <button @click="openParameterModal" class="btn btn-primary mb-4">Add New Parameter</button>
-        <table class="w-full">
+        <table class="w-full min-w-max">
           <thead>
             <tr class="bg-gray-100">
               <th class="p-2 text-left">Name</th>
-              <th class="p-2 text-left">Description</th>
+              <th class="p-2 text-left hidden sm:table-cell">Description</th>
               <th class="p-2 text-left">Type</th>
               <th class="p-2 text-left">Actions</th>
             </tr>
@@ -71,37 +70,12 @@
           <tbody>
             <tr v-for="param in trackingParameters" :key="param._id" class="border-b border-gray-200">
               <td class="p-2">{{ param.name }}</td>
-              <td class="p-2">{{ param.description }}</td>
+              <td class="p-2 hidden sm:table-cell">{{ param.description }}</td>
               <td class="p-2">{{ param.type }}</td>
               <td class="p-2">
-                <button @click="editParameter(param)" class="btn btn-sm btn-secondary mr-2">Edit</button>
+                <button @click="editParameter(param)" class="btn btn-sm btn-secondary mr-2 mb-2 sm:mb-0">Edit</button>
                 <button @click="deleteParameter(param._id)" class="btn btn-sm btn-danger">Delete</button>
               </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Tracking by SubID -->
-    <section>
-      <h2 class="text-2xl font-heading text-gray-800 mb-4">Tracking by SubID</h2>
-      <div class="bg-white rounded-xl shadow-md p-6">
-        <table class="w-full">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="p-2 text-left">SubID</th>
-              <th class="p-2 text-left">Total Clicks</th>
-              <th class="p-2 text-left">Unique Users</th>
-              <th class="p-2 text-left">Conversion Rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(data, subid) in subidStats" :key="subid" class="border-b border-gray-200">
-              <td class="p-2">{{ subid }}</td>
-              <td class="p-2">{{ data.totalClicks }}</td>
-              <td class="p-2">{{ data.uniqueUsers }}</td>
-              <td class="p-2">{{ (data.conversionRate * 100).toFixed(2) }}%</td>
             </tr>
           </tbody>
         </table>
@@ -161,6 +135,14 @@
         </form>
       </div>
     </div>
+
+    <!-- Fire Test Event Section -->
+    <section class="mt-8 sm:mt-12 text-center">
+      <div class="inline-flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-white rounded-xl shadow-md p-4">
+        <button @click="fireTestEvent" class="btn btn-primary w-full sm:w-auto">Fire Test Event</button>
+        <span class="text-base sm:text-lg font-semibold">Count: {{ testEventCount }}</span>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -186,9 +168,9 @@ const showParameterModal = ref(false)
 const editingEvent = ref({})
 const editingParameter = ref({})
 
-const trackingChartRef = ref(null)
-
-const subidStats = ref({});
+const chartRef = ref(null)
+const testEventCount = ref(0)
+const chartInstance = ref(null)
 
 const fetchTrackingStats = async () => {
   try {
@@ -197,9 +179,10 @@ const fetchTrackingStats = async () => {
     const stats = response.data.data.stats
     for (const [key, value] of Object.entries(stats)) {
       if (trackingStats.value.hasOwnProperty(key)) {
-        trackingStats.value[key].totalCount = value.totalCount
+        trackingStats.value[key].totalCount = value.totalCount || 0
       }
     }
+    createChart()
   } catch (error) {
     console.error('Error fetching tracking stats:', error)
     toast.error('Failed to fetch tracking stats')
@@ -228,45 +211,87 @@ const fetchTrackingParameters = async () => {
   }
 }
 
-const fetchSubidStats = async () => {
-  try {
-    const response = await api.get('/marketing/tracking/subid-stats');
-    console.log('SubID stats response:', response.data);
-    subidStats.value = response.data.data.stats;
-  } catch (error) {
-    console.error('Error fetching SubID stats:', error);
-    toast.error('Failed to fetch SubID stats');
-  }
-};
-
-const createTrackingChart = () => {
-  if (!trackingChartRef.value) return
-
-  new Chart(trackingChartRef.value, {
-    type: 'bar',
-    data: {
-      labels: Object.keys(trackingStats.value).map(formatStatName),
-      datasets: [{
-        label: 'Event Count',
-        data: Object.values(trackingStats.value),
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.6)',
-          'rgba(54, 162, 235, 0.6)',
-          'rgba(255, 206, 86, 0.6)',
-          'rgba(75, 192, 192, 0.6)',
-          'rgba(153, 102, 255, 0.6)'
-        ]
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true
+const createChart = () => {
+  if (chartRef.value) {
+    const ctx = chartRef.value.getContext('2d')
+    
+    if (chartInstance.value) {
+      chartInstance.value.destroy()
+    }
+    
+    const labels = Object.keys(trackingStats.value).map(formatStatName)
+    const data = Object.values(trackingStats.value).map(v => v.totalCount)
+    
+    chartInstance.value = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Total Events',
+          data: data,
+          backgroundColor: [
+            'rgba(54, 162, 235, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(255, 159, 64, 0.6)'
+          ],
+          borderColor: [
+            'rgba(54, 162, 235, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(255, 159, 64, 1)'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          title: {
+            display: true,
+            text: 'Total Events by Type',
+            font: {
+              size: 16
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0,
+              callback: function(value) {
+                if (value % 1 === 0) {
+                  return value;
+                }
+              }
+            },
+            grid: {
+              display: false
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        },
+        layout: {
+          padding: {
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: 20
+          }
+        },
+        animation: {
+          duration: 500
         }
       }
-    }
-  })
+    })
+  }
 }
 
 const formatStatName = (name) => {
@@ -372,8 +397,9 @@ const fireTestEvent = async () => {
         subid: 'testSubId123'
       }
     });
+    testEventCount.value++;
     toast.success('Test event fired');
-    await fetchTrackingStats();
+    createChart(); // Recreate the chart to show updated data
   } catch (error) {
     console.error('Error firing test event:', error);
     toast.error('Failed to fire test event');
@@ -385,13 +411,10 @@ onMounted(async () => {
   await fetchTrackingStats()
   await fetchTrackingEvents()
   await fetchTrackingParameters()
-  await fetchSubidStats();
   console.log('After fetching data:')
   console.log('Stats:', trackingStats.value)
   console.log('Events:', trackingEvents.value)
   console.log('Parameters:', trackingParameters.value)
-  console.log('SubID Stats:', subidStats.value);
-  createTrackingChart()
 })
 </script>
 
@@ -401,7 +424,7 @@ onMounted(async () => {
 }
 
 .btn {
-  @apply font-bold py-2 px-4 rounded;
+  @apply font-bold py-2 px-4 rounded transition duration-150 ease-in-out;
 }
 
 .btn-sm {
@@ -409,7 +432,7 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  @apply bg-blue-500 text-white hover:bg-blue-700;
+  @apply bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700;
 }
 
 .btn-secondary {
