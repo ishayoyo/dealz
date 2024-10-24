@@ -63,8 +63,10 @@ exports.getTrackingStats = catchAsync(async (req, res, next) => {
       $group: {
         _id: '$eventName',
         totalCount: { $sum: 1 },
-        pixelFiredCount: {
-          $sum: { $cond: ['$pixelFired', 1, 0] }
+        uniqueUsers: { $addToSet: '$userId' },
+        revenueTotal: { $sum: '$parameters.revenue' },  // Add revenue tracking
+        conversionRate: {
+          $avg: { $cond: ['$converted', 1, 0] }
         }
       }
     }
@@ -75,7 +77,9 @@ exports.getTrackingStats = catchAsync(async (req, res, next) => {
   const formattedStats = stats.reduce((acc, stat) => {
     acc[stat._id] = {
       totalCount: stat.totalCount,
-      pixelFiredCount: stat.pixelFiredCount
+      uniqueUsers: stat.uniqueUsers.length,
+      revenueTotal: stat.revenueTotal,
+      conversionRate: stat.conversionRate
     };
     return acc;
   }, {});
@@ -209,6 +213,52 @@ exports.getSubidStats = catchAsync(async (req, res, next) => {
 });
 
 exports.testPixel = catchAsync(async (req, res, next) => {
-  console.log('Test pixel fired with params:', req.query);
-  res.status(200).send('Pixel fired successfully');
+  const { network, subid, eventName } = req.query;
+  
+  console.log('Test pixel fired with params:', {
+    network,
+    subid,
+    eventName,
+    timestamp: new Date().toISOString(),
+    ip: req.ip,
+    userAgent: req.headers['user-agent']
+  });
+
+  // You can add logic here to verify the pixel fire
+  const response = {
+    status: 'success',
+    message: 'Pixel fired successfully',
+    params: {
+      network,
+      subid,
+      eventName,
+      timestamp: new Date().toISOString()
+    }
+  };
+
+  // Send response based on requested format
+  if (req.query.format === 'image') {
+    // Send a 1x1 transparent GIF
+    const buffer = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+    res.writeHead(200, {
+      'Content-Type': 'image/gif',
+      'Content-Length': buffer.length
+    });
+    res.end(buffer);
+  } else {
+    res.status(200).json(response);
+  }
 });
+
+const firePixel = async (url, retries = 3) => {
+  try {
+    const response = await axios.get(url);
+    return response;
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return firePixel(url, retries - 1);
+    }
+    throw error;
+  }
+};

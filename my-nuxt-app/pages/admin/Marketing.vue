@@ -5,11 +5,17 @@
     <!-- Stats Overview -->
     <section>
       <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Tracking Stats Overview</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div v-for="(value, key) in trackingStats" :key="key" 
-             class="bg-gradient-to-br from-primary-100 to-primary-200 p-4 sm:p-6 rounded-xl shadow-md">
-          <h3 class="text-base sm:text-lg font-heading text-gray-800 capitalize">{{ formatStatName(key) }}</h3>
-          <p class="text-lg sm:text-xl font-bold text-gray-900 mt-2">Total: {{ value.totalCount }}</p>
+      
+      <!-- Network Stats -->
+      <div v-for="(networkData, network) in filteredStats" :key="network" class="mb-8">
+        <h3 class="text-lg font-heading text-gray-700 mb-4 capitalize">{{ network }} Network</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div v-for="(value, key) in networkData" :key="key" 
+               class="bg-gradient-to-br from-primary-100 to-primary-200 p-4 sm:p-6 rounded-xl shadow-md">
+            <h3 class="text-base sm:text-lg font-heading text-gray-800 capitalize">{{ formatStatName(key) }}</h3>
+            <p class="text-lg sm:text-xl font-bold text-gray-900 mt-2">Total: {{ value.totalCount }}</p>
+            <p class="text-sm text-gray-600">Conversion Rate: {{ (value.conversionRate * 100).toFixed(2) }}%</p>
+          </div>
         </div>
       </div>
     </section>
@@ -143,6 +149,86 @@
         <span class="text-base sm:text-lg font-semibold">Count: {{ testEventCount }}</span>
       </div>
     </section>
+
+    <!-- Add date picker to template -->
+    <div class="flex space-x-4 mb-4">
+      <input type="date" v-model="startDate" class="input-field">
+      <input type="date" v-model="endDate" class="input-field">
+      <button @click="fetchTrackingStats" class="btn btn-primary">Filter</button>
+    </div>
+
+    <!-- Add this after the date picker in template -->
+    <div class="flex space-x-4 mb-4">
+      <select v-model="selectedNetwork" class="input-field">
+        <option v-for="network in networks" :key="network" :value="network">
+          {{ network.charAt(0).toUpperCase() + network.slice(1) }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Add this section for pixel testing -->
+    <section class="mt-6 sm:mt-8">
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Pixel Testing</h2>
+      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <div class="space-y-4">
+          <!-- Test Pixel Form -->
+          <form @submit.prevent="fireTestPixel" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Network</label>
+              <select v-model="testPixelData.network" class="input-field" required>
+                <option value="facebook">Facebook</option>
+                <option value="google">Google</option>
+                <!-- Add more networks as needed -->
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Event Name</label>
+              <input 
+                v-model="testPixelData.eventName" 
+                type="text" 
+                class="input-field" 
+                required
+                placeholder="signup"
+              >
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">SubID</label>
+              <input 
+                v-model="testPixelData.subid" 
+                type="text" 
+                class="input-field" 
+                required
+                placeholder="test_subid_123"
+              >
+            </div>
+
+            <div>
+              <button type="submit" class="btn btn-primary">
+                Fire Test Pixel
+              </button>
+            </div>
+          </form>
+
+          <!-- Last Fired Pixel Info -->
+          <div v-if="lastPixelResponse" class="mt-4">
+            <h3 class="text-lg font-medium text-gray-900">Last Pixel Response:</h3>
+            <pre class="mt-2 p-4 bg-gray-50 rounded-md overflow-x-auto">
+              {{ JSON.stringify(lastPixelResponse, null, 2) }}
+            </pre>
+          </div>
+
+          <!-- Pixel URL Preview -->
+          <div v-if="testPixelUrl" class="mt-4">
+            <h3 class="text-lg font-medium text-gray-900">Test Pixel URL:</h3>
+            <div class="mt-2 p-4 bg-gray-50 rounded-md break-all">
+              <code>{{ testPixelUrl }}</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -155,9 +241,17 @@ import { useToast } from 'vue-toastification'
 const toast = useToast()
 
 const trackingStats = ref({
-  SignUp: { totalCount: 0 },
-  DealModalOpen: { totalCount: 0 },
-  GetThisDealClick: { totalCount: 0 }
+  facebook: {
+    SignUp: { totalCount: 0 },
+    DealModalOpen: { totalCount: 0 },
+    GetThisDealClick: { totalCount: 0 }
+  },
+  google: {
+    SignUp: { totalCount: 0 },
+    DealModalOpen: { totalCount: 0 },
+    GetThisDealClick: { totalCount: 0 }
+  },
+  // Add more networks as needed
 })
 
 const trackingEvents = ref([])
@@ -172,16 +266,49 @@ const chartRef = ref(null)
 const testEventCount = ref(0)
 const chartInstance = ref(null)
 
+const startDate = ref(null)
+const endDate = ref(null)
+
+// Add network filter
+const selectedNetwork = ref('all')
+const networks = ['all', 'facebook', 'google'] // Add your networks here
+
+const filteredStats = computed(() => {
+  if (selectedNetwork.value === 'all') {
+    return trackingStats.value
+  }
+  return {
+    [selectedNetwork.value]: trackingStats.value[selectedNetwork.value]
+  }
+})
+
 const fetchTrackingStats = async () => {
   try {
-    const response = await api.get('/marketing/tracking/stats')
-    console.log('Tracking stats response:', response.data)
-    const stats = response.data.data.stats
-    for (const [key, value] of Object.entries(stats)) {
-      if (trackingStats.value.hasOwnProperty(key)) {
-        trackingStats.value[key].totalCount = value.totalCount || 0
+    const response = await api.get('/marketing/tracking/stats', {
+      params: {
+        startDate: startDate.value,
+        endDate: endDate.value,
+        network: selectedNetwork.value === 'all' ? undefined : selectedNetwork.value
       }
-    }
+    })
+    
+    const stats = response.data.data.stats
+    
+    // Update stats for each network
+    Object.entries(stats).forEach(([network, networkStats]) => {
+      if (trackingStats.value[network]) {
+        Object.entries(networkStats).forEach(([eventName, eventStats]) => {
+          if (trackingStats.value[network][eventName]) {
+            trackingStats.value[network][eventName] = {
+              totalCount: eventStats.totalCount || 0,
+              conversionRate: eventStats.conversionRate || 0,
+              revenue: eventStats.revenueTotal || 0
+            }
+          }
+        })
+      }
+    })
+    
     createChart()
   } catch (error) {
     console.error('Error fetching tracking stats:', error)
@@ -212,86 +339,84 @@ const fetchTrackingParameters = async () => {
 }
 
 const createChart = () => {
-  if (chartRef.value) {
-    const ctx = chartRef.value.getContext('2d')
-    
-    if (chartInstance.value) {
-      chartInstance.value.destroy()
-    }
-    
-    const labels = Object.keys(trackingStats.value).map(formatStatName)
-    const data = Object.values(trackingStats.value).map(v => v.totalCount)
-    
-    chartInstance.value = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Total Events',
-          data: data,
-          backgroundColor: [
-            'rgba(54, 162, 235, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(255, 159, 64, 0.6)'
-          ],
-          borderColor: [
-            'rgba(54, 162, 235, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(255, 159, 64, 1)'
-          ],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          },
-          title: {
-            display: true,
-            text: 'Total Events by Type',
-            font: {
-              size: 16
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              precision: 0,
-              callback: function(value) {
-                if (value % 1 === 0) {
-                  return value;
-                }
-              }
-            },
-            grid: {
-              display: false
-            }
-          },
-          x: {
-            grid: {
-              display: false
-            }
-          }
-        },
-        layout: {
-          padding: {
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: 20
-          }
-        },
-        animation: {
-          duration: 500
-        }
-      }
-    })
+  if (!chartRef.value) return
+
+  const ctx = chartRef.value.getContext('2d')
+  if (chartInstance.value) {
+    chartInstance.value.destroy()
   }
+
+  const datasets = []
+  const networks = selectedNetwork.value === 'all' 
+    ? Object.keys(trackingStats.value)
+    : [selectedNetwork.value]
+
+  networks.forEach((network, index) => {
+    const networkData = trackingStats.value[network]
+    datasets.push({
+      label: network.charAt(0).toUpperCase() + network.slice(1),
+      data: Object.values(networkData).map(v => v.totalCount),
+      backgroundColor: `rgba(54, ${162 + (index * 30)}, 235, 0.6)`,
+      borderColor: `rgba(54, ${162 + (index * 30)}, 235, 1)`,
+      borderWidth: 1
+    })
+  })
+
+  chartInstance.value = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(trackingStats.value[networks[0]]).map(formatStatName),
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true // Show legend to distinguish networks
+        },
+        title: {
+          display: true,
+          text: 'Total Events by Type',
+          font: {
+            size: 16
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0,
+            callback: function(value) {
+              if (value % 1 === 0) {
+                return value;
+              }
+            }
+          },
+          grid: {
+            display: false
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      },
+      layout: {
+        padding: {
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: 20
+        }
+      },
+      animation: {
+        duration: 500
+      }
+    }
+  })
 }
 
 const formatStatName = (name) => {
@@ -394,17 +519,70 @@ const fireTestEvent = async () => {
       eventName: 'TestClickEvent',
       parameters: {
         testParam: 'testValue',
-        subid: 'testSubId123'
+        subid: 'testSubId123',
+        network: selectedNetwork.value === 'all' ? 'facebook' : selectedNetwork.value
       }
     });
     testEventCount.value++;
     toast.success('Test event fired');
-    createChart(); // Recreate the chart to show updated data
+    await fetchTrackingStats();
   } catch (error) {
     console.error('Error firing test event:', error);
     toast.error('Failed to fire test event');
   }
 };
+
+// Add these to your existing refs
+const testPixelData = ref({
+  network: 'facebook',
+  eventName: '',
+  subid: ''
+})
+const lastPixelResponse = ref(null)
+const testPixelUrl = ref('')
+
+// Add this method
+const fireTestPixel = async () => {
+  try {
+    // Construct the test pixel URL
+    const baseUrl = `${window.location.origin}/api/v1/marketing/test-pixel`
+    const params = new URLSearchParams({
+      network: testPixelData.value.network,
+      eventName: testPixelData.value.eventName,
+      subid: testPixelData.value.subid,
+      timestamp: new Date().toISOString()
+    })
+    
+    testPixelUrl.value = `${baseUrl}?${params.toString()}`
+
+    // Fire the pixel
+    const response = await api.get(`/marketing/test-pixel`, {
+      params: {
+        network: testPixelData.value.network,
+        eventName: testPixelData.value.eventName,
+        subid: testPixelData.value.subid
+      }
+    })
+
+    lastPixelResponse.value = response.data
+    toast.success('Test pixel fired successfully')
+    
+    // Optional: Also log the event
+    await api.post('/marketing/tracking/log', {
+      eventName: testPixelData.value.eventName,
+      parameters: {
+        network: testPixelData.value.network,
+        subid: testPixelData.value.subid
+      }
+    })
+
+    // Refresh stats
+    await fetchTrackingStats()
+  } catch (error) {
+    console.error('Error firing test pixel:', error)
+    toast.error('Failed to fire test pixel')
+  }
+}
 
 onMounted(async () => {
   console.log('Marketing component mounted')
