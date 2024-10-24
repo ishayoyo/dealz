@@ -30,7 +30,7 @@ import { ref, watch } from 'vue';
 const props = defineProps({
   pixel: {
     type: Object,
-    default: () => ({})
+    default: () => ({ network: '', event: '', url: '' }) // Ensure default values
   }
 });
 
@@ -43,11 +43,11 @@ watch(() => props.pixel, (newPixel) => {
 }, { deep: true });
 
 const savePixel = () => {
+  console.log('Local pixel before save:', localPixel.value); // Debugging log
   if (!localPixel.value.network || !localPixel.value.event || !localPixel.value.url) {
     alert('Please fill in all fields');
     return;
   }
-  console.log('Emitting save event with pixel:', localPixel.value);
   emit('save', localPixel.value);
 };
 </script>

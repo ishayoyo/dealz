@@ -285,23 +285,27 @@ const deletePixel = async (pixelId) => {
   }
 }
 
-const savePixel = async () => {
+const savePixel = async (pixelData) => {
   try {
-    console.log('Saving pixel:', editingPixel.value); // Add this line
-    if (editingPixel.value._id) {
-      await api.put(`/marketing/s2s-pixel/${editingPixel.value._id}`, editingPixel.value)
-      toast.success('Pixel updated successfully')
-    } else {
-      await api.post('/marketing/s2s-pixel', editingPixel.value)
-      toast.success('Pixel added successfully')
+    console.log('Saving pixel:', pixelData); // Debugging log
+    if (!pixelData.network || !pixelData.event || !pixelData.url) {
+      toast.error('Please fill in all fields');
+      return;
     }
-    await fetchS2SPixels()
-    closePixelModal()
+    if (pixelData._id) {
+      await api.put(`/marketing/s2s-pixel/${pixelData._id}`, pixelData);
+      toast.success('Pixel updated successfully');
+    } else {
+      await api.post('/marketing/s2s-pixel', pixelData);
+      toast.success('Pixel added successfully');
+    }
+    await fetchS2SPixels();
+    closePixelModal();
   } catch (error) {
-    console.error('Error saving pixel:', error.response?.data || error.message)
-    toast.error('Failed to save pixel')
+    console.error('Error saving pixel:', error.response?.data || error.message);
+    toast.error(error.response?.data?.message || 'Failed to save pixel');
   }
-}
+};
 
 // Fetch all necessary data
 const fetchData = async () => {

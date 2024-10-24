@@ -451,7 +451,7 @@ exports.getS2SPixels = catchAsync(async (req, res, next) => {
 });
 
 exports.addS2SPixel = catchAsync(async (req, res, next) => {
-  console.log('Received request body:', req.body);
+  console.log('Received request body:', req.body); // Debugging log
   const { network, event, url } = req.body;
   if (!network || !event || !url || network.trim() === '' || event.trim() === '' || url.trim() === '') {
     return next(new AppError('Network, event, and URL are required and cannot be empty', 400));
