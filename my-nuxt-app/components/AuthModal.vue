@@ -274,21 +274,6 @@ const handleSignup = async () => {
       password: form.password
     })
     if (result.success) {
-      // Track the signup event
-      try {
-        await api.post('/marketing/tracking/log', {
-          eventName: 'SignUp',
-          parameters: {
-            username: form.username,
-            email: form.email
-            // Add any other relevant parameters you want to track
-          }
-        })
-      } catch (trackingError) {
-        console.error('Error tracking signup:', trackingError)
-        // Don't throw this error as it shouldn't affect the user experience
-      }
-
       toast.success(result.message || 'Signup successful. Please check your email for the verification code.')
       navigateTo('/verify-email')
       emit('close')
@@ -398,3 +383,4 @@ const resendVerificationEmail = async () => {
   @apply opacity-50 cursor-not-allowed;
 }
 </style>
+

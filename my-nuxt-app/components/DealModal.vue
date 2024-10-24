@@ -200,7 +200,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close-modal', 'open-auth-modal', 'update-follow-status', 'follow-deal', 'update:deal', 'delete-comment', 'track-event'])
+const emit = defineEmits(['close-modal', 'open-auth-modal', 'update-follow-status', 'follow-deal', 'update:deal', 'delete-comment'])
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
@@ -358,15 +358,6 @@ const handleFollowDeal = async () => {
     console.error('Error following/unfollowing deal:', error)
     toast.error('An error occurred while following/unfollowing the deal')
   }
-
-  emit('track-event', {
-    eventName: 'followDeal',
-    parameters: {
-      dealId: props.deal._id,
-      dealTitle: props.deal.title,
-      isFollowing: isFollowing.value
-    }
-  });
 }
 
 const handleAddComment = () => {
@@ -588,15 +579,6 @@ const handleShareDeal = async () => {
   } else {
     await copyToClipboard(dealUrl)
   }
-
-  emit('track-event', {
-    eventName: 'shareDeal',
-    parameters: {
-      dealId: props.deal._id,
-      dealTitle: props.deal.title,
-      shareMethod: 'clipboard' // or any other method you implement
-    }
-  });
 }
 
 const copyToClipboard = async (text) => {
@@ -610,26 +592,7 @@ const copyToClipboard = async (text) => {
 }
 
 const handleGetThisDealClick = () => {
-  emit('track-event', {
-    eventName: 'GetThisDealClick',
-    parameters: {
-      dealId: props.deal._id,
-      dealTitle: props.deal.title,
-      dealPrice: props.deal.price,
-      subid: props.subid
-    }
-  });
-};
-
-const emitDealModalOpenEvent = () => {
-  emit('track-event', {
-    eventName: 'DealModalOpen',
-    parameters: {
-      dealId: props.deal._id,
-      dealTitle: props.deal.title,
-      subid: props.subid
-    }
-  });
+  // Remove the emit call for tracking
 };
 
 onMounted(() => {
@@ -637,13 +600,7 @@ onMounted(() => {
     fetchAvatar()
   }
 
-  emit('track-event', {
-    eventName: 'viewDealModal',
-    parameters: {
-      dealId: props.deal._id,
-      dealTitle: props.deal.title
-    }
-  });
+  // Remove the emit call for tracking
 })
 
 onMounted(async () => {
@@ -663,7 +620,6 @@ onUnmounted(() => {
 
 watch(() => props.isOpen, async (newIsOpen) => {
   if (newIsOpen && props.deal && props.deal._id) {
-    emitDealModalOpenEvent(); // This should be called regardless of authentication
     await fetchDealData();
     if (isAuthenticated.value) {
       await fetchMentionableUsers();
@@ -678,13 +634,8 @@ watch(comments, (newComments) => {
 // Add this computed property
 const isOpen = computed(() => props.isOpen)
 
-const subid = computed(() => {
-  if (process.client) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('subid') || 'organic';
-  }
-  return 'organic';
-});
+// Remove the following computed property if it's not used elsewhere
+// const subid = computed(() => { ... });
 </script>
 
 <style scoped>
@@ -780,6 +731,10 @@ const subid = computed(() => {
 
 /* Add any other custom styles you need */
 </style>
+
+
+
+
 
 
 
