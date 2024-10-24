@@ -55,40 +55,28 @@
       </div>
     </section>
 
-    <!-- Top Campaigns -->
+    <!-- Pixel Performance -->
     <section>
-      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Top Performing Campaigns</h2>
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Pixel Performance</h2>
       <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 overflow-x-auto">
         <table class="w-full min-w-max">
           <thead>
             <tr class="bg-gray-100">
-              <th class="p-2 text-left">Campaign</th>
               <th class="p-2 text-left">Network</th>
-              <th class="p-2 text-right">Clicks</th>
+              <th class="p-2 text-left">Event</th>
+              <th class="p-2 text-right">Fires</th>
               <th class="p-2 text-right">Conversions</th>
-              <th class="p-2 text-right">CR</th>
-              <th class="p-2 text-right">Revenue</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="campaign in topCampaigns" :key="campaign.id" class="border-b border-gray-200">
-              <td class="p-2">{{ campaign.name }}</td>
-              <td class="p-2">{{ campaign.network }}</td>
-              <td class="p-2 text-right">{{ campaign.clicks }}</td>
-              <td class="p-2 text-right">{{ campaign.conversions }}</td>
-              <td class="p-2 text-right">{{ campaign.cr.toFixed(2) }}%</td>
-              <td class="p-2 text-right">${{ campaign.revenue.toFixed(2) }}</td>
+            <tr v-for="pixel in pixelPerformance" :key="pixel.id" class="border-b border-gray-200">
+              <td class="p-2">{{ pixel.network }}</td>
+              <td class="p-2">{{ pixel.event }}</td>
+              <td class="p-2 text-right">{{ pixel.fires }}</td>
+              <td class="p-2 text-right">{{ pixel.conversions }}</td>
             </tr>
           </tbody>
         </table>
-      </div>
-    </section>
-
-    <!-- Conversion Funnel -->
-    <section>
-      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Conversion Funnel</h2>
-      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
-        <ConversionFunnelChart :funnel-data="conversionFunnelData" />
       </div>
     </section>
 
@@ -107,7 +95,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="pixel in s2sPixels" :key="pixel.id" class="border-b border-gray-200">
+            <tr v-for="pixel in s2sPixels" :key="pixel._id" class="border-b border-gray-200">
               <td class="p-2">{{ pixel.network }}</td>
               <td class="p-2">{{ pixel.event }}</td>
               <td class="p-2">
@@ -115,7 +103,7 @@
               </td>
               <td class="p-2">
                 <button @click="editPixel(pixel)" class="btn btn-sm btn-secondary mr-2">Edit</button>
-                <button @click="deletePixel(pixel.id)" class="btn btn-sm btn-danger">Delete</button>
+                <button @click="deletePixel(pixel._id)" class="btn btn-sm btn-danger">Delete</button>
               </td>
             </tr>
           </tbody>
@@ -134,7 +122,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import api from '~/services/api'
 import { useToast } from 'vue-toastification'
 import DateRangePicker from '~/components/DateRangePicker.vue'
@@ -162,6 +150,7 @@ const networkPerformance = ref([])
 const topCampaigns = ref([])
 const conversionFunnelData = ref([])
 const s2sPixels = ref([])
+const pixelPerformance = ref([]) // New state for pixel performance
 
 const showPixelModal = ref(false)
 const editingPixel = ref({})
@@ -214,35 +203,19 @@ const fetchNetworkPerformance = async () => {
   }
 }
 
-const fetchTopCampaigns = async () => {
+const fetchPixelPerformance = async () => {
   try {
-    const response = await api.get('/marketing/stats/top-campaigns', {
+    const response = await api.get('/marketing/stats/pixel-performance', {
       params: {
         startDate: dateRange.value.startDate,
         endDate: dateRange.value.endDate
       }
     })
     
-    topCampaigns.value = response.data.data.topCampaigns
+    pixelPerformance.value = response.data.data.pixelPerformance
   } catch (error) {
-    console.error('Error fetching top campaigns:', error)
-    toast.error('Failed to fetch top campaigns')
-  }
-}
-
-const fetchConversionFunnel = async () => {
-  try {
-    const response = await api.get('/marketing/stats/conversion-funnel', {
-      params: {
-        startDate: dateRange.value.startDate,
-        endDate: dateRange.value.endDate
-      }
-    })
-    
-    conversionFunnelData.value = response.data.data.conversionFunnel
-  } catch (error) {
-    console.error('Error fetching conversion funnel:', error)
-    toast.error('Failed to fetch conversion funnel')
+    console.error('Error fetching pixel performance:', error)
+    toast.error('Failed to fetch pixel performance')
   }
 }
 
@@ -313,8 +286,7 @@ const fetchData = async () => {
     fetchOverallStats(),
     fetchNetworkComparison(),
     fetchNetworkPerformance(),
-    fetchTopCampaigns(),
-    fetchConversionFunnel(),
+    fetchPixelPerformance(), // Fetch pixel performance data
     fetchS2SPixels()
   ])
 }
@@ -349,4 +321,3 @@ onMounted(async () => {
   @apply bg-red-500 text-white hover:bg-red-700;
 }
 </style>
-
