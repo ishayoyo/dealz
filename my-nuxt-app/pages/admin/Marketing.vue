@@ -1,57 +1,121 @@
 <template>
   <div class="marketing-dashboard p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
-    <h1 class="text-2xl sm:text-3xl font-heading text-primary-800 mb-6 sm:mb-8 text-center">SaverSonic Marketing Dashboard</h1>
+    <h1 class="text-2xl sm:text-3xl font-heading text-primary-800 mb-6 sm:mb-8 text-center">SaverSonic Media Dashboard</h1>
 
-    <!-- Stats Overview -->
+    <!-- Date Range Picker -->
+    <div class="mb-4">
+      <DateRangePicker v-model="dateRange" @update:modelValue="fetchData" />
+    </div>
+
+    <!-- Overview Stats -->
     <section>
-      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Tracking Stats Overview</h2>
-      
-      <!-- Network Stats -->
-      <div v-for="(networkData, network) in filteredStats" :key="network" class="mb-8">
-        <h3 class="text-lg font-heading text-gray-700 mb-4 capitalize">{{ network }} Network</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          <div v-for="(value, key) in networkData" :key="key" 
-               class="bg-gradient-to-br from-primary-100 to-primary-200 p-4 sm:p-6 rounded-xl shadow-md">
-            <h3 class="text-base sm:text-lg font-heading text-gray-800 capitalize">{{ formatStatName(key) }}</h3>
-            <p class="text-lg sm:text-xl font-bold text-gray-900 mt-2">Total: {{ value.totalCount }}</p>
-            <p class="text-sm text-gray-600">Conversion Rate: {{ (value.conversionRate * 100).toFixed(2) }}%</p>
-          </div>
-        </div>
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Overall Performance</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard title="Total Clicks" :value="overallStats.totalClicks" />
+        <StatCard title="Total Conversions" :value="overallStats.totalConversions" />
+        <StatCard title="Overall CR" :value="overallStats.overallCR" suffix="%" :decimals="2" />
+        <StatCard title="Total Revenue" :value="overallStats.totalRevenue" prefix="$" :decimals="2" />
       </div>
     </section>
 
-    <!-- Simple Bar Chart -->
-    <section class="mt-6 sm:mt-8">
-      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Event Tracking Overview</h2>
+    <!-- Network Comparison Chart -->
+    <section>
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Network Comparison</h2>
       <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
-        <canvas ref="chartRef" style="max-height: 300px; sm:max-height: 400px;"></canvas>
+        <NetworkComparisonChart :chart-data="networkComparisonData" />
       </div>
     </section>
 
-    <!-- Tracking Events Management -->
-    <section class="mt-6 sm:mt-8">
-      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Tracking Events</h2>
+    <!-- Network Performance Table -->
+    <section>
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Network Performance</h2>
       <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 overflow-x-auto">
-        <button @click="openEventModal" class="btn btn-primary mb-4">Add New Event</button>
         <table class="w-full min-w-max">
           <thead>
             <tr class="bg-gray-100">
-              <th class="p-2 text-left">Name</th>
-              <th class="p-2 text-left hidden sm:table-cell">Description</th>
-              <th class="p-2 text-left hidden md:table-cell">Pixel URL</th>
+              <th class="p-2 text-left">Network</th>
+              <th class="p-2 text-right">Clicks</th>
+              <th class="p-2 text-right">Conversions</th>
+              <th class="p-2 text-right">CR</th>
+              <th class="p-2 text-right">Revenue</th>
+              <th class="p-2 text-right">EPC</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="network in networkPerformance" :key="network.name" class="border-b border-gray-200">
+              <td class="p-2">{{ network.name }}</td>
+              <td class="p-2 text-right">{{ network.clicks }}</td>
+              <td class="p-2 text-right">{{ network.conversions }}</td>
+              <td class="p-2 text-right">{{ network.cr.toFixed(2) }}%</td>
+              <td class="p-2 text-right">${{ network.revenue.toFixed(2) }}</td>
+              <td class="p-2 text-right">${{ network.epc.toFixed(2) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Top Campaigns -->
+    <section>
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Top Performing Campaigns</h2>
+      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 overflow-x-auto">
+        <table class="w-full min-w-max">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="p-2 text-left">Campaign</th>
+              <th class="p-2 text-left">Network</th>
+              <th class="p-2 text-right">Clicks</th>
+              <th class="p-2 text-right">Conversions</th>
+              <th class="p-2 text-right">CR</th>
+              <th class="p-2 text-right">Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="campaign in topCampaigns" :key="campaign.id" class="border-b border-gray-200">
+              <td class="p-2">{{ campaign.name }}</td>
+              <td class="p-2">{{ campaign.network }}</td>
+              <td class="p-2 text-right">{{ campaign.clicks }}</td>
+              <td class="p-2 text-right">{{ campaign.conversions }}</td>
+              <td class="p-2 text-right">{{ campaign.cr.toFixed(2) }}%</td>
+              <td class="p-2 text-right">${{ campaign.revenue.toFixed(2) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Conversion Funnel -->
+    <section>
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Conversion Funnel</h2>
+      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <ConversionFunnelChart :funnel-data="conversionFunnelData" />
+      </div>
+    </section>
+
+    <!-- S2S Pixel Management -->
+    <section>
+      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">S2S Pixel Management</h2>
+      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <button @click="openPixelModal" class="btn btn-primary mb-4">Add New Pixel</button>
+        <table class="w-full min-w-max">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="p-2 text-left">Network</th>
+              <th class="p-2 text-left">Event</th>
+              <th class="p-2 text-left">Pixel URL</th>
               <th class="p-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="event in trackingEvents" :key="event._id" class="border-b border-gray-200">
-              <td class="p-2">{{ event.name }}</td>
-              <td class="p-2 hidden sm:table-cell">{{ event.description }}</td>
-              <td class="p-2 hidden md:table-cell">
-                <span class="truncate block max-w-xs">{{ event.pixelUrl }}</span>
+            <tr v-for="pixel in s2sPixels" :key="pixel.id" class="border-b border-gray-200">
+              <td class="p-2">{{ pixel.network }}</td>
+              <td class="p-2">{{ pixel.event }}</td>
+              <td class="p-2">
+                <span class="truncate block max-w-xs">{{ pixel.url }}</span>
               </td>
               <td class="p-2">
-                <button @click="editEvent(event)" class="btn btn-sm btn-secondary mr-2 mb-2 sm:mb-0">Edit</button>
-                <button @click="deleteEvent(event._id)" class="btn btn-sm btn-danger">Delete</button>
+                <button @click="editPixel(pixel)" class="btn btn-sm btn-secondary mr-2">Edit</button>
+                <button @click="deletePixel(pixel.id)" class="btn btn-sm btn-danger">Delete</button>
               </td>
             </tr>
           </tbody>
@@ -59,540 +123,200 @@
       </div>
     </section>
 
-    <!-- Tracking Parameters Management -->
-    <section class="mt-6 sm:mt-8">
-      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Tracking Parameters</h2>
-      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 overflow-x-auto">
-        <button @click="openParameterModal" class="btn btn-primary mb-4">Add New Parameter</button>
-        <table class="w-full min-w-max">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="p-2 text-left">Name</th>
-              <th class="p-2 text-left hidden sm:table-cell">Description</th>
-              <th class="p-2 text-left">Type</th>
-              <th class="p-2 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="param in trackingParameters" :key="param._id" class="border-b border-gray-200">
-              <td class="p-2">{{ param.name }}</td>
-              <td class="p-2 hidden sm:table-cell">{{ param.description }}</td>
-              <td class="p-2">{{ param.type }}</td>
-              <td class="p-2">
-                <button @click="editParameter(param)" class="btn btn-sm btn-secondary mr-2 mb-2 sm:mb-0">Edit</button>
-                <button @click="deleteParameter(param._id)" class="btn btn-sm btn-danger">Delete</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Event Modal -->
-    <div v-if="showEventModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
-      <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
-        <h3 class="text-2xl font-heading text-gray-800 mb-4">{{ editingEvent._id ? 'Edit' : 'Add' }} Event</h3>
-        <form @submit.prevent="submitEvent" class="space-y-4">
-          <div>
-            <label for="eventName" class="block text-sm font-medium text-gray-700">Name</label>
-            <input v-model="editingEvent.name" id="eventName" type="text" class="input-field" required>
-          </div>
-          <div>
-            <label for="eventDescription" class="block text-sm font-medium text-gray-700">Description</label>
-            <input v-model="editingEvent.description" id="eventDescription" type="text" class="input-field">
-          </div>
-          <div>
-            <label for="eventPixelUrl" class="block text-sm font-medium text-gray-700">Pixel URL</label>
-            <input v-model="editingEvent.pixelUrl" id="eventPixelUrl" type="text" class="input-field">
-          </div>
-          <div class="flex justify-end space-x-2">
-            <button type="button" @click="closeEventModal" class="btn btn-secondary">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Parameter Modal -->
-    <div v-if="showParameterModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
-      <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
-        <h3 class="text-2xl font-heading text-gray-800 mb-4">{{ editingParameter._id ? 'Edit' : 'Add' }} Parameter</h3>
-        <form @submit.prevent="submitParameter" class="space-y-4">
-          <div>
-            <label for="paramName" class="block text-sm font-medium text-gray-700">Name</label>
-            <input v-model="editingParameter.name" id="paramName" type="text" class="input-field" required>
-          </div>
-          <div>
-            <label for="paramDescription" class="block text-sm font-medium text-gray-700">Description</label>
-            <input v-model="editingParameter.description" id="paramDescription" type="text" class="input-field">
-          </div>
-          <div>
-            <label for="paramType" class="block text-sm font-medium text-gray-700">Type</label>
-            <select v-model="editingParameter.type" id="paramType" class="input-field" required>
-              <option value="string">String</option>
-              <option value="number">Number</option>
-              <option value="boolean">Boolean</option>
-            </select>
-          </div>
-          <div class="flex justify-end space-x-2">
-            <button type="button" @click="closeParameterModal" class="btn btn-secondary">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Fire Test Event Section -->
-    <section class="mt-8 sm:mt-12 text-center">
-      <div class="inline-flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-white rounded-xl shadow-md p-4">
-        <button @click="fireTestEvent" class="btn btn-primary w-full sm:w-auto">Fire Test Event</button>
-        <span class="text-base sm:text-lg font-semibold">Count: {{ testEventCount }}</span>
-      </div>
-    </section>
-
-    <!-- Add date picker to template -->
-    <div class="flex space-x-4 mb-4">
-      <input type="date" v-model="startDate" class="input-field">
-      <input type="date" v-model="endDate" class="input-field">
-      <button @click="fetchTrackingStats" class="btn btn-primary">Filter</button>
-    </div>
-
-    <!-- Add this after the date picker in template -->
-    <div class="flex space-x-4 mb-4">
-      <select v-model="selectedNetwork" class="input-field">
-        <option v-for="network in networks" :key="network" :value="network">
-          {{ network.charAt(0).toUpperCase() + network.slice(1) }}
-        </option>
-      </select>
-    </div>
-
-    <!-- Add this section for pixel testing -->
-    <section class="mt-6 sm:mt-8">
-      <h2 class="text-xl sm:text-2xl font-heading text-gray-800 mb-4">Pixel Testing</h2>
-      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
-        <div class="space-y-4">
-          <!-- Test Pixel Form -->
-          <form @submit.prevent="fireTestPixel" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Network</label>
-              <select v-model="testPixelData.network" class="input-field" required>
-                <option value="facebook">Facebook</option>
-                <option value="google">Google</option>
-                <!-- Add more networks as needed -->
-              </select>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Event Name</label>
-              <input 
-                v-model="testPixelData.eventName" 
-                type="text" 
-                class="input-field" 
-                required
-                placeholder="signup"
-              >
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700">SubID</label>
-              <input 
-                v-model="testPixelData.subid" 
-                type="text" 
-                class="input-field" 
-                required
-                placeholder="test_subid_123"
-              >
-            </div>
-
-            <div>
-              <button type="submit" class="btn btn-primary">
-                Fire Test Pixel
-              </button>
-            </div>
-          </form>
-
-          <!-- Last Fired Pixel Info -->
-          <div v-if="lastPixelResponse" class="mt-4">
-            <h3 class="text-lg font-medium text-gray-900">Last Pixel Response:</h3>
-            <pre class="mt-2 p-4 bg-gray-50 rounded-md overflow-x-auto">
-              {{ JSON.stringify(lastPixelResponse, null, 2) }}
-            </pre>
-          </div>
-
-          <!-- Pixel URL Preview -->
-          <div v-if="testPixelUrl" class="mt-4">
-            <h3 class="text-lg font-medium text-gray-900">Test Pixel URL:</h3>
-            <div class="mt-2 p-4 bg-gray-50 rounded-md break-all">
-              <code>{{ testPixelUrl }}</code>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    <!-- S2S Pixel Modal -->
+    <S2SPixelModal
+      v-if="showPixelModal"
+      :pixel="editingPixel"
+      @close="closePixelModal"
+      @save="savePixel"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import Chart from 'chart.js/auto'
 import api from '~/services/api'
 import { useToast } from 'vue-toastification'
+import DateRangePicker from '~/components/DateRangePicker.vue'
+import StatCard from '~/components/StatCard.vue'
+import NetworkComparisonChart from '~/components/NetworkComparisonChart.vue'
+import ConversionFunnelChart from '~/components/ConversionFunnelChart.vue'
+import S2SPixelModal from '~/components/S2SPixelModal.vue'
 
 const toast = useToast()
 
-const trackingStats = ref({
-  facebook: {
-    SignUp: { totalCount: 0 },
-    DealModalOpen: { totalCount: 0 },
-    GetThisDealClick: { totalCount: 0 }
-  },
-  google: {
-    SignUp: { totalCount: 0 },
-    DealModalOpen: { totalCount: 0 },
-    GetThisDealClick: { totalCount: 0 }
-  },
-  // Add more networks as needed
+const dateRange = ref({
+  startDate: null,
+  endDate: null
 })
 
-const trackingEvents = ref([])
-const trackingParameters = ref([])
-
-const showEventModal = ref(false)
-const showParameterModal = ref(false)
-const editingEvent = ref({})
-const editingParameter = ref({})
-
-const chartRef = ref(null)
-const testEventCount = ref(0)
-const chartInstance = ref(null)
-
-const startDate = ref(null)
-const endDate = ref(null)
-
-// Add network filter
-const selectedNetwork = ref('all')
-const networks = ['all', 'facebook', 'google'] // Add your networks here
-
-const filteredStats = computed(() => {
-  if (selectedNetwork.value === 'all') {
-    return trackingStats.value
-  }
-  return {
-    [selectedNetwork.value]: trackingStats.value[selectedNetwork.value]
-  }
+const overallStats = ref({
+  totalClicks: 0,
+  totalConversions: 0,
+  overallCR: 0,
+  totalRevenue: 0
 })
 
-const fetchTrackingStats = async () => {
+const networkComparisonData = ref([])
+const networkPerformance = ref([])
+const topCampaigns = ref([])
+const conversionFunnelData = ref([])
+const s2sPixels = ref([])
+
+const showPixelModal = ref(false)
+const editingPixel = ref({})
+
+const fetchOverallStats = async () => {
   try {
-    const response = await api.get('/marketing/tracking/stats', {
+    const response = await api.get('/marketing/stats/overall', {
       params: {
-        startDate: startDate.value,
-        endDate: endDate.value,
-        network: selectedNetwork.value === 'all' ? undefined : selectedNetwork.value
+        startDate: dateRange.value.startDate,
+        endDate: dateRange.value.endDate
       }
     })
     
-    const stats = response.data.data.stats
-    
-    // Update stats for each network
-    Object.entries(stats).forEach(([network, networkStats]) => {
-      if (trackingStats.value[network]) {
-        Object.entries(networkStats).forEach(([eventName, eventStats]) => {
-          if (trackingStats.value[network][eventName]) {
-            trackingStats.value[network][eventName] = {
-              totalCount: eventStats.totalCount || 0,
-              conversionRate: eventStats.conversionRate || 0,
-              revenue: eventStats.revenueTotal || 0
-            }
-          }
-        })
+    overallStats.value = response.data.data.stats
+  } catch (error) {
+    console.error('Error fetching overall stats:', error)
+    toast.error('Failed to fetch overall stats')
+  }
+}
+
+const fetchNetworkComparison = async () => {
+  try {
+    const response = await api.get('/marketing/stats/network-comparison', {
+      params: {
+        startDate: dateRange.value.startDate,
+        endDate: dateRange.value.endDate
       }
     })
     
-    createChart()
+    networkComparisonData.value = response.data.data.networkComparison
   } catch (error) {
-    console.error('Error fetching tracking stats:', error)
-    toast.error('Failed to fetch tracking stats')
+    console.error('Error fetching network comparison:', error)
+    toast.error('Failed to fetch network comparison')
   }
 }
 
-const fetchTrackingEvents = async () => {
+const fetchNetworkPerformance = async () => {
   try {
-    const response = await api.get('/marketing/tracking/events')
-    console.log('Tracking events response:', response.data)
-    trackingEvents.value = response.data.data.events
-  } catch (error) {
-    console.error('Error fetching tracking events:', error)
-    toast.error('Failed to fetch tracking events')
-  }
-}
-
-const fetchTrackingParameters = async () => {
-  try {
-    const response = await api.get('/marketing/tracking/parameters')
-    console.log('Tracking parameters response:', response.data)
-    trackingParameters.value = response.data.data.parameters
-  } catch (error) {
-    console.error('Error fetching tracking parameters:', error)
-    toast.error('Failed to fetch tracking parameters')
-  }
-}
-
-const createChart = () => {
-  if (!chartRef.value) return
-
-  const ctx = chartRef.value.getContext('2d')
-  if (chartInstance.value) {
-    chartInstance.value.destroy()
-  }
-
-  const datasets = []
-  const networks = selectedNetwork.value === 'all' 
-    ? Object.keys(trackingStats.value)
-    : [selectedNetwork.value]
-
-  networks.forEach((network, index) => {
-    const networkData = trackingStats.value[network]
-    datasets.push({
-      label: network.charAt(0).toUpperCase() + network.slice(1),
-      data: Object.values(networkData).map(v => v.totalCount),
-      backgroundColor: `rgba(54, ${162 + (index * 30)}, 235, 0.6)`,
-      borderColor: `rgba(54, ${162 + (index * 30)}, 235, 1)`,
-      borderWidth: 1
+    const response = await api.get('/marketing/stats/network-performance', {
+      params: {
+        startDate: dateRange.value.startDate,
+        endDate: dateRange.value.endDate
+      }
     })
-  })
+    
+    networkPerformance.value = response.data.data.networkPerformance
+  } catch (error) {
+    console.error('Error fetching network performance:', error)
+    toast.error('Failed to fetch network performance')
+  }
+}
 
-  chartInstance.value = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: Object.keys(trackingStats.value[networks[0]]).map(formatStatName),
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: true // Show legend to distinguish networks
-        },
-        title: {
-          display: true,
-          text: 'Total Events by Type',
-          font: {
-            size: 16
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            precision: 0,
-            callback: function(value) {
-              if (value % 1 === 0) {
-                return value;
-              }
-            }
-          },
-          grid: {
-            display: false
-          }
-        },
-        x: {
-          grid: {
-            display: false
-          }
-        }
-      },
-      layout: {
-        padding: {
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: 20
-        }
-      },
-      animation: {
-        duration: 500
+const fetchTopCampaigns = async () => {
+  try {
+    const response = await api.get('/marketing/stats/top-campaigns', {
+      params: {
+        startDate: dateRange.value.startDate,
+        endDate: dateRange.value.endDate
       }
-    }
-  })
-}
-
-const formatStatName = (name) => {
-  return name.split(/(?=[A-Z])/).join(' ')
-}
-
-const openEventModal = () => {
-  editingEvent.value = {}
-  showEventModal.value = true
-}
-
-const closeEventModal = () => {
-  showEventModal.value = false
-  editingEvent.value = {}
-}
-
-const submitEvent = async () => {
-  try {
-    if (editingEvent.value._id) {
-      await api.put(`/marketing/tracking/event/${editingEvent.value._id}`, editingEvent.value)
-      toast.success('Event updated successfully')
-    } else {
-      await api.post('/marketing/tracking/add-event', editingEvent.value)
-      toast.success('Event added successfully')
-    }
-    await fetchTrackingEvents()
-    closeEventModal()
+    })
+    
+    topCampaigns.value = response.data.data.topCampaigns
   } catch (error) {
-    console.error('Error submitting event:', error)
-    toast.error('Failed to submit event')
+    console.error('Error fetching top campaigns:', error)
+    toast.error('Failed to fetch top campaigns')
   }
 }
 
-const editEvent = (event) => {
-  editingEvent.value = { ...event }
-  showEventModal.value = true
-}
-
-const deleteEvent = async (eventId) => {
-  if (confirm('Are you sure you want to delete this event?')) {
-    try {
-      await api.delete(`/marketing/tracking/event/${eventId}`)
-      await fetchTrackingEvents()
-      toast.success('Event deleted successfully')
-    } catch (error) {
-      console.error('Error deleting event:', error)
-      toast.error('Failed to delete event')
-    }
-  }
-}
-
-const openParameterModal = () => {
-  editingParameter.value = {}
-  showParameterModal.value = true
-}
-
-const closeParameterModal = () => {
-  showParameterModal.value = false
-  editingParameter.value = {}
-}
-
-const submitParameter = async () => {
+const fetchConversionFunnel = async () => {
   try {
-    if (editingParameter.value._id) {
-      await api.put(`/marketing/tracking/parameter/${editingParameter.value._id}`, editingParameter.value)
-      toast.success('Parameter updated successfully')
-    } else {
-      await api.post('/marketing/tracking/add-parameter', editingParameter.value)
-      toast.success('Parameter added successfully')
-    }
-    await fetchTrackingParameters()
-    closeParameterModal()
-  } catch (error) {
-    console.error('Error submitting parameter:', error)
-    toast.error('Failed to submit parameter')
-  }
-}
-
-const editParameter = (param) => {
-  editingParameter.value = { ...param }
-  showParameterModal.value = true
-}
-
-const deleteParameter = async (paramId) => {
-  if (confirm('Are you sure you want to delete this parameter?')) {
-    try {
-      await api.delete(`/marketing/tracking/parameter/${paramId}`)
-      await fetchTrackingParameters()
-      toast.success('Parameter deleted successfully')
-    } catch (error) {
-      console.error('Error deleting parameter:', error)
-      toast.error('Failed to delete parameter')
-    }
-  }
-}
-
-const fireTestEvent = async () => {
-  try {
-    await api.post('/marketing/tracking/log', {
-      eventName: 'TestClickEvent',
-      parameters: {
-        testParam: 'testValue',
-        subid: 'testSubId123',
-        network: selectedNetwork.value === 'all' ? 'facebook' : selectedNetwork.value
+    const response = await api.get('/marketing/stats/conversion-funnel', {
+      params: {
+        startDate: dateRange.value.startDate,
+        endDate: dateRange.value.endDate
       }
-    });
-    testEventCount.value++;
-    toast.success('Test event fired');
-    await fetchTrackingStats();
+    })
+    
+    conversionFunnelData.value = response.data.data.conversionFunnel
   } catch (error) {
-    console.error('Error firing test event:', error);
-    toast.error('Failed to fire test event');
+    console.error('Error fetching conversion funnel:', error)
+    toast.error('Failed to fetch conversion funnel')
   }
+}
+
+const fetchS2SPixels = async () => {
+  try {
+    const response = await api.get('/marketing/s2s-pixels')
+    console.log('S2S pixels response:', response.data)
+    s2sPixels.value = response.data.data.pixels
+  } catch (error) {
+    console.error('Error fetching S2S pixels:', error)
+    toast.error('Failed to fetch S2S pixels')
+  }
+}
+
+const openPixelModal = () => {
+  editingPixel.value = { network: '', event: '', url: '' };
+  showPixelModal.value = true;
 };
 
-// Add these to your existing refs
-const testPixelData = ref({
-  network: 'facebook',
-  eventName: '',
-  subid: ''
-})
-const lastPixelResponse = ref(null)
-const testPixelUrl = ref('')
+const closePixelModal = () => {
+  showPixelModal.value = false
+  editingPixel.value = {}
+}
 
-// Add this method
-const fireTestPixel = async () => {
-  try {
-    // Construct the test pixel URL
-    const baseUrl = `${window.location.origin}/api/v1/marketing/test-pixel`
-    const params = new URLSearchParams({
-      network: testPixelData.value.network,
-      eventName: testPixelData.value.eventName,
-      subid: testPixelData.value.subid,
-      timestamp: new Date().toISOString()
-    })
-    
-    testPixelUrl.value = `${baseUrl}?${params.toString()}`
+const editPixel = (pixel) => {
+  editingPixel.value = { ...pixel }
+  showPixelModal.value = true
+}
 
-    // Fire the pixel
-    const response = await api.get(`/marketing/test-pixel`, {
-      params: {
-        network: testPixelData.value.network,
-        eventName: testPixelData.value.eventName,
-        subid: testPixelData.value.subid
-      }
-    })
-
-    lastPixelResponse.value = response.data
-    toast.success('Test pixel fired successfully')
-    
-    // Optional: Also log the event
-    await api.post('/marketing/tracking/log', {
-      eventName: testPixelData.value.eventName,
-      parameters: {
-        network: testPixelData.value.network,
-        subid: testPixelData.value.subid
-      }
-    })
-
-    // Refresh stats
-    await fetchTrackingStats()
-  } catch (error) {
-    console.error('Error firing test pixel:', error)
-    toast.error('Failed to fire test pixel')
+const deletePixel = async (pixelId) => {
+  if (confirm('Are you sure you want to delete this pixel?')) {
+    try {
+      await api.delete(`/marketing/s2s-pixel/${pixelId}`)
+      await fetchS2SPixels()
+      toast.success('Pixel deleted successfully')
+    } catch (error) {
+      console.error('Error deleting pixel:', error)
+      toast.error('Failed to delete pixel')
+    }
   }
+}
+
+const savePixel = async () => {
+  try {
+    console.log('Saving pixel:', editingPixel.value); // Add this line
+    if (editingPixel.value._id) {
+      await api.put(`/marketing/s2s-pixel/${editingPixel.value._id}`, editingPixel.value)
+      toast.success('Pixel updated successfully')
+    } else {
+      await api.post('/marketing/s2s-pixel', editingPixel.value)
+      toast.success('Pixel added successfully')
+    }
+    await fetchS2SPixels()
+    closePixelModal()
+  } catch (error) {
+    console.error('Error saving pixel:', error.response?.data || error.message)
+    toast.error('Failed to save pixel')
+  }
+}
+
+// Fetch all necessary data
+const fetchData = async () => {
+  await Promise.all([
+    fetchOverallStats(),
+    fetchNetworkComparison(),
+    fetchNetworkPerformance(),
+    fetchTopCampaigns(),
+    fetchConversionFunnel(),
+    fetchS2SPixels()
+  ])
 }
 
 onMounted(async () => {
-  console.log('Marketing component mounted')
-  await fetchTrackingStats()
-  await fetchTrackingEvents()
-  await fetchTrackingParameters()
-  console.log('After fetching data:')
-  console.log('Stats:', trackingStats.value)
-  console.log('Events:', trackingEvents.value)
-  console.log('Parameters:', trackingParameters.value)
+  await fetchData()
 })
 </script>
 

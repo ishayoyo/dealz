@@ -3,6 +3,7 @@
 const TrackingEvent = require('../models/TrackingEvent.Model');
 const TrackingParameter = require('../models/TrackingParameter.Model');
 const TrackingLog = require('../models/TrackingLog.Model');
+const S2SPixel = require('../models/S2SPixel.Model');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const axios = require('axios');
@@ -262,3 +263,232 @@ const firePixel = async (url, retries = 3) => {
     throw error;
   }
 };
+
+exports.getOverallStats = catchAsync(async (req, res, next) => {
+  const { startDate, endDate } = req.query;
+  const query = {};
+  if (startDate && endDate) {
+    query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+  }
+
+  const stats = await TrackingLog.aggregate([
+    { $match: query },
+    {
+      $group: {
+        _id: null,
+        totalClicks: { $sum: 1 },
+        totalConversions: { $sum: { $cond: [{ $eq: ['$eventName', 'purchase'] }, 1, 0] } },
+        totalRevenue: { $sum: '$parameters.revenue' }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        totalClicks: 1,
+        totalConversions: 1,
+        overallCR: { $multiply: [{ $divide: ['$totalConversions', '$totalClicks'] }, 100] },
+        totalRevenue: 1
+      }
+    }
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    data: { stats: stats[0] || {} }
+  });
+});
+
+exports.getNetworkComparison = catchAsync(async (req, res, next) => {
+  const { startDate, endDate } = req.query;
+  const query = {};
+  if (startDate && endDate) {
+    query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+  }
+
+  const networkComparison = await TrackingLog.aggregate([
+    { $match: query },
+    {
+      $group: {
+        _id: '$parameters.network',
+        clicks: { $sum: 1 },
+        conversions: { $sum: { $cond: [{ $eq: ['$eventName', 'purchase'] }, 1, 0] } }
+      }
+    },
+    {
+      $project: {
+        network: '$_id',
+        clicks: 1,
+        conversions: 1,
+        _id: 0
+      }
+    }
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    data: { networkComparison }
+  });
+});
+
+exports.getNetworkPerformance = catchAsync(async (req, res, next) => {
+  const { startDate, endDate } = req.query;
+  const query = {};
+  if (startDate && endDate) {
+    query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+  }
+
+  const networkPerformance = await TrackingLog.aggregate([
+    { $match: query },
+    {
+      $group: {
+        _id: '$parameters.network',
+        clicks: { $sum: 1 },
+        conversions: { $sum: { $cond: [{ $eq: ['$eventName', 'purchase'] }, 1, 0] } },
+        revenue: { $sum: '$parameters.revenue' }
+      }
+    },
+    {
+      $project: {
+        network: '$_id',
+        clicks: 1,
+        conversions: 1,
+        revenue: 1,
+        cr: { $multiply: [{ $divide: ['$conversions', '$clicks'] }, 100] },
+        epc: { $divide: ['$revenue', '$clicks'] },
+        _id: 0
+      }
+    }
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    data: { networkPerformance }
+  });
+});
+
+exports.getTopCampaigns = catchAsync(async (req, res, next) => {
+  const { startDate, endDate } = req.query;
+  const query = {};
+  if (startDate && endDate) {
+    query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+  }
+
+  const topCampaigns = await TrackingLog.aggregate([
+    { $match: query },
+    {
+      $group: {
+        _id: { campaign: '$parameters.campaign', network: '$parameters.network' },
+        clicks: { $sum: 1 },
+        conversions: { $sum: { $cond: [{ $eq: ['$eventName', 'purchase'] }, 1, 0] } },
+        revenue: { $sum: '$parameters.revenue' }
+      }
+    },
+    {
+      $project: {
+        campaign: '$_id.campaign',
+        network: '$_id.network',
+        clicks: 1,
+        conversions: 1,
+        revenue: 1,
+        cr: { $multiply: [{ $divide: ['$conversions', '$clicks'] }, 100] },
+        _id: 0
+      }
+    },
+    { $sort: { revenue: -1 } },
+    { $limit: 10 }
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    data: { topCampaigns }
+  });
+});
+
+exports.getConversionFunnel = catchAsync(async (req, res, next) => {
+  const { startDate, endDate } = req.query;
+  const query = {};
+  if (startDate && endDate) {
+    query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+  }
+
+  const funnelStages = ['view', 'click', 'lead', 'purchase'];
+  const conversionFunnel = await TrackingLog.aggregate([
+    { $match: query },
+    {
+      $group: {
+        _id: '$eventName',
+        users: { $addToSet: '$userId' }
+      }
+    },
+    {
+      $project: {
+        stage: '$_id',
+        users: { $size: '$users' },
+        _id: 0
+      }
+    },
+    { $sort: { users: -1 } }
+  ]);
+
+  // Ensure all funnel stages are present
+  const fullFunnel = funnelStages.map(stage => {
+    const found = conversionFunnel.find(item => item.stage === stage);
+    return found || { stage, users: 0 };
+  });
+
+  res.status(200).json({
+    status: 'success',
+    data: { conversionFunnel: fullFunnel }
+  });
+});
+
+exports.getS2SPixels = catchAsync(async (req, res, next) => {
+  const pixels = await S2SPixel.find();
+  res.status(200).json({
+    status: 'success',
+    data: { pixels }
+  });
+});
+
+exports.addS2SPixel = catchAsync(async (req, res, next) => {
+  console.log('Received request body:', req.body);
+  const { network, event, url } = req.body;
+  if (!network || !event || !url || network.trim() === '' || event.trim() === '' || url.trim() === '') {
+    return next(new AppError('Network, event, and URL are required and cannot be empty', 400));
+  }
+  const pixel = await S2SPixel.create({ network, event, url });
+  res.status(201).json({
+    status: 'success',
+    data: { pixel }
+  });
+});
+
+exports.updateS2SPixel = catchAsync(async (req, res, next) => {
+  console.log('Received request body:', req.body);
+  const { id } = req.params;
+  const { network, event, url } = req.body;
+  if (!network || !event || !url || network.trim() === '' || event.trim() === '' || url.trim() === '') {
+    return next(new AppError('Network, event, and URL are required and cannot be empty', 400));
+  }
+  const pixel = await S2SPixel.findByIdAndUpdate(id, { network, event, url }, { new: true, runValidators: true });
+  if (!pixel) {
+    return next(new AppError('No pixel found with that ID', 404));
+  }
+  res.status(200).json({
+    status: 'success',
+    data: { pixel }
+  });
+});
+
+exports.deleteS2SPixel = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const pixel = await S2SPixel.findByIdAndDelete(id);
+  if (!pixel) {
+    return next(new AppError('No pixel found with that ID', 404));
+  }
+  res.status(204).json({
+    status: 'success',
+    data: null
+  });
+});
+
