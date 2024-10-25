@@ -360,34 +360,62 @@ exports.checkAuth = catchAsync(async (req, res, next) => {
 
 const sendVerificationEmail = async (user) => {
   const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  
+  // Add input validation
+  if (!user.email || !user.username || !user.verificationCode) {
+    console.error('Missing required user data for verification email');
+    return false;
+  }
+
   sendSmtpEmail.to = [{ email: user.email, name: user.username }];
-  sendSmtpEmail.subject = "Verify Your Email";
+  sendSmtpEmail.subject = "Verify Your SaverSonic Account";
   sendSmtpEmail.htmlContent = generateVerificationEmailHTML(user.username, user.verificationCode);
-  sendSmtpEmail.sender = { name: "Verify Your SaverSonic Account", email: "ishay@saversonic.com" };
+  sendSmtpEmail.sender = { 
+    name: "SaverSonic", // Simplified sender name
+    email: process.env.SENDER_EMAIL || "ishay@saversonic.com" // Make sender email configurable
+  };
 
   try {
-    await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log('Verification email sent successfully');
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Verification email sent successfully:', response);
     return true;
   } catch (error) {
-    console.error('Error sending verification email:', error);
+    console.error('Error sending verification email:', {
+      error: error.message,
+      responseData: error.response?.data,
+      userEmail: user.email
+    });
     return false;
   }
 };
 
 const sendPasswordResetEmail = async (user, resetURL) => {
   const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  
+  // Add input validation
+  if (!user.email || !user.username || !resetURL) {
+    console.error('Missing required data for password reset email');
+    return false;
+  }
+
   sendSmtpEmail.to = [{ email: user.email, name: user.username }];
   sendSmtpEmail.subject = "Reset Your SaverSonic Password";
   sendSmtpEmail.htmlContent = generatePasswordResetEmailHTML(user.username, resetURL);
-  sendSmtpEmail.sender = { name: "SaverSonic Password Reset", email: "ishay@saversonic.com" };
+  sendSmtpEmail.sender = { 
+    name: "SaverSonic", 
+    email: process.env.SENDER_EMAIL || "ishay@saversonic.com"
+  };
 
   try {
-    await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log('Password reset email sent successfully');
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Password reset email sent successfully:', response);
     return true;
   } catch (error) {
-    console.error('Error sending password reset email:', error);
+    console.error('Error sending password reset email:', {
+      error: error.message,
+      responseData: error.response?.data,
+      userEmail: user.email
+    });
     return false;
   }
 };

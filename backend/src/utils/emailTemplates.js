@@ -85,7 +85,8 @@ exports.generateVerificationEmailHTML = (username, verificationCode) => {
     <p>Thank you for signing up with SaverSonic! To complete your registration, please use the following verification code:</p>
     <div class="verification-code">${verificationCode}</div>
     <p>Enter this code on the verification page to activate your account.</p>
-    <p>If you didn't create an account with SaverSonic, please ignore this email.</p>
+    <p>This code will expire in 15 minutes.</p>
+    <p><strong>Security Notice:</strong> If you didn't create an account with SaverSonic, please ignore this email and contact our support team.</p>
   `;
   return baseTemplate(content);
 };
