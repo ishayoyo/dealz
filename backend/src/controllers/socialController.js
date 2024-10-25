@@ -144,10 +144,15 @@ exports.getUserDeals = catchAsync(async (req, res, next) => {
 });
 
 exports.getCurrentUserDeals = catchAsync(async (req, res, next) => {
-  const deals = await Deal.find({ user: req.user._id }).sort('-createdAt');
-  res.status(200).json({
+  const deals = await Deal.find({ user: req.user._id })
+    .populate('user', '_id username avatarSeed')
+    .sort({ createdAt: -1 });
+
+  res.json({
     status: 'success',
-    data: { deals }
+    data: {
+      deals
+    }
   });
 });
 

@@ -115,9 +115,9 @@
             <div v-if="userDeals.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <DealCard 
                 v-for="deal in userDeals" 
-                :key="deal['_id']" 
-                :deal="{ ...deal, user: { ...deal.user, avatarUrl: getAvatarUrl(deal.user._id) } }"
-                :username="getUserName"
+                :key="deal._id" 
+                :deal="deal"
+                :username="deal.user.username || getUserName"
                 @open-modal="navigateToDeal" 
                 class="deal-card cursor-pointer transition duration-300 transform hover:scale-105"
               />
@@ -283,7 +283,22 @@ const fetchFollowedDeals = async () => {
 const fetchUserDeals = async () => {
   try {
     const response = await api.get('/users/me/deals')
-    userDeals.value = response.data.data.deals
+    console.log('Raw deals response:', response.data.data.deals[0]) // Log the first deal to see its structure
+    
+    userDeals.value = response.data.data.deals.map(deal => {
+      // Make sure we're passing all user details
+      const mappedDeal = {
+        ...deal,
+        user: {
+          ...deal.user,
+          _id: deal.user._id,
+          username: deal.user.username,
+          avatarUrl: getAvatarUrl(deal.user._id)
+        }
+      }
+      console.log('Mapped deal:', mappedDeal) // Log the mapped deal
+      return mappedDeal
+    })
   } catch (error) {
     console.error('Error fetching user deals:', error)
     throw error
@@ -461,7 +476,10 @@ const selectTab = (tabId) => {
 const authStore = useAuthStore()
 
 const getAvatarUrl = (userId) => {
-  return `${config.public.apiBase}/api/v1/users/${userId}/avatar`
+  if (!userId) return '/default-avatar.jpg'
+  // Remove '/api/v1' if it exists in the base URL to avoid double inclusion
+  const baseUrl = config.public.apiBase.replace('/api/v1', '')
+  return `${baseUrl}/api/v1/users/${userId}/avatar`
 }
 
 const getFullImageUrl = (imageUrl) => {
