@@ -380,7 +380,7 @@ const sendPasswordResetEmail = async (user, resetURL) => {
   sendSmtpEmail.to = [{ email: user.email, name: user.username }];
   sendSmtpEmail.subject = "Reset Your SaverSonic Password";
   sendSmtpEmail.htmlContent = generatePasswordResetEmailHTML(user.username, resetURL);
-  sendSmtpEmail.sender = { name: "SaverSonic Password Reset", email: "noreply@saversonic.com" };
+  sendSmtpEmail.sender = { name: "SaverSonic Password Reset", email: "ishay@saversonic.com" };
 
   try {
     await apiInstance.sendTransacEmail(sendSmtpEmail);
