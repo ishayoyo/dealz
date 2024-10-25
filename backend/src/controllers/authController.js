@@ -27,9 +27,15 @@ const generateVerificationCode = () => {
 exports.register = catchAsync(async (req, res, next) => {
   let { username, email, password } = req.body;
 
+  // Normalize email for Gmail addresses
+  email = email.toLowerCase().trim();
+  if (email.endsWith('@gmail.com')) {
+    // Remove all dots before @gmail.com
+    email = email.replace(/\.+/g, '').replace('@gmail.com', '@gmail.com');
+  }
+
   // Sanitize inputs
   username = validator.trim(username);
-  email = validator.normalizeEmail(email);
 
   if (!username || !email || !password) {
     return next(new AppError('Please provide username, email and password', 400));
@@ -171,33 +177,57 @@ exports.logout = catchAsync(async (req, res) => {
 });
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email });
-  if (!user) {
-    return next(new AppError('There is no user with this email address.', 404));
-  }
-
-  // Generate the random reset token
-  const resetToken = user.createPasswordResetToken();
-  await user.save({ validateBeforeSave: false });
-
-  console.log('User after saving reset token:', user.toObject());
-
-  // Send it to user's email
   try {
-    const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-    await sendPasswordResetEmail(user, resetURL);
+    let { email } = req.body;
 
-    res.status(200).json({
-      status: 'success',
-      message: 'Token sent to email!'
-    });
-  } catch (err) {
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
+    // Normalize email for search
+    email = email.toLowerCase().trim();
+    const normalizedEmail = email.endsWith('@gmail.com') 
+      ? email.replace(/\.+/g, '').replace('@gmail.com', '@gmail.com')
+      : email;
+
+    console.log('Searching for email:', normalizedEmail);
+
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No account found with this email address.'
+      });
+    }
+
+    // Generate password reset token
+    const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
-    return next(new AppError('There was an error sending the email. Try again later!', 500));
+    try {
+      // Create reset URL
+      const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+      
+      // Send email
+      await sendPasswordResetEmail(user, resetURL);
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Password reset instructions sent to your email.'
+      });
+    } catch (err) {
+      // If email fails, clean up the reset token
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      console.error('Error sending reset email:', err);
+
+      return res.status(500).json({
+        status: 'error',
+        message: 'Failed to send password reset email. Please try again later.'
+      });
+    }
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    return next(new AppError('Error during password reset request', 500));
   }
 });
 
