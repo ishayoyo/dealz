@@ -46,9 +46,11 @@ router.get('/check-image-uploads', dealController.checkImageUploads);
 router.get('/unused-images-count', isAdmin, dealController.getUnusedImagesCount);
 router.delete('/delete-unused-images', isAdmin, dealController.deleteUnusedImages);
 router.post('/clear-cache', isAdmin, dealController.clearDealsCache);
+router.patch('/:id/moderate', isAdmin, dealController.moderateDeal);
 
 // Authenticated routes with :id parameter
 router.get('/:id/status', dealController.checkDealStatus);
+router.patch('/:id', dealController.updateDeal);
 router.delete('/:id', dealController.deleteDeal);
 router.post('/:id/buy', dealController.markAsBought);
 router.post('/:id/follow', dealController.followDeal);

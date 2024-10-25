@@ -759,10 +759,20 @@ exports.updateDeal = catchAsync(async (req, res, next) => {
     imageUrl
   } = req.body;
 
+  // Validate required fields
+  if (!title || !description || !price || !listPrice || !category || !url) {
+    return next(new AppError('Please provide all required fields', 400));
+  }
+
   const deal = await Deal.findById(id);
 
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
+  }
+
+  // Check if user is the owner
+  if (deal.user.toString() !== req.user.id) {
+    return next(new AppError('You do not have permission to update this deal', 403));
   }
 
   // Update deal fields
@@ -774,11 +784,16 @@ exports.updateDeal = catchAsync(async (req, res, next) => {
   deal.shipping = shipping;
   deal.url = url;
 
-  // Handle image update
-  if (imageUrl !== deal.imageUrl) {
+  // Handle image update if provided
+  if (imageUrl && imageUrl !== deal.imageUrl) {
+    const newImageUpload = await ImageUpload.findOne({ imageUrl });
+    if (!newImageUpload) {
+      return next(new AppError('Invalid image URL', 400));
+    }
+
     // Mark the new image as used
     await ImageUpload.findOneAndUpdate(
-      { imageUrl: imageUrl },
+      { imageUrl },
       { used: true }
     );
 
@@ -792,8 +807,6 @@ exports.updateDeal = catchAsync(async (req, res, next) => {
   }
 
   await deal.save();
-
-  // Clear the deals cache
   dealCache.flushAll();
 
   res.status(200).json({
