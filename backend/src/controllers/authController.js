@@ -122,18 +122,19 @@ exports.login = catchAsync(async (req, res, next) => {
     const accessToken = signToken(user._id);
     const refreshToken = signRefreshToken(user._id);
 
+    // Set cookies
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 15 * 60 * 1000 // 15 minutes
+      maxAge: 15 * 60 * 1000
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     user.password = undefined;
@@ -141,9 +142,12 @@ exports.login = catchAsync(async (req, res, next) => {
     // Reset the rate limiter for this IP on successful login
     req.rateLimit.resetKey(req.ip);
 
-    res.status(200).json({ 
-      status: 'success', 
-      data: { user }
+    res.status(200).json({
+      status: 'success',
+      data: {
+        user,
+        token: accessToken // Include token in response body
+      }
     });
   } catch (error) {
     return next(new AppError('Error during login', 500));
@@ -198,61 +202,54 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
-  const { token } = req.params;
-  const { newPassword, passwordConfirmation } = req.body;
+  try {
+    // Get user based on token
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
 
-  console.log('Received token:', token);
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() }
+    });
 
-  // Hash the token
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
+    if (!user) {
+      return next(new AppError('Token is invalid or has expired', 400));
+    }
 
-  console.log('Hashed token:', hashedToken);
+    // Set new password
+    user.password = req.body.password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
 
-  const user = await User.findOne({
-    passwordResetToken: hashedToken,
-    passwordResetExpires: { $gt: Date.now() }
-  });
+    // Log the user in
+    const accessToken = signToken(user._id);
+    const refreshToken = signRefreshToken(user._id);
 
-  console.log('Found user:', user ? user.toObject() : null);
-  console.log('Current time:', new Date());
-  if (user) {
-    console.log('Token expiration time:', user.passwordResetExpires);
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Password reset successfully'
+    });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    return next(new AppError('Error resetting password', 500));
   }
-
-  if (!user) {
-    return next(new AppError('Token is invalid or has expired', 400));
-  }
-
-  user.password = newPassword;
-  user.passwordResetToken = undefined;
-  user.passwordResetExpires = undefined;
-  await user.save();
-
-  // Log the user in, send JWT
-  const accessToken = signToken(user._id);
-  const refreshToken = signRefreshToken(user._id);
-
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 15 * 60 * 1000 // 15 minutes
-  });
-
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  });
-
-  res.status(200).json({ 
-    status: 'success',
-    message: 'Password reset successfully'
-  });
 });
 
 exports.verifyEmail = async (req, res) => {
