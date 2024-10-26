@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const crypto = require('crypto');
 const cheerio = require('cheerio');
+const sharp = require('sharp');
 
 class ImageFetcherService {
   constructor() {
@@ -67,15 +68,20 @@ class ImageFetcherService {
       console.log('Image fetched successfully');
 
       const buffer = Buffer.from(imageResponse.data, 'binary');
-      const filename = `${crypto.randomBytes(16).toString('hex')}.jpg`;
+      const filename = `${crypto.randomBytes(16).toString('hex')}.webp`;
       const filepath = path.join(this.imageDir, filename);
 
-      console.log('Writing image to file:', filepath);
-      await fs.writeFile(filepath, buffer);
+      // Convert to WebP and save
+      await sharp(buffer)
+        .webp({ 
+          quality: 80, // Adjust quality (0-100)
+          lossless: false, // Use lossy compression
+          effort: 4 // Compression effort (0-6)
+        })
+        .toFile(filepath);
       
-      console.log('Image saved successfully');
+      console.log('Image saved successfully as WebP');
       const savedImageUrl = `/images/deals/${filename}`;
-      console.log('Returning image URL:', savedImageUrl);
       return savedImageUrl;
     } catch (error) {
       console.error('Error in fetchAndSaveImage:', error.message);
