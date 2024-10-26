@@ -31,7 +31,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
@@ -40,6 +40,7 @@ import DealModal from '~/components/DealModal.vue'
 import DealModalSkeleton from '~/components/DealModalSkeleton.vue'
 import AuthModal from '~/components/AuthModal.vue'
 import api from '~/services/api'
+import { useHead } from '#imports'
 
 const route = useRoute()
 const router = useRouter()
@@ -55,6 +56,13 @@ const isLoginMode = ref(true)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.user && authStore.user.role === 'admin')
+
+// Add this computed property for the base URL
+const baseUrl = computed(() => {
+  return process.client 
+    ? window.location.origin 
+    : 'http://localhost:3000' // Default for SSR
+})
 
 async function fetchDeal() {
   loading.value = true
@@ -165,6 +173,55 @@ async function handleDeleteComment(commentId) {
       deal.value.comments.push(deletedComment)
     }
   }
+}
+
+// Add this watch to update meta tags when deal data changes
+watch(() => deal.value, (newDeal) => {
+  if (newDeal) {
+    // Create a friendly sharing message
+    const sharingDescription = `I found this great deal at SaverSonic! ${newDeal.title} for only $${newDeal.price} (Was $${newDeal.listPrice})`
+
+    useHead({
+      title: newDeal.title,
+      meta: [
+        { name: 'description', content: sharingDescription },
+        // OpenGraph Basic
+        { property: 'og:title', content: newDeal.title },
+        { property: 'og:description', content: sharingDescription },
+        { property: 'og:image', content: getFullImageUrl(newDeal.imageUrl) },
+        { property: 'og:url', content: `${baseUrl.value}/deals/${newDeal._id}` },
+        { property: 'og:type', content: 'product' },
+        // OpenGraph Product Specific
+        { property: 'og:price:amount', content: newDeal.price.toString() },
+        { property: 'og:price:currency', content: 'USD' },
+        // Add original price and discount if available
+        { property: 'product:original_price:amount', content: newDeal.listPrice?.toString() },
+        { property: 'product:original_price:currency', content: 'USD' },
+        { property: 'product:sale_price:amount', content: newDeal.price.toString() },
+        { property: 'product:sale_price:currency', content: 'USD' },
+        // Add availability
+        { property: 'product:availability', content: 'in stock' },
+        // Twitter Card
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: newDeal.title },
+        { name: 'twitter:description', content: sharingDescription },
+        { name: 'twitter:image', content: getFullImageUrl(newDeal.imageUrl) },
+      ],
+    })
+  }
+}, { immediate: true })
+
+// Add this helper function to ensure full image URLs
+const getFullImageUrl = (imageUrl) => {
+  if (!imageUrl) return ''
+  if (imageUrl.startsWith('http')) return imageUrl
+  
+  const config = useRuntimeConfig()
+  const baseUrl = config.public.apiBase.includes('localhost')
+    ? 'http://localhost:5000'
+    : 'https://saversonic.com'
+    
+  return `${baseUrl}${imageUrl}`
 }
 
 </script>

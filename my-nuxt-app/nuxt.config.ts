@@ -46,15 +46,56 @@ export default defineNuxtConfig({
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
+      title: 'SaverSonic - Your Smart Shopping Companion',
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'theme-color', content: '#ffffff' },
+        // Description
+        { 
+          name: 'description', 
+          content: 'SaverSonic is a social deal shopping network that helps consumers find the best deals and savings opportunities. Join our community of smart shoppers and start saving today!' 
+        },
+        // OpenGraph Basic
+        { property: 'og:site_name', content: 'SaverSonic' },
+        { property: 'og:type', content: 'website' },
+        { 
+          property: 'og:title', 
+          content: 'SaverSonic - Your Smart Shopping Companion' 
+        },
+        { 
+          property: 'og:description', 
+          content: 'SaverSonic is a social deal shopping network that helps consumers find the best deals and savings opportunities. Join our community of smart shoppers and start saving today!' 
+        },
+        { 
+          property: 'og:image', 
+          content: 'https://saversonic.com/images/logo-saver-background.png' 
+        },
+        { 
+          property: 'og:url', 
+          content: 'https://saversonic.com' 
+        },
+        // Twitter Card
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { 
+          name: 'twitter:title', 
+          content: 'SaverSonic - Your Smart Shopping Companion' 
+        },
+        { 
+          name: 'twitter:description', 
+          content: 'SaverSonic is a social deal shopping network that helps consumers find the best deals and savings opportunities. Join our community of smart shoppers and start saving today!' 
+        },
+        { 
+          name: 'twitter:image', 
+          content: 'https://saversonic.com/images/logo-saver-background.png' 
+        },
+      ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' },
         { rel: 'manifest', href: '/site.webmanifest' },
-      ],
-      meta: [
-        { name: 'theme-color', content: '#ffffff' },
       ],
       script: [
         {
