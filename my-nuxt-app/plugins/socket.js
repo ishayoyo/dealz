@@ -88,5 +88,16 @@ export default defineNuxtPlugin((nuxtApp) => {
         authStore.updateFollowerCount(data.count)
       }
     })
+
+    socket.on('dealStatusChanged', (payload) => {
+      console.log('Received deal status change:', payload)
+      if (payload.status === 'approved') {
+        // Update the deals store
+        dealsStore.handleDealApproval(payload.deal)
+        
+        // Show success notification
+        toast.success(`Deal "${payload.deal.title}" has been approved!`)
+      }
+    })
   }
 })

@@ -600,10 +600,31 @@ exports.moderateDeal = catchAsync(async (req, res, next) => {
     return next(new AppError('Invalid status', 400));
   }
 
-  const deal = await Deal.findByIdAndUpdate(id, { status }, { new: true });
+  const deal = await Deal.findByIdAndUpdate(id, { status }, { new: true })
+    .populate('user', 'username profilePicture');
 
   if (!deal) {
     return next(new AppError('No deal found with that ID', 404));
+  }
+
+  // Clear cache
+  dealCache.flushAll();
+
+  // Emit socket event for deal approval
+  if (status === 'approved') {
+    req.app.get('io').emit('dealStatusChanged', {
+      dealId: deal._id,
+      status: 'approved',
+      deal: deal
+    });
+
+    // Notify the deal creator
+    const notificationService = req.app.get('notificationService');
+    await notificationService.createDealApprovalNotification(
+      deal.user._id,
+      deal._id,
+      `Your deal "${deal.title}" has been approved!`
+    );
   }
 
   res.status(200).json({

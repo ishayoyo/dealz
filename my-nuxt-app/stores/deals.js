@@ -227,6 +227,17 @@ export const useDealsStore = defineStore('deals', {
         this.loading = false
         throw error
       }
+    },
+
+    handleDealApproval(deal) {
+      // If the deal is in pending state, update it
+      const index = this.deals.findIndex(d => d._id === deal._id)
+      if (index !== -1) {
+        this.deals[index] = deal
+      } else {
+        // If it's not in the list, add it at the beginning
+        this.deals.unshift(deal)
+      }
     }
   }
 })
