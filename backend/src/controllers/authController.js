@@ -238,6 +238,24 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
   try {
+    // Add debug logs
+    console.log('Reset password request body:', req.body);
+    console.log('Reset password token:', req.params.token);
+
+    // Validate password from request body
+    const { password, confirmPassword } = req.body; // Also get confirmPassword if you're using it
+    
+    console.log('Password received:', password);
+    console.log('Confirm password received:', confirmPassword);
+
+    if (!password) {
+      return next(new AppError('Please provide a new password', 400));
+    }
+
+    if (!validator.isLength(password, { min: 8 })) {
+      return next(new AppError('Password must be at least 8 characters long', 400));
+    }
+
     // Get user based on token
     const hashedToken = crypto
       .createHash('sha256')
@@ -254,9 +272,11 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     }
 
     // Set new password
-    user.password = req.body.password;
+    user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+    
+    // Save with validation
     await user.save();
 
     // Log the user in

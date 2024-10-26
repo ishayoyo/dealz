@@ -444,23 +444,26 @@ export const useAuthStore = defineStore('auth', {
 
     async resetPassword(token, newPassword, passwordConfirmation) {
       try {
-        console.log('Calling API to reset password')
+        console.log('Calling API to reset password with token:', token);
         const response = await api.patch(`/users/reset-password/${token}`, { 
-          newPassword,
-          passwordConfirmation
-        })
-        console.log('API response:', response.data)
+          password: newPassword, // Changed from newPassword to password to match backend
+          confirmPassword: passwordConfirmation // Added confirmPassword
+        });
+        
+        console.log('API response:', response.data);
+        
         if (response.data.status === 'success') {
-          return { success: true }
+          return { success: true };
         } else {
-          return { success: false, error: response.data.message || 'Password reset failed' }
+          return { success: false, error: response.data.message || 'Password reset failed' };
         }
       } catch (error) {
-        console.error('Error in authStore.resetPassword:', error)
+        console.error('Error in authStore.resetPassword:', error);
+        console.error('Error response data:', error.response?.data);
         return { 
           success: false, 
           error: error.response?.data?.message || 'An error occurred while resetting the password'
-        }
+        };
       }
     },
 
