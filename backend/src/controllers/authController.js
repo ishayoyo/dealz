@@ -24,15 +24,22 @@ const generateVerificationCode = () => {
   return crypto.randomBytes(3).toString('hex').toUpperCase();
 };
 
+// Update the email normalization in register, login, and forgotPassword functions
+const normalizeEmail = (email) => {
+  email = email.toLowerCase().trim();
+  if (email.endsWith('@gmail.com')) {
+    // Only remove dots before the @gmail.com, not in @gmail.com itself
+    const [localPart] = email.split('@');
+    return `${localPart.replace(/\./g, '')}@gmail.com`;
+  }
+  return email;
+};
+
 exports.register = catchAsync(async (req, res, next) => {
   let { username, email, password } = req.body;
 
-  // Normalize email for Gmail addresses
-  email = email.toLowerCase().trim();
-  if (email.endsWith('@gmail.com')) {
-    // Remove all dots before @gmail.com
-    email = email.replace(/\.+/g, '').replace('@gmail.com', '@gmail.com');
-  }
+  // Use the updated normalizeEmail function
+  email = normalizeEmail(email);
 
   // Sanitize inputs
   username = validator.trim(username);
@@ -94,7 +101,8 @@ exports.register = catchAsync(async (req, res, next) => {
 exports.login = catchAsync(async (req, res, next) => {
   let { email, password } = req.body;
 
-  email = validator.normalizeEmail(email);
+  // Use the updated normalizeEmail function
+  email = normalizeEmail(email);
 
   if (!email || !password) {
     return next(new AppError('Please provide email and password', 400));
@@ -180,16 +188,13 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   try {
     let { email } = req.body;
 
-    // Normalize email for search
-    email = email.toLowerCase().trim();
-    const normalizedEmail = email.endsWith('@gmail.com') 
-      ? email.replace(/\.+/g, '').replace('@gmail.com', '@gmail.com')
-      : email;
+    // Use the updated normalizeEmail function
+    email = normalizeEmail(email);
 
-    console.log('Searching for email:', normalizedEmail);
+    console.log('Searching for email:', email);
 
-    const user = await User.findOne({ email: normalizedEmail });
-
+    const user = await User.findOne({ email });
+    
     if (!user) {
       return res.status(404).json({
         status: 'error',
