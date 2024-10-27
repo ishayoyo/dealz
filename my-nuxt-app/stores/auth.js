@@ -537,8 +537,8 @@ export const useAuthStore = defineStore('auth', {
           }
         }
 
-        // Add /v1 to the path
-        const response = await api.get(`/v1/users/auth/google/callback?code=${code}`);
+        // Remove the extra /v1
+        const response = await api.get(`/users/auth/google/callback?code=${code}`);
         if (response.data.status === 'success') {
           sessionStorage.removeItem('googleLoginInitiated');
           await this.fetchUser();
@@ -560,8 +560,8 @@ export const useAuthStore = defineStore('auth', {
         if (process.client) {
           sessionStorage.setItem('googleLoginInitiated', Date.now().toString());
         }
-        // Add /v1 to the path
-        window.location.href = `${config.public.apiBase}/v1/users/auth/google`;
+        // Remove the extra /v1 since it's already in the base URL
+        window.location.href = `${config.public.apiBase}/users/auth/google`;
       } catch (error) {
         console.error('Google login error:', error);
         return { 
