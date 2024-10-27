@@ -529,18 +529,17 @@ export const useAuthStore = defineStore('auth', {
     // Add these new actions for Google authentication
     async handleGoogleCallback(code) {
       try {
-        // Check if the login request is stale
         const loginTimestamp = sessionStorage.getItem('googleLoginInitiated');
         if (loginTimestamp) {
           const timeDiff = Date.now() - parseInt(loginTimestamp);
-          if (timeDiff > 300000) { // 5 minutes
+          if (timeDiff > 300000) {
             throw new Error('Login request expired');
           }
         }
 
-        const response = await api.get(`/users/auth/google/callback?code=${code}`);
+        // Add /v1 to the path
+        const response = await api.get(`/v1/users/auth/google/callback?code=${code}`);
         if (response.data.status === 'success') {
-          // Clear the timestamp
           sessionStorage.removeItem('googleLoginInitiated');
           await this.fetchUser();
           return { success: true };
@@ -558,11 +557,11 @@ export const useAuthStore = defineStore('auth', {
     async googleLogin() {
       const config = useRuntimeConfig();
       try {
-        // Store current timestamp to prevent stale redirects
         if (process.client) {
           sessionStorage.setItem('googleLoginInitiated', Date.now().toString());
         }
-        window.location.href = `${config.public.apiBase}/users/auth/google`;
+        // Add /v1 to the path
+        window.location.href = `${config.public.apiBase}/v1/users/auth/google`;
       } catch (error) {
         console.error('Google login error:', error);
         return { 
