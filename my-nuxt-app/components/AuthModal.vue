@@ -1,36 +1,68 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-    <div class="bg-white rounded-lg w-full max-w-md p-6 sm:p-8 relative shadow-lg">
-      <!-- Close button -->
-      <button @click="$emit('close')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-300">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl w-full max-w-md p-8 relative shadow-2xl transform transition-all">
+      <!-- Close button - styled more elegantly -->
+      <button @click="$emit('close')" class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors duration-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
       
       <!-- Auth form -->
       <div v-if="!showForgotPassword">
-        <!-- Modal title -->
-        <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-center text-primary-600">
-          {{ isLogin ? 'Welcome Back!' : 'Join the Savings Squad!' }}
+        <!-- Enhanced title with gradient text -->
+        <h2 class="text-3xl font-bold mb-2 text-center bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
+          {{ isLogin ? 'Welcome Back! 👋' : 'Join Our Community! 🎉' }}
         </h2>
         
-        <!-- Modal subtitle -->
-        <p class="text-center text-gray-600 mb-6">
-          {{ isLogin ? 'Your fellow shoppers are waiting for your amazing deals!' : 'Unlock a world of incredible deals and start saving today!' }}
+        <!-- Enhanced subtitle -->
+        <p class="text-center text-gray-600 mb-8 max-w-sm mx-auto">
+          {{ isLogin 
+            ? 'Great to see you again! Ready to discover more amazing deals?' 
+            : 'Join thousands of smart shoppers and start saving today!' 
+          }}
         </p>
 
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Username input (only for signup) -->
+        <!-- Google Sign In Button moved to top for better visibility -->
+        <button 
+          @click="handleGoogleLogin"
+          type="button"
+          class="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm bg-white hover:bg-gray-50 transition-all duration-200 mb-6"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M23.766 12.2764C23.766 11.4607 23.6999 10.6406 23.5588 9.83807H12.24V14.4591H18.7217C18.4528 15.9494 17.5885 17.2678 16.323 18.1056V21.1039H20.19C22.4608 19.0139 23.766 15.9274 23.766 12.2764Z" fill="#4285F4"/>
+            <path d="M12.24 24.0008C15.4764 24.0008 18.2058 22.9382 20.1944 21.1039L16.3274 18.1055C15.2516 18.8375 13.8626 19.252 12.24 19.252C9.0792 19.252 6.4034 17.1399 5.4414 14.3003H1.4474V17.3912C3.4034 21.4434 7.5034 24.0008 12.24 24.0008Z" fill="#34A853"/>
+            <path d="M5.4414 14.3003C5.2022 13.5681 5.0676 12.7862 5.0676 12.0008C5.0676 11.2154 5.2022 10.4335 5.4414 9.70129V6.61029H1.4474C0.5244 8.23129 0 10.0682 0 12.0008C0 13.9334 0.5244 15.7703 1.4474 17.3913L5.4414 14.3003Z" fill="#FBBC04"/>
+            <path d="M12.24 4.74966C14.0258 4.74966 15.6234 5.35843 16.8954 6.56966L20.2698 3.19523C18.2002 1.21523 15.4764 0 12.24 0C7.5034 0 3.4034 2.55733 1.4474 6.61029L5.4414 9.70129C6.4034 6.86166 9.0792 4.74966 12.24 4.74966Z" fill="#EA4335"/>
+          </svg>
+          <span class="font-medium">Continue with Google</span>
+        </button>
+
+        <!-- Divider with enhanced styling -->
+        <div class="relative my-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-200"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-4 bg-white text-gray-500 text-sm">or continue with email</span>
+          </div>
+        </div>
+
+        <form @submit.prevent="handleSubmit" class="space-y-5">
+          <!-- Enhanced input fields with better visual feedback -->
           <div v-if="!isLogin">
-            <label for="username" class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+            <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <input 
               type="text" 
               id="username" 
               v-model="form.username" 
               @input="validateUsername"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" 
-              :class="{'border-red-500': usernameError, 'border-green-500': isUsernameValid && form.username.length > 0}"
+              class="w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              :class="{
+                'border-red-200 bg-red-50': usernameError,
+                'border-green-200 bg-green-50': isUsernameValid && form.username.length > 0,
+                'border-gray-200': !usernameError && (!isUsernameValid || form.username.length === 0)
+              }"
               required
             >
             <p v-if="!isLogin && form.username.length > 0" class="text-sm mt-1" :class="isUsernameValid ? 'text-green-500' : 'text-red-500'">
@@ -88,55 +120,41 @@
             {{ error }}
           </div>
 
-          <!-- Submit button -->
+          <!-- Enhanced submit button -->
           <button 
             type="submit" 
-            class="w-full btn btn-primary"
-            :disabled="!isPasswordValid || !isEmailValid || isSubmitting || (isLogin ? authStore.loginCountdown > 0 : authStore.signupCountdown > 0)"
+            class="w-full py-3 px-4 rounded-xl font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+            :disabled="!isPasswordValid || !isEmailValid || isSubmitting"
           >
-            {{ isSubmitting ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up') }}
+            <span v-if="isSubmitting" class="flex items-center justify-center gap-2">
+              <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><!-- ... loading spinner SVG ... --></svg>
+              Processing...
+            </span>
+            <span v-else>{{ isLogin ? 'Sign In' : 'Create Account' }}</span>
           </button>
 
-          <!-- Add after the submit button and before the Forgot Password link -->
-          <div class="relative my-6">
-            <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-gray-300"></div>
-            </div>
-            <div class="relative flex justify-center text-sm">
-              <span class="px-2 bg-white text-gray-500">Or continue with</span>
-            </div>
+          <!-- Enhanced toggle link -->
+          <div class="mt-6 text-center space-y-2">
+            <!-- Forgot Password link (only for login) -->
+            <p v-if="isLogin" class="text-gray-600">
+              <a href="#" @click.prevent="showForgotPassword = true" class="text-primary-600 hover:text-primary-700 hover:underline">
+                Forgot Password?
+              </a>
+            </p>
+
+            <!-- Single toggle auth mode link -->
+            <p class="text-gray-600">
+              {{ isLogin ? "New to our platform?" : "Already have an account?" }}
+              <a 
+                href="#" 
+                @click.prevent="toggleAuthMode" 
+                class="font-medium text-primary-600 hover:text-primary-700 underline-offset-2 hover:underline ml-1"
+              >
+                {{ isLogin ? 'Sign up now' : 'Log in' }}
+              </a>
+            </p>
           </div>
-
-          <!-- Google Sign In Button -->
-          <button 
-            @click="handleGoogleLogin"
-            type="button"
-            class="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-md shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M23.766 12.2764C23.766 11.4607 23.6999 10.6406 23.5588 9.83807H12.24V14.4591H18.7217C18.4528 15.9494 17.5885 17.2678 16.323 18.1056V21.1039H20.19C22.4608 19.0139 23.766 15.9274 23.766 12.2764Z" fill="#4285F4"/>
-              <path d="M12.24 24.0008C15.4764 24.0008 18.2058 22.9382 20.1944 21.1039L16.3274 18.1055C15.2516 18.8375 13.8626 19.252 12.24 19.252C9.0792 19.252 6.4034 17.1399 5.4414 14.3003H1.4474V17.3912C3.4034 21.4434 7.5034 24.0008 12.24 24.0008Z" fill="#34A853"/>
-              <path d="M5.4414 14.3003C5.2022 13.5681 5.0676 12.7862 5.0676 12.0008C5.0676 11.2154 5.2022 10.4335 5.4414 9.70129V6.61029H1.4474C0.5244 8.23129 0 10.0682 0 12.0008C0 13.9334 0.5244 15.7703 1.4474 17.3913L5.4414 14.3003Z" fill="#FBBC04"/>
-              <path d="M12.24 4.74966C14.0258 4.74966 15.6234 5.35843 16.8954 6.56966L20.2698 3.19523C18.2002 1.21523 15.4764 0 12.24 0C7.5034 0 3.4034 2.55733 1.4474 6.61029L5.4414 9.70129C6.4034 6.86166 9.0792 4.74966 12.24 4.74966Z" fill="#EA4335"/>
-            </svg>
-            <span class="text-sm font-medium">Continue with Google</span>
-          </button>
         </form>
-        
-        <!-- Forgot Password link (only for login) -->
-        <p v-if="isLogin" class="mt-2 text-center text-gray-600">
-          <a href="#" @click.prevent="showForgotPassword = true" class="text-primary-600 hover:underline">
-            Forgot Password?
-          </a>
-        </p>
-        
-        <!-- Toggle between login and signup -->
-        <p class="mt-4 text-center text-gray-600">
-          {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
-          <a href="#" @click.prevent="toggleAuthMode" class="text-primary-600 hover:underline">
-            {{ isLogin ? 'Sign Up' : 'Log In' }}
-          </a>
-        </p>
       </div>
 
       <!-- Forgot Password Modal -->
