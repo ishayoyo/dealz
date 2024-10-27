@@ -29,7 +29,10 @@ export default defineNuxtConfig({
       // Add Google Auth config
       googleAuthCallback: process.env.NODE_ENV === 'production'
         ? 'https://saversonic.com/api/v1/users/auth/google/callback'
-        : 'http://localhost:5000/api/v1/users/auth/google/callback'
+        : 'http://localhost:5000/api/v1/users/auth/google/callback',
+      // Google OAuth Configuration
+      googleClientId: process.env.GOOGLE_CLIENT_ID,
+      googleAuthScope: ['email', 'profile']
     }
   },
 

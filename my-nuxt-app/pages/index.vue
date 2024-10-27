@@ -1,48 +1,47 @@
 <template>
   <div>
     <AnnouncementBanner @open-auth-modal="openAuthModal" />
-    <!-- Adjust container padding based on authentication status -->
     <div class="container mx-auto px-4" 
       :class="{
-        'pt-16 md:pt-24': !isAuthenticated, // More padding for hero section when not authenticated
-        'pt-0 md:pt-0': isAuthenticated // No extra padding when authenticated
+        'pt-14 sm:pt-16 md:pt-24': !isAuthenticated,
+        'pt-0': isAuthenticated
       }"
     >
       <!-- Hero section for non-authenticated users -->
-      <div v-if="!isAuthenticated" class="text-center mb-12 max-w-3xl mx-auto">
-        <h1 class="text-3xl md:text-4xl font-heading font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
+      <div v-if="!isAuthenticated" class="text-center mb-8 sm:mb-12 max-w-3xl mx-auto px-4">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-heading font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3 sm:mb-4">
           Discover the Best Deals Daily
         </h1>
-        <p class="text-gray-600 text-lg mb-6">
-          Join our community of savvy shoppers and never miss out on amazing discounts across all categories.
+        <p class="text-gray-600 text-base sm:text-lg mb-4 sm:mb-6">
+          Join our community of savvy shoppers and never miss out on amazing discounts.
         </p>
-        <div class="flex justify-center gap-4">
+        <div class="grid grid-cols-2 sm:flex sm:flex-row justify-center gap-2 sm:gap-4">
           <button 
             @click="openAuthModal('signup')" 
-            class="btn btn-primary"
+            class="btn btn-primary text-sm sm:text-base px-2 sm:px-4"
           >
-            Start Saving Today
+            Start Saving
           </button>
           <button 
             @click="scrollToDeals" 
-            class="btn btn-secondary"
+            class="btn btn-secondary text-sm sm:text-base px-2 sm:px-4"
           >
             Browse Deals
           </button>
         </div>
-        <!-- Add statistics -->
-        <div class="grid grid-cols-3 gap-4 mt-8 max-w-2xl mx-auto">
-          <div class="p-4 rounded-lg bg-white shadow-md">
-            <div class="text-2xl font-bold text-primary-600">{{ dealStats.total }}+</div>
-            <div class="text-sm text-gray-600">Active Deals</div>
+        <!-- Stats section -->
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 mt-6 sm:mt-8 max-w-2xl mx-auto">
+          <div class="p-2 sm:p-4 rounded-lg bg-white shadow-md">
+            <div class="text-xl sm:text-2xl font-bold text-primary-600">{{ dealStats.total }}+</div>
+            <div class="text-xs sm:text-sm text-gray-600">Active Deals</div>
           </div>
-          <div class="p-4 rounded-lg bg-white shadow-md">
-            <div class="text-2xl font-bold text-primary-600">{{ dealStats.savings }}%</div>
-            <div class="text-sm text-gray-600">Avg. Savings</div>
+          <div class="p-2 sm:p-4 rounded-lg bg-white shadow-md">
+            <div class="text-xl sm:text-2xl font-bold text-primary-600">{{ dealStats.savings }}%</div>
+            <div class="text-xs sm:text-sm text-gray-600">Avg. Savings</div>
           </div>
-          <div class="p-4 rounded-lg bg-white shadow-md">
-            <div class="text-2xl font-bold text-primary-600">{{ dealStats.users }}k+</div>
-            <div class="text-sm text-gray-600">Happy Users</div>
+          <div class="p-2 sm:p-4 rounded-lg bg-white shadow-md">
+            <div class="text-xl sm:text-2xl font-bold text-primary-600">{{ dealStats.users }}k+</div>
+            <div class="text-xs sm:text-sm text-gray-600">Happy Users</div>
           </div>
         </div>
       </div>
@@ -281,3 +280,4 @@ const dealStats = ref({
 
 const showBanner = ref(true)
 </script>
+

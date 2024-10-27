@@ -21,7 +21,7 @@
         
         <!-- Main content -->
         <main class="relative z-[1] pt-16 md:pt-20">
-          <slot />
+          <slot /> <!-- Replace NuxtPage with slot -->
         </main>
 
         <!-- Modals -->
@@ -168,3 +168,4 @@ watch(() => route.path, async (newPath) => {
   }
 })
 </script>
+

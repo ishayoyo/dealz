@@ -2,15 +2,16 @@
   <ClientOnly>
     <div 
       v-if="!isAuthenticated" 
-      class="fixed top-0 left-0 right-0 bg-gradient-to-r from-primary-500 to-secondary-500 text-white h-10 z-50"
+      class="fixed top-0 left-0 right-0 bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-2 sm:py-2.5 z-50"
     >
       <div class="container mx-auto px-4 h-full flex items-center justify-center">
-        <p class="text-sm">
-          <span class="font-bold">🎉 Welcome!</span> 
-          <span class="font-heading">Join our community of deal hunters today.</span> 
+        <p class="text-xs sm:text-sm text-center">
+          <span class="font-bold block sm:inline">🎉 Welcome!</span> 
+          <span class="font-heading hidden sm:inline">Join our community of deal hunters today.</span>
+          <span class="font-heading sm:hidden">Join our community today.</span>
           <button 
             @click="$emit('open-auth-modal', 'signup')" 
-            class="underline hover:no-underline ml-2 font-semibold"
+            class="underline hover:no-underline ml-1 sm:ml-2 font-semibold whitespace-nowrap"
           >
             Sign up now
           </button>
