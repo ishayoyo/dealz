@@ -51,6 +51,40 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
+// Add this function at the top with your other utility functions
+const generateUniqueUsername = async (baseName) => {
+  // Remove spaces and special characters, convert to lowercase
+  let username = baseName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  
+  let isUnique = false;
+  let counter = 0;
+  let finalUsername = username;
+
+  // Keep trying until we find a unique username
+  while (!isUnique) {
+    // If this isn't our first try, add a number to the end
+    if (counter > 0) {
+      finalUsername = `${username}${counter}`;
+    }
+
+    // Check if this username exists
+    const existingUser = await User.findOne({ username: finalUsername });
+    
+    if (!existingUser) {
+      isUnique = true;
+    } else {
+      counter++;
+    }
+
+    // Prevent infinite loops
+    if (counter > 1000) {
+      throw new Error('Unable to generate unique username');
+    }
+  }
+
+  return finalUsername;
+};
+
 // Update the Google Strategy configuration
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
@@ -58,39 +92,37 @@ passport.use(new GoogleStrategy({
     callbackURL: process.env.GOOGLE_CALLBACK_URL,
     passReqToCallback: true
   },
-  async function(req, accessToken, refreshToken, profile, cb) {
+  async function(req, accessToken, refreshToken, profile, done) {
     try {
-      console.log('Google auth callback received:', profile);
+      // Check if user exists
       let user = await User.findOne({ email: profile.emails[0].value });
       
       if (!user) {
+        // Generate a unique username from their Google display name
+        const username = await generateUniqueUsername(profile.displayName);
+        
         // Create new user
         user = await User.create({
+          username: username,
           email: profile.emails[0].value,
-          username: await generateUniqueUsername(profile.displayName),
-          googleId: profile.id,
-          provider: 'google',
+          password: crypto.randomBytes(16).toString('hex'),
           isVerified: true,
-          firstName: profile.name.givenName,
-          lastName: profile.name.familyName,
-          avatar: profile.photos[0]?.value
+          googleId: profile.id,
+          avatar: profile.photos?.[0]?.value || null
         });
-      } else {
-        // Update existing user
+      } else if (!user.googleId) {
+        // If user exists but hasn't linked Google
         user.googleId = profile.id;
-        user.provider = 'google';
-        if (!user.firstName) user.firstName = profile.name.givenName;
-        if (!user.lastName) user.lastName = profile.name.familyName;
-        if (!user.avatar && profile.photos[0]?.value) {
+        if (!user.avatar && profile.photos?.[0]?.value) {
           user.avatar = profile.photos[0].value;
         }
         await user.save();
       }
-      
-      return cb(null, user);
+
+      return done(null, user);
     } catch (error) {
       console.error('Google auth error:', error);
-      return cb(error);
+      return done(error);
     }
   }
 ));
