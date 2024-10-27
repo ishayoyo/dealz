@@ -51,44 +51,24 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'theme-color', content: '#ffffff' },
-        // Description
+        // Default description (will be overridden by deal pages)
         { 
-          name: 'description', 
-          content: 'SaverSonic is a social deal shopping network that helps consumers find the best deals and savings opportunities. Join our community of smart shoppers and start saving today!' 
+          name: 'description',
+          content: 'SaverSonic is a social deal shopping network that helps consumers find the best deals and savings opportunities.',
+          key: 'description'  // Add key for dynamic updates
         },
-        // OpenGraph Basic
+        // OpenGraph Basic (with keys for dynamic updates)
         { property: 'og:site_name', content: 'SaverSonic' },
-        { property: 'og:type', content: 'website' },
-        { 
-          property: 'og:title', 
-          content: 'SaverSonic - Your Smart Shopping Companion' 
-        },
-        { 
-          property: 'og:description', 
-          content: 'SaverSonic is a social deal shopping network that helps consumers find the best deals and savings opportunities. Join our community of smart shoppers and start saving today!' 
-        },
-        { 
-          property: 'og:image', 
-          content: 'https://saversonic.com/images/logo-saver-background.png' 
-        },
-        { 
-          property: 'og:url', 
-          content: 'https://saversonic.com' 
-        },
-        // Twitter Card
-        { name: 'twitter:card', content: 'summary_large_image' },
-        { 
-          name: 'twitter:title', 
-          content: 'SaverSonic - Your Smart Shopping Companion' 
-        },
-        { 
-          name: 'twitter:description', 
-          content: 'SaverSonic is a social deal shopping network that helps consumers find the best deals and savings opportunities. Join our community of smart shoppers and start saving today!' 
-        },
-        { 
-          name: 'twitter:image', 
-          content: 'https://saversonic.com/images/logo-saver-background.png' 
-        },
+        { property: 'og:type', content: 'website', key: 'ogType' },
+        { property: 'og:title', content: 'SaverSonic - Your Smart Shopping Companion', key: 'ogTitle' },
+        { property: 'og:description', content: 'SaverSonic is a social deal shopping network that helps consumers find the best deals and savings opportunities.', key: 'ogDescription' },
+        { property: 'og:image', content: 'https://saversonic.com/images/logo-saver-background.png', key: 'ogImage' },
+        { property: 'og:url', content: 'https://saversonic.com', key: 'ogUrl' },
+        // Twitter Card (with keys)
+        { name: 'twitter:card', content: 'summary_large_image', key: 'twitterCard' },
+        { name: 'twitter:title', content: 'SaverSonic - Your Smart Shopping Companion', key: 'twitterTitle' },
+        { name: 'twitter:description', content: 'SaverSonic is a social deal shopping network that helps consumers find the best deals and savings opportunities.', key: 'twitterDescription' },
+        { name: 'twitter:image', content: 'https://saversonic.com/images/logo-saver-background.png', key: 'twitterImage' }
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },

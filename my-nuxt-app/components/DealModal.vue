@@ -180,6 +180,7 @@ import UserMentionAutocomplete from '~/components/UserMentionAutocomplete.vue'
 import { useUserFollow } from '~/composables/useUserFollow'
 import DealModalSkeleton from '~/components/DealModalSkeleton.vue'
 import { useClipboard } from '@vueuse/core'
+import { useHead } from '#app'
 
 const props = defineProps({
   deal: {
@@ -634,6 +635,50 @@ watch(comments, (newComments) => {
 // Add this computed property
 const isOpen = computed(() => props.isOpen)
 
+// Add this computed property for OG meta tags
+const ogMetaTags = computed(() => {
+  if (!props.deal) return null
+  
+  const dealUrl = `${window.location.origin}/deals/${props.deal._id}`
+  const imageFullUrl = props.deal.imageUrl.startsWith('http') 
+    ? props.deal.imageUrl 
+    : `${getImageBaseUrl()}${props.deal.imageUrl}`
+  
+  return {
+    title: props.deal.title,
+    description: `I found this great deal at SaverSonic! ${props.deal.title} for only $${props.deal.price} (Was $${props.deal.listPrice})`,
+    image: imageFullUrl,
+    url: dealUrl,
+    type: 'product',
+    price: {
+      amount: props.deal.price,
+      currency: 'USD'
+    }
+  }
+})
+
+// Add useHead to update meta tags
+watch(() => props.deal, (newDeal) => {
+  if (newDeal) {
+    useHead({
+      meta: [
+        { property: 'og:title', content: ogMetaTags.value.title },
+        { property: 'og:description', content: ogMetaTags.value.description },
+        { property: 'og:image', content: ogMetaTags.value.image },
+        { property: 'og:url', content: ogMetaTags.value.url },
+        { property: 'og:type', content: ogMetaTags.value.type },
+        { property: 'product:price:amount', content: ogMetaTags.value.price.amount.toString() },
+        { property: 'product:price:currency', content: ogMetaTags.value.price.currency },
+        // Twitter Card tags
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: ogMetaTags.value.title },
+        { name: 'twitter:description', content: ogMetaTags.value.description },
+        { name: 'twitter:image', content: ogMetaTags.value.image }
+      ]
+    })
+  }
+}, { immediate: true })
+
 // Remove the following computed property if it's not used elsewhere
 // const subid = computed(() => { ... });
 </script>
@@ -731,6 +776,8 @@ const isOpen = computed(() => props.isOpen)
 
 /* Add any other custom styles you need */
 </style>
+
+
 
 
 
