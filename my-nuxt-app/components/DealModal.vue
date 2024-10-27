@@ -378,8 +378,8 @@ const handleUserSelect = (user) => {
 }
 
 const handleFollowDeal = async () => {
-  if (!authStore.isAuthenticated) {
-    openAuthModal()
+  if (!isAuthenticated.value) {
+    emit('open-auth-modal', 'login')
     return
   }
   try {
@@ -399,8 +399,8 @@ const handleFollowDeal = async () => {
 }
 
 const handleAddComment = () => {
-  if (!authStore.isAuthenticated) {
-    openAuthModal()
+  if (!isAuthenticated.value) {
+    emit('open-auth-modal', 'login')
     return
   }
   addComment()
@@ -444,8 +444,8 @@ const closeModal = () => {
 }
 
 const handleFollowUser = async () => {
-  if (!authStore.isAuthenticated) {
-    openAuthModal()
+  if (!isAuthenticated.value) {
+    emit('open-auth-modal', 'login')
     return
   }
   if (isCurrentUser.value) {
@@ -981,5 +981,6 @@ button {
 
 /* Keep existing styles below */
 </style>
+
 
 

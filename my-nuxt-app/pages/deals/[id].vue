@@ -6,23 +6,35 @@
       :class="{ 'pt-24': !deal || !isMobile }"
     >
       <Transition name="fade" mode="out-in">
-        <DealModalSkeleton v-if="loading" key="loading" />
-        <div v-else-if="error" class="text-center py-8 text-red-500" key="error">{{ error }}</div>
-        <DealModal 
-          v-else-if="deal" 
-          v-model:deal="deal"
-          :isOpen="true"
-          :isAuthenticated="isAuthenticated"
-          :isAdmin="isAdmin"
-          :isDedicatedPage="true"
-          @close-modal="goBack"
-          @update-follow-status="updateFollowStatus"
-          @follow-deal="handleFollowDeal"
-          @open-auth-modal="openAuthModal"
-          @delete-comment="handleDeleteComment"
-          key="deal-modal"
-        />
+        <div key="content"> <!-- Add wrapper div -->
+          <DealModalSkeleton v-if="loading" />
+          <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
+          <DealModal 
+            v-else-if="deal" 
+            v-model:deal="deal"
+            :isOpen="true"
+            :isAuthenticated="isAuthenticated"
+            :isAdmin="isAdmin"
+            :isDedicatedPage="true"
+            @close-modal="goBack"
+            @update-follow-status="updateFollowStatus"
+            @follow-deal="handleFollowDeal"
+            @open-auth-modal="openAuthModal"
+            @delete-comment="handleDeleteComment"
+          />
+        </div>
       </Transition>
+
+      <!-- Move AuthModal outside of Transition -->
+      <Teleport to="body">
+        <AuthModal
+          v-if="showAuthModal"
+          :isLogin="isLoginMode"
+          @close="closeAuthModal"
+          @login="handleLogin"
+          @signup="handleSignup"
+        />
+      </Teleport>
     </div>
   </div>
 </template>
@@ -110,7 +122,7 @@ function handleFollowDeal(followData) {
   dealsStore.updateDealFollowStatus(followData.dealId, followData.isFollowing, followData.followCount)
 }
 
-function openAuthModal(mode) {
+function openAuthModal(mode = 'login') {
   isLoginMode.value = mode === 'login'
   showAuthModal.value = true
 }
@@ -247,6 +259,14 @@ const { width } = useWindowSize()
 
 // Add this computed property
 const isMobile = computed(() => width.value < 768)
+
+// Add watch for authentication state
+watch(() => authStore.isAuthenticated, (newValue) => {
+  if (newValue) {
+    closeAuthModal()
+    fetchDeal() // Refetch deal data when user authenticates
+  }
+})
 </script>
 
 <style scoped>
