@@ -1,14 +1,30 @@
 <template>
-  <div>
-    <div v-if="error">
-      An error occurred: {{ error.message }}
+  <div class="min-h-screen">
+    <!-- Show loading state until auth check completes -->
+    <div v-if="isLoading" class="min-h-screen flex items-center justify-center">
+      <!-- Add a loading spinner here -->
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
     </div>
-    <template v-else>
-      <Header @open-post-deal-modal="openPostDealModal" @open-auth-modal="openAuthModal" />
-      <main class="pt-16 md:pt-20">
-        <slot />
-      </main>
-      <ClientOnly>
+    
+    <ClientOnly v-else>
+      <div v-if="error">
+        An error occurred: {{ error.message }}
+      </div>
+      <template v-else>
+        <!-- Header section with proper z-index -->
+        <div class="fixed top-0 left-0 right-0 z-[100] bg-white shadow-md">
+          <Header 
+            @open-post-deal-modal="openPostDealModal" 
+            @open-auth-modal="openAuthModal" 
+          />
+        </div>
+        
+        <!-- Main content -->
+        <main class="relative z-[1] pt-16 md:pt-20">
+          <slot />
+        </main>
+
+        <!-- Modals -->
         <div>
           <FloatingActionButton v-if="isAuthenticated" @click="openPostDealModal" />
           <PostDealModal 
@@ -26,10 +42,11 @@
             :is-login="isLoginMode" 
           />
         </div>
-      </ClientOnly>
-    </template>
+      </template>
+    </ClientOnly>
   </div>
 </template>
+
 
 <script setup>
 import { ref, onBeforeMount, watch } from 'vue'
@@ -51,6 +68,23 @@ const route = useRoute()
 const showPostDealModal = ref(false)
 const showAuthModal = ref(false)
 const isLoginMode = ref(true)
+
+// Add isLoading ref
+const isLoading = ref(true)
+
+// Modify onBeforeMount
+onBeforeMount(async () => {
+  console.log('Layout: Checking authentication status')
+  isLoading.value = true
+  try {
+    await authStore.initializeAuth()
+    console.log('Layout: Authentication status checked, isAuthenticated:', isAuthenticated.value)
+  } catch (error) {
+    console.error('Layout: Error checking auth:', error)
+  } finally {
+    isLoading.value = false
+  }
+})
 
 const openPostDealModal = () => {
   if (isAuthenticated.value) {
@@ -121,17 +155,6 @@ onErrorCaptured((err, instance, info) => {
   console.error('Layout caught an error:', err)
   error.value = err
   return false // prevent error from propagating further
-})
-
-// Check authentication status before mounting
-onBeforeMount(async () => {
-  console.log('Layout: Checking authentication status')
-  try {
-    await authStore.initializeAuth()
-    console.log('Layout: Authentication status checked, isAuthenticated:', isAuthenticated.value)
-  } catch (error) {
-    console.error('Layout: Error checking auth:', error)
-  }
 })
 
 // Watch for route changes to protect certain routes
