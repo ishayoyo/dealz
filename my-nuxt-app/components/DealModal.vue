@@ -54,9 +54,6 @@
                     
                     <!-- Shipping and category -->
                     <div class="flex flex-col items-start sm:items-end">
-                      <span class="font-medium text-green-600 text-base sm:text-lg">
-                        {{ deal.shipping === 'FREE' ? 'FREE Shipping' : `+$${deal.shipping} Shipping` }}
-                      </span>
                       <span class="text-sm font-medium text-gray-600">
                         Category: <span class="text-primary-600">{{ deal.category }}</span>
                       </span>
@@ -249,10 +246,6 @@ const imageUrl = computed(() => {
 
 const formattedPrice = computed(() => {
   return parseFloat(props.deal.price).toFixed(2)
-})
-
-const formattedShipping = computed(() => {
-  return props.deal.shipping === 'FREE' ? 'FREE' : `$${parseFloat(props.deal.shipping).toFixed(2)}`
 })
 
 const formattedFollowCount = computed(() => {
@@ -876,6 +869,7 @@ watch(() => props.deal, (newDeal) => {
 
 /* Keep existing styles below */
 </style>
+
 
 
 

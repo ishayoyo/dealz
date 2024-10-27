@@ -107,10 +107,9 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     price,
     listPrice,
     category = '',
-    shipping = 'FREE',
     imageUrl = '',
     url = ''
-  } = req.body;
+  } = req.body;  // Remove shipping from destructuring
 
   // Validate required fields
   if (!title || !description || !price || !listPrice || !category || !url || !imageUrl) {
@@ -130,11 +129,10 @@ exports.createDeal = catchAsync(async (req, res, next) => {
     price: parseFloat(price),
     listPrice: parseFloat(listPrice),
     category: trimmedCategory,
-    shipping: shipping === 'FREE' ? 'FREE' : parseFloat(shipping),
     imageUrl,
     url: trimmedUrl,
     user: req.user._id
-  };
+  };  // Remove shipping from dealData
 
   const newDeal = await Deal.create(dealData);
 
@@ -775,10 +773,9 @@ exports.updateDeal = catchAsync(async (req, res, next) => {
     price,
     listPrice,
     category,
-    shipping,
     url,
     imageUrl
-  } = req.body;
+  } = req.body;  // Remove shipping from destructuring
 
   // Validate required fields
   if (!title || !description || !price || !listPrice || !category || !url) {
@@ -802,8 +799,7 @@ exports.updateDeal = catchAsync(async (req, res, next) => {
   deal.price = price;
   deal.listPrice = listPrice;
   deal.category = category;
-  deal.shipping = shipping;
-  deal.url = url;
+  deal.url = url;  // Remove shipping update
 
   // Handle image update if provided
   if (imageUrl && imageUrl !== deal.imageUrl) {

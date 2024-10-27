@@ -40,7 +40,6 @@
         <span class="text-sm text-gray-500 flex items-center">
           <i class="far fa-clock mr-2"></i>{{ formattedDate }}
         </span>
-        <span class="text-sm text-gray-500">{{ formattedShipping }}</span>
       </div>
       <div class="flex items-center">
         <img :src="avatarUrl" :alt="dealUsername" class="w-6 h-6 rounded-full mr-2" />
@@ -145,10 +144,6 @@ const isHot = computed(() => {
 const isApproved = computed(() => props.deal?.status === 'approved')
 
 const dealId = computed(() => props.deal['_id'] || props.deal.id || 'no-id')
-
-const formattedShipping = computed(() => {
-  return props.deal.shipping === 'FREE' ? 'FREE Shipping' : `+$${parseFloat(props.deal.shipping).toFixed(2)} Shipping`
-})
 
 const formattedListPrice = computed(() => 
   new Intl.NumberFormat('en-US', { 
