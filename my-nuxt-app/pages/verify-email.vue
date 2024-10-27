@@ -1,74 +1,113 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
-      <div>
-        <h2 class="mt-6 text-center text-3xl font-extrabold text-indigo-900">
-          Email Verification
+  <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-50 to-purple-50">
+    <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-2xl transform transition-all">
+      <!-- Header Section -->
+      <div class="text-center">
+        <!-- Email SVG icon -->
+        <div class="mb-6">
+          <svg class="w-20 h-20 mx-auto text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h2 class="text-3xl font-bold mb-2 bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
+          Verify Your Email
         </h2>
-        <p v-if="isVerified" class="mt-2 text-center text-sm text-green-600">
+        <p v-if="isVerified" class="text-green-600 font-medium">
           Your email is verified. You can now use all features of the application.
         </p>
-        <p v-else class="mt-2 text-center text-sm text-gray-600">
-          Please enter the verification code sent to your email.
+        <p v-else class="text-gray-600 max-w-sm mx-auto">
+          We've sent a verification code to your email. Please enter it below to complete your registration.
         </p>
       </div>
-      <div v-if="isVerifying" class="text-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
-        <p class="mt-4 text-indigo-600">Verifying your email...</p>
+
+      <!-- Verification Form -->
+      <div v-if="isVerifying" class="text-center my-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+        <p class="mt-4 text-primary-600 font-medium">Verifying your email...</p>
       </div>
+
       <form v-if="!isVerified" class="mt-8 space-y-6" @submit.prevent="verifyEmail">
+        <!-- Verification Code Input -->
         <div>
-          <label for="verification-code" class="sr-only">Verification Code</label>
+          <label for="verification-code" class="block text-sm font-medium text-gray-700 mb-1">
+            Verification Code
+          </label>
           <input
             id="verification-code"
             v-model="verificationCode"
             type="text"
             required
-            class="input-field"
-            placeholder="Enter 6-character code"
+            class="w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            :class="{
+              'border-gray-200': !error,
+              'border-red-200 bg-red-50': error
+            }"
+            placeholder="Enter 6-digit code"
             maxlength="6"
-            title="Please enter the 6-character verification code"
+            title="Please enter the 6-digit verification code"
           >
         </div>
-        <div>
-          <button
-            type="submit"
-            :disabled="isSubmitting"
-            class="btn btn-primary w-full"
-          >
-            {{ isSubmitting ? 'Verifying...' : 'Verify Email' }}
-          </button>
-        </div>
+
+        <!-- Verify Button -->
+        <button
+          type="submit"
+          :disabled="isSubmitting"
+          class="w-full py-3 px-4 rounded-xl font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span v-if="isSubmitting" class="flex items-center justify-center gap-2">
+            <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+            </svg>
+            Verifying...
+          </span>
+          <span v-else>Verify Email</span>
+        </button>
       </form>
-      <div v-if="!isVerified" class="mt-6">
-        <h3 class="text-center text-lg font-medium text-gray-900">Resend Verification Email</h3>
-        <form @submit.prevent="resendVerificationEmail" class="mt-2 space-y-4">
+
+      <!-- Resend Section -->
+      <div v-if="!isVerified" class="mt-8">
+        <!-- Divider -->
+        <div class="relative my-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-200"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-4 bg-white text-gray-500">Didn't receive the code?</span>
+          </div>
+        </div>
+
+        <form @submit.prevent="resendVerificationEmail" class="space-y-4">
           <div>
-            <label for="resend-email" class="sr-only">Email address</label>
+            <label for="resend-email" class="block text-sm font-medium text-gray-700 mb-1">
+              Email Address
+            </label>
             <input
               id="resend-email"
               v-model="resendEmail"
               type="email"
               required
-              class="input-field"
+              class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 transition-all duration-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Enter your email address"
             >
           </div>
-          <div>
-            <button
-              type="submit"
-              :disabled="!canResend || isResending || !resendEmail"
-              class="btn btn-secondary w-full"
-            >
-              {{ isResending ? 'Sending...' : 
-                 !canResend ? `Resend in ${resendCooldown}s` : 
-                 'Resend Verification Email' }}
-            </button>
-          </div>
+
+          <!-- Resend Button -->
+          <button
+            type="submit"
+            :disabled="!canResend || isResending || !resendEmail"
+            class="w-full py-3 px-4 rounded-xl font-medium border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ isResending ? 'Sending...' : 
+               !canResend ? `Resend available in ${resendCooldown}s` : 
+               'Resend Verification Code' }}
+          </button>
         </form>
       </div>
-      <div v-if="error" class="mt-4 text-center text-red-600">
-        {{ error }}
+
+      <!-- Error Message -->
+      <div v-if="error" class="mt-4 p-3 rounded-lg bg-red-50 border border-red-200">
+        <p class="text-center text-red-600 text-sm">{{ error }}</p>
       </div>
     </div>
   </div>
