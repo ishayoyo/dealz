@@ -537,7 +537,7 @@ export const useAuthStore = defineStore('auth', {
           }
         }
 
-        // Remove the extra /v1
+        // Since apiBase already includes /v1, we just need /users/auth/google/callback
         const response = await api.get(`/users/auth/google/callback?code=${code}`);
         if (response.data.status === 'success') {
           sessionStorage.removeItem('googleLoginInitiated');
@@ -555,13 +555,16 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async googleLogin() {
-      const config = useRuntimeConfig();
       try {
         if (process.client) {
           sessionStorage.setItem('googleLoginInitiated', Date.now().toString());
         }
-        // Remove the extra /v1 since it's already in the base URL
-        window.location.href = `${config.public.apiBase}/users/auth/google`;
+        
+        // Use the api baseURL directly
+        const googleAuthUrl = `${api.defaults.baseURL}/users/auth/google`;
+        console.log('Redirecting to Google Auth:', googleAuthUrl);
+        
+        window.location.href = googleAuthUrl;
       } catch (error) {
         console.error('Google login error:', error);
         return { 
