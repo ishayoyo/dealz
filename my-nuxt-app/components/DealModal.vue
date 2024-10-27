@@ -142,12 +142,13 @@
                 </button>
               </div>
               
-              <div class="border-t border-gray-200 pt-6 flex-grow">
+              <div class="border-t border-gray-200 pt-6 flex flex-col flex-shrink-0">
                 <h3 class="font-bold text-xl md:text-2xl mb-4 text-text">Comments</h3>
                 <div v-if="isAuthenticated">
                   <div v-if="loading" class="text-gray-500">Loading comments...</div>
                   <div v-else-if="error" class="text-red-500">{{ error }}</div>
-                  <div v-else class="comments-container space-y-4 mb-6 max-h-64 md:max-h-96 overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
+                  <!-- Add max-h-[300px] to fix the height -->
+                  <div class="comments-container space-y-4 mb-6 max-h-[300px] overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
                     <div v-if="comments.length === 0" class="text-gray-500 text-sm md:text-base">No comments yet. Be the first to comment!</div>
                     <div v-else>
                       <Comment 
@@ -741,7 +742,8 @@ const handleKeydown = (e) => {
   }
 }
 
-// Add swipe support for mobile
+// Remove or comment out these touch event handlers and their setup
+/*
 let touchStartY = 0
 const handleTouchStart = (e) => {
   touchStartY = e.touches[0].clientY
@@ -772,6 +774,7 @@ onUnmounted(() => {
     document.removeEventListener('touchmove', handleTouchMove)
   }
 })
+*/
 </script>
 
 <style scoped>
@@ -814,6 +817,9 @@ onUnmounted(() => {
 .comments-container {
   scrollbar-width: thin;
   scrollbar-color: #CBD5E0 #EDF2F7;
+  height: auto;
+  max-height: 300px !important; /* Force maximum height */
+  overflow-y: auto;
 }
 
 .comments-container::-webkit-scrollbar {
@@ -981,6 +987,8 @@ button {
 
 /* Keep existing styles below */
 </style>
+
+
 
 
 
