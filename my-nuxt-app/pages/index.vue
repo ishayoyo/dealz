@@ -1,7 +1,31 @@
 <template>
   <div>
-    <div class="container mx-auto px-4 pt-12 md:pt-20 pb-8">
-                  <!-- Add category filter chips -->
+    <div class="container mx-auto px-4 pt-16 md:pt-24 pb-8">
+      <!-- Only show hero section when not authenticated -->
+      <div v-if="!isAuthenticated" class="text-center mb-12 max-w-3xl mx-auto">
+        <h1 class="text-3xl md:text-4xl font-heading font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
+          Discover the Best Deals Daily
+        </h1>
+        <p class="text-gray-600 text-lg mb-6">
+          Join our community of savvy shoppers and never miss out on amazing discounts across all categories.
+        </p>
+        <div class="flex justify-center gap-4">
+          <button 
+            @click="openAuthModal('signup')" 
+            class="btn btn-primary"
+          >
+            Start Saving Today
+          </button>
+          <button 
+            @click="scrollToDeals" 
+            class="btn btn-secondary"
+          >
+            Browse Deals
+          </button>
+        </div>
+      </div>
+
+      <!-- Category filters and deals will now start at the top when logged in -->
       <div class="flex flex-wrap gap-2 mb-6">
         <button
           v-for="category in categories"
@@ -213,4 +237,12 @@ const filteredDeals = computed(() => {
 })
 
 const showSkeleton = computed(() => dealsStore.loading && dealsStore.deals.length === 0)
+
+const scrollToDeals = () => {
+  window.scrollTo({
+    top: window.innerHeight * 0.6,
+    behavior: 'smooth'
+  })
+}
 </script>
+

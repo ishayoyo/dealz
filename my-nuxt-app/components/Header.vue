@@ -1,5 +1,11 @@
 <template>
-  <header class="fixed top-0 left-0 right-0 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg shadow-md z-40 transition-all duration-300" :class="{ 'shadow-lg': scrolled }">
+  <header 
+    class="fixed top-0 left-0 right-0 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg shadow-md z-40 transition-all duration-300" 
+    :class="{ 
+      'shadow-lg transform -translate-y-1': scrolled,
+      'shadow-sm': !scrolled 
+    }"
+  >
     <div class="container mx-auto px-4 flex items-center justify-between h-20 md:h-24">
       <div class="flex items-center">
         <NuxtLink to="/" class="flex items-center relative group">
