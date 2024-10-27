@@ -12,7 +12,10 @@
       </div>
       <template v-else>
         <!-- Header section with proper z-index -->
-        <div class="fixed top-0 left-0 right-0 z-[100] bg-white shadow-md">
+        <div 
+          class="fixed top-0 left-0 right-0 z-[100] bg-white shadow-md"
+          :class="{ 'hidden': isDealModalOpen && isMobile }"
+        >
           <Header 
             @open-post-deal-modal="openPostDealModal" 
             @open-auth-modal="openAuthModal" 
@@ -49,7 +52,7 @@
 
 
 <script setup>
-import { ref, onBeforeMount, watch } from 'vue'
+import { ref, onBeforeMount, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
 import { storeToRefs } from 'pinia'
@@ -57,6 +60,7 @@ import { useToastification } from '~/composables/useToastification'
 import { useRouter, useRoute } from 'vue-router'
 import PostDealModal from '~/components/PostDealModal.vue'
 import AuthModal from '~/components/AuthModal.vue'
+import { useWindowSize } from '@vueuse/core'
 
 const authStore = useAuthStore()
 const dealsStore = useDealsStore()
@@ -167,5 +171,15 @@ watch(() => route.path, async (newPath) => {
     await router.push('/login')
   }
 })
-</script>
 
+// Add these to your existing script
+const { width } = useWindowSize()
+
+// Add these computed properties
+const isMobile = computed(() => width.value < 768)
+const isDealModalOpen = computed(() => {
+  return route.path.startsWith('/deals/') && route.params.id
+})
+
+// ... rest of your existing script
+</script>

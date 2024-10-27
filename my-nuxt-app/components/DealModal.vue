@@ -1,11 +1,34 @@
   <template>
   <Transition name="modal-fade" appear>
-    <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-0 overflow-y-auto">
       <div 
         class="bg-white w-full overflow-hidden flex flex-col relative transform transition-all duration-300"
         :class="[modalSizeClass, { 'scale-95 opacity-0': !isOpen, 'scale-100 opacity-100': isOpen }]"
         :style="modalStyle"
       >
+        <!-- Single close button for both mobile and desktop -->
+        <button 
+          v-if="isDedicatedPage"
+          @click="$emit('close-modal')" 
+          class="absolute top-4 right-4 z-50 bg-white rounded-full p-2 shadow-md transition duration-300 hover:bg-gray-100"
+          aria-label="Close modal"
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            class="h-6 w-6 text-gray-600" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path 
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              stroke-width="2" 
+              d="M6 18L18 6M6 6l12 12" 
+            />
+          </svg>
+        </button>
+
         <DealModalSkeleton v-if="showSkeleton" />
         <template v-else>
           <!-- Close button - Only show if not on dedicated deal page -->
@@ -189,6 +212,8 @@ import { useUserFollow } from '~/composables/useUserFollow'
 import DealModalSkeleton from '~/components/DealModalSkeleton.vue'
 import { useClipboard } from '@vueuse/core'
 import { useHead } from '#app'
+import { useWindowSize } from '@vueuse/core'
+const { width } = useWindowSize()
 
 const props = defineProps({
   deal: {
@@ -208,6 +233,10 @@ const props = defineProps({
     default: 'organic'
   },
   isDedicatedPage: {
+    type: Boolean,
+    default: false
+  },
+  isAuthenticated: {
     type: Boolean,
     default: false
   }
@@ -468,21 +497,28 @@ const openAuthModal = () => {
 
 const modalSizeClass = computed(() => {
   return {
-    'h-full rounded-none': window.innerWidth < 768, // Full height on mobile
-    'max-w-5xl rounded-lg': window.innerWidth >= 768 && window.innerWidth < 1024,
-    'max-w-6xl rounded-lg': window.innerWidth >= 1024 && window.innerWidth < 1280,
-    'max-w-7xl rounded-lg': window.innerWidth >= 1280,
+    'h-full rounded-none': width.value < 768, // Using width from useWindowSize
+    'max-w-5xl rounded-lg': width.value >= 768 && width.value < 1024,
+    'max-w-6xl rounded-lg': width.value >= 1024 && width.value < 1280,
+    'max-w-7xl rounded-lg': width.value >= 1280,
   }
 })
 
+const isMobile = computed(() => width.value < 768)
+
 const modalStyle = computed(() => {
-  if (window.innerWidth < 768) {
+  if (isMobile.value) {
     return { 
-      height: '100%',
-      maxHeight: '100%',
+      height: '100vh',
+      maxHeight: '100vh',
       margin: '0',
       display: 'flex',
       flexDirection: 'column',
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      right: '0',
+      bottom: '0',
     }
   } else {
     return { 
@@ -689,28 +725,73 @@ watch(() => props.deal, (newDeal) => {
 
 // Remove the following computed property if it's not used elsewhere
 // const subid = computed(() => { ... });
+
+// Add keyboard support for closing
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+
+const handleKeydown = (e) => {
+  if (e.key === 'Escape') {
+    emit('close-modal')
+  }
+}
+
+// Add swipe support for mobile
+let touchStartY = 0
+const handleTouchStart = (e) => {
+  touchStartY = e.touches[0].clientY
+}
+
+const handleTouchMove = (e) => {
+  if (!isMobile.value) return
+  
+  const touchY = e.touches[0].clientY
+  const diff = touchY - touchStartY
+  
+  // If swiping down more than 100px, close the modal
+  if (diff > 100) {
+    emit('close-modal')
+  }
+}
+
+onMounted(() => {
+  if (isMobile.value) {
+    document.addEventListener('touchstart', handleTouchStart)
+    document.addEventListener('touchmove', handleTouchMove)
+  }
+})
+
+onUnmounted(() => {
+  if (isMobile.value) {
+    document.removeEventListener('touchstart', handleTouchStart)
+    document.removeEventListener('touchmove', handleTouchMove)
+  }
+})
 </script>
 
 <style scoped>
+/* Add these styles at the top of your style section */
 @media (max-width: 767px) {
-  .overflow-y-auto {
-    -webkit-overflow-scrolling: touch;
+  .modal-fade-enter-active,
+  .modal-fade-leave-active {
+    transition: transform 0.3s ease, opacity 0.3s ease;
   }
 
-  .btn-primary,
-  .btn-outline-secondary {
-    display: block;
-    width: 100%;
-    margin-bottom: 0.5rem;
+  .modal-fade-enter-from,
+  .modal-fade-leave-to {
+    transform: translateY(100%);
+    opacity: 0;
   }
 
-  .flex.items-center.justify-between {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .flex.items-center.justify-between > * {
-    margin-bottom: 0.5rem;
+  .modal-fade-enter-to,
+  .modal-fade-leave-from {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 
@@ -867,34 +948,38 @@ watch(() => props.deal, (newDeal) => {
   }
 }
 
+/* Add these styles for the close button */
+.absolute {
+  position: absolute;
+}
+
+.top-4 {
+  top: 1rem;
+}
+
+.right-4 {
+  right: 1rem;
+}
+
+.z-50 {
+  z-index: 50;
+}
+
+/* Add hover effect for the close button */
+button:hover {
+  transform: scale(1.1);
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+/* Add transition for smooth animations */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
 /* Keep existing styles below */
 </style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

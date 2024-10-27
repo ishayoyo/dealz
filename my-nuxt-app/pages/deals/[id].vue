@@ -1,33 +1,29 @@
 <template>
-  <div class="container mx-auto px-4 py-8 pt-24">
-    <Transition name="fade" mode="out-in">
-      <DealModalSkeleton v-if="loading" key="loading" />
-      <div v-else-if="error" class="text-center py-8 text-red-500" key="error">{{ error }}</div>
-      <DealModal 
-        v-else-if="deal" 
-        v-model:deal="deal"
-        :isOpen="true"
-        :isAuthenticated="isAuthenticated"
-        :isAdmin="isAdmin"
-        :isDedicatedPage="false"
-        @close-modal="goBack"
-        @update-follow-status="updateFollowStatus"
-        @follow-deal="handleFollowDeal"
-        @open-auth-modal="openAuthModal"
-        @delete-comment="handleDeleteComment"
-        key="deal-modal"
-      />
-    </Transition>
-    <Transition name="fade">
-      <AuthModal 
-        v-if="showAuthModal" 
-        :show="showAuthModal"
-        @close="closeAuthModal" 
-        @login="handleLogin" 
-        @signup="handleSignup" 
-        :is-login="isLoginMode" 
-      />
-    </Transition>
+  <div class="relative">
+    <!-- Add a class to hide the header when modal is open on mobile -->
+    <div 
+      class="container mx-auto px-4 py-8"
+      :class="{ 'pt-24': !deal || !isMobile }"
+    >
+      <Transition name="fade" mode="out-in">
+        <DealModalSkeleton v-if="loading" key="loading" />
+        <div v-else-if="error" class="text-center py-8 text-red-500" key="error">{{ error }}</div>
+        <DealModal 
+          v-else-if="deal" 
+          v-model:deal="deal"
+          :isOpen="true"
+          :isAuthenticated="isAuthenticated"
+          :isAdmin="isAdmin"
+          :isDedicatedPage="true"
+          @close-modal="goBack"
+          @update-follow-status="updateFollowStatus"
+          @follow-deal="handleFollowDeal"
+          @open-auth-modal="openAuthModal"
+          @delete-comment="handleDeleteComment"
+          key="deal-modal"
+        />
+      </Transition>
+    </div>
   </div>
 </template>
 
@@ -42,6 +38,7 @@ import DealModalSkeleton from '~/components/DealModalSkeleton.vue'
 import AuthModal from '~/components/AuthModal.vue'
 import api from '~/services/api'
 import { useHead } from '#imports'
+import { useWindowSize } from '@vueuse/core'
 
 const route = useRoute()
 const router = useRouter()
@@ -246,6 +243,10 @@ const handleKeydown = (e) => {
   }
 }
 
+const { width } = useWindowSize()
+
+// Add this computed property
+const isMobile = computed(() => width.value < 768)
 </script>
 
 <style scoped>
