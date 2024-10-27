@@ -23,18 +23,22 @@
           </div>
           <button type="submit" :disabled="isLoading" class="w-full btn btn-primary relative">
             <span v-if="!isLoading">Next</span>
-            <span v-else class="flex items-center justify-center">
-              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Fetching image...
-            </span>
+            <span v-else>Fetching image...</span>
           </button>
+          
+          <!-- Add this progress bar section -->
+          <div v-if="isLoading" class="mt-4 space-y-2">
+            <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                class="h-full bg-primary-600 transition-all duration-500 rounded-full"
+                :style="{ width: `${Math.min(progressValue, 100)}%` }"
+              ></div>
+            </div>
+            <p class="text-center text-sm text-gray-600">
+              {{ Math.round(progressValue) }}% - Analyzing webpage and extracting image...
+            </p>
+          </div>
         </form>
-        <p v-if="isLoading" class="text-center text-gray-600 mt-4">
-          Please wait while we fetch the image. This may take a few moments...
-        </p>
       </div>
 
       <!-- Step 2: Complete deal details -->
@@ -157,19 +161,49 @@ const getImageBaseUrl = () => {
     : 'https://saversonic.com'
 }
 
+// Add these new refs near the top with other refs
+const progressValue = ref(0)
+const progressInterval = ref(null)
+
+// Add these new functions
+const startFakeProgress = () => {
+  progressValue.value = 0
+  progressInterval.value = setInterval(() => {
+    if (progressValue.value < 90) {
+      progressValue.value += Math.random() * 15
+    }
+  }, 500)
+}
+
+const stopFakeProgress = () => {
+  if (progressInterval.value) {
+    clearInterval(progressInterval.value)
+    progressInterval.value = null
+  }
+  progressValue.value = 100
+  // Reset after animation
+  setTimeout(() => {
+    progressValue.value = 0
+  }, 500)
+}
+
+// Modify the fetchDealInfo function
 const fetchDealInfo = async () => {
   isLoading.value = true
+  startFakeProgress()
   try {
     const response = await api.post('/deals/fetch-image', { url: dealLink.value })
     const imageBaseUrl = getImageBaseUrl()
     dealImage.value = `${imageBaseUrl}${response.data.data.imageUrl}`
+    stopFakeProgress()
     toast.success('Deal information fetched successfully')
-    step.value = 2 // Advance to the next step
+    step.value = 2
   } catch (error) {
     console.error('Error fetching deal image:', error)
+    stopFakeProgress()
     toast.error('Failed to fetch deal image. You can upload an image manually.')
-    dealImage.value = '' // Reset the dealImage if fetch fails
-    step.value = 2 // Still advance to the next step even if image fetch fails
+    dealImage.value = ''
+    step.value = 2
   } finally {
     isLoading.value = false
   }
@@ -320,5 +354,11 @@ onMounted(async () => {
 }
 .fixed {
   z-index: 1000;
+}
+
+/* Add this to your existing styles */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>

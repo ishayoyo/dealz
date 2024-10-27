@@ -154,6 +154,22 @@ const rateLimitMiddleware = {
       res.redirect(`${process.env.FRONTEND_URL}/?auth=error&message=too_many_attempts`);
     },
   }),
+
+  fetchDealImage: rateLimit({
+    store: new MemoryStore(),
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 15, // 15 attempts per IP
+    message: 'Too many image fetch attempts. Please try again after 5 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many image fetch attempts. Please try again after 5 minutes.',
+        attemptsLeft: 0
+      });
+    },
+  }),
 };
 
 module.exports = rateLimitMiddleware;

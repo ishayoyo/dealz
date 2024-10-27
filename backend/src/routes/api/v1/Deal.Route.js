@@ -38,7 +38,7 @@ router.use(auth);
 
 router.get('/followed', dealController.getFollowedDeals);
 router.post('/', rateLimitMiddleware.createDeal, dealController.createDeal);
-router.post('/fetch-image', dealController.fetchImage);
+router.post('/fetch-image', rateLimitMiddleware.fetchDealImage, dealController.fetchImage);
 router.post('/upload-image', upload.single('image'), dealController.uploadImage);
 router.get('/check-image-uploads', dealController.checkImageUploads);
 
