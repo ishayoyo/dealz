@@ -8,8 +8,12 @@
       >
         <DealModalSkeleton v-if="showSkeleton" />
         <template v-else>
-          <!-- Close button -->
-          <button @click="closeModal" class="absolute top-4 right-4 text-gray-700 hover:text-text z-20 bg-white rounded-full p-2 shadow-md transition duration-300">
+          <!-- Close button - Only show if not on dedicated deal page -->
+          <button 
+            v-if="!isDedicatedPage" 
+            @click="closeModal" 
+            class="absolute top-4 right-4 text-gray-700 hover:text-text z-20 bg-white rounded-full p-2 shadow-md transition duration-300"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -205,6 +209,10 @@ const props = defineProps({
   subid: {
     type: String,
     default: 'organic'
+  },
+  isDedicatedPage: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -868,6 +876,8 @@ watch(() => props.deal, (newDeal) => {
 
 /* Keep existing styles below */
 </style>
+
+
 
 
 

@@ -9,6 +9,7 @@
         :isOpen="true"
         :isAuthenticated="isAuthenticated"
         :isAdmin="isAdmin"
+        :isDedicatedPage="false"
         @close-modal="goBack"
         @update-follow-status="updateFollowStatus"
         @follow-deal="handleFollowDeal"
@@ -90,8 +91,14 @@ onMounted(async () => {
   await fetchDeal()
 })
 
-function goBack() {
-  router.go(-1)
+const goBack = () => {
+  // Check if we can go back
+  if (window.history.length > 2) { // > 2 because the current page counts as 1
+    router.go(-1)
+  } else {
+    // No history, go to home page
+    router.push('/')
+  }
 }
 
 function updateFollowStatus(isFollowing) {
@@ -222,6 +229,21 @@ const getFullImageUrl = (imageUrl) => {
     : 'https://saversonic.com'
     
   return `${baseUrl}${imageUrl}`
+}
+
+// Add keyboard support
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+
+const handleKeydown = (e) => {
+  if (e.key === 'Escape') {
+    goBack()
+  }
 }
 
 </script>
