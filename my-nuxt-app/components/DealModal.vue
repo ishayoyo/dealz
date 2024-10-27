@@ -66,10 +66,17 @@
                   :href="getOutgoingLink(deal.url)" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  class="btn btn-primary w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2"
+                  class="btn-deal-cta group w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2 relative overflow-hidden"
                   @click="handleGetThisDealClick"
                 >
-                  GET THIS DEAL
+                  <span class="lightning left"></span>
+                  <span class="lightning right"></span>
+                  <span class="relative z-10 flex items-center justify-center">
+                    GET THIS DEAL
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2 transform transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                  </span>
                 </a>
                 
                 <div class="flex w-full sm:w-auto">
@@ -775,7 +782,93 @@ watch(() => props.deal, (newDeal) => {
 }
 
 /* Add any other custom styles you need */
+.btn-deal-cta {
+  @apply text-white font-bold py-4 px-8 rounded-full text-lg;
+  background: linear-gradient(135deg, #FF4D4D 0%, #FF8C00 100%);
+  transform-style: preserve-3d;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 77, 77, 0.3);
+}
+
+.btn-deal-cta:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(255, 77, 77, 0.4);
+  animation: pulse 2s infinite;
+}
+
+.btn-deal-cta:active {
+  transform: translateY(1px);
+}
+
+.lightning {
+  position: absolute;
+  width: 10px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: skewX(-20deg);
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.lightning.left {
+  left: -20%;
+}
+
+.lightning.right {
+  right: -20%;
+}
+
+.btn-deal-cta:hover .lightning.left {
+  animation: lightningLeft 1.5s infinite;
+}
+
+.btn-deal-cta:hover .lightning.right {
+  animation: lightningRight 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 15px rgba(255, 77, 77, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 25px rgba(255, 77, 77, 0.6);
+  }
+  100% {
+    box-shadow: 0 4px 15px rgba(255, 77, 77, 0.3);
+  }
+}
+
+@keyframes lightningLeft {
+  0% {
+    left: -20%;
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    left: 120%;
+    opacity: 0;
+  }
+}
+
+@keyframes lightningRight {
+  0% {
+    right: -20%;
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    right: 120%;
+    opacity: 0;
+  }
+}
+
+/* Keep existing styles below */
 </style>
+
 
 
 
