@@ -7,11 +7,21 @@ const publicRoutes = [
   '/api/v1/deals',
   '/api/v1/users/login',
   '/api/v1/users/signup',
-  '/api/v1/users/refresh-token'
-  // Add other public routes here
+  '/api/v1/users/refresh-token',
+  '/api/v1/users/auth/google',           // Add this
+  '/api/v1/users/auth/google/callback',  // Add this
+  '/api/v1/users/check-email',          // Add this if you have it
+  '/api/v1/users/verify-email',         // Add this if you have it
+  '/api/v1/users/resend-verification'   // Add this if you have it
 ];
 
 const protect = catchAsync(async (req, res, next) => {
+  // Check if route is public
+  const isPublicRoute = publicRoutes.some(route => req.path.startsWith(route));
+  if (isPublicRoute) {
+    return next();
+  }
+
   let token;
   
   // Check for token in Authorization header

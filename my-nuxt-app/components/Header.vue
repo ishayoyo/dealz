@@ -1,77 +1,82 @@
 <template>
   <div>
-    <AnnouncementBanner @open-auth-modal="$emit('open-auth-modal', 'signup')" />
-    <header 
-      class="fixed left-0 right-0 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg shadow-md z-40 transition-all duration-300" 
-      :style="!isAuthenticated ? 'top: 40px' : 'top: 0'"
-      :class="{ 
-        'shadow-lg transform -translate-y-1': scrolled,
-        'shadow-sm': !scrolled
-      }"
-    >
-      <div class="container mx-auto px-4 flex items-center justify-between h-20 md:h-24">
-        <div class="flex items-center">
-          <NuxtLink to="/" class="flex items-center relative group">
-            <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 -m-1"></div>
-            <img 
-              src="/images/logo.png"
-              alt="Dealz Logo" 
-              class="h-16 w-16 md:h-20 md:w-20 object-contain animate-float transition-all duration-300 group-hover:scale-110 relative z-10"
-            />
-          </NuxtLink>
-          <form @submit.prevent="handleSearch" class="relative hidden md:block ml-4">
-            <input 
-              type="search" 
-              v-model="searchQuery"
-              placeholder="Search deals..." 
-              class="input-field pr-10 h-10 md:h-12 w-64 md:w-80 transition-all duration-300 focus:w-96"
-            >
-            <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary-500 hover:text-primary-600 transition-colors duration-300">
-              <i class="fas fa-search"></i>
-            </button>
-          </form>
-        </div>
-        <div class="flex items-center space-x-4">
-          <ClientOnly>
-            <template v-if="!isAuthenticated">
-              <button @click="$emit('open-auth-modal', 'login')" class="btn btn-secondary md:text-lg md:px-6">Log In</button>
-              <button @click="$emit('open-auth-modal', 'signup')" class="btn btn-primary md:text-lg md:px-6">Sign Up</button>
-            </template>
-            <template v-else>
-              <button @click="$emit('open-post-deal-modal')" class="btn btn-secondary hidden md:block md:text-lg md:px-6">Post a Deal</button>
-              
-              <NuxtLink to="/profile" class="relative group">
-                <UserAvatar 
-                  :name="user?.username || ''"
-                  :size="40"
-                  :seed="user?.avatarSeed"
-                  class="border-2 border-primary-300 group-hover:border-primary-500 transition-all duration-300 transform group-hover:scale-110"
-                />
-              </NuxtLink>
-              <NuxtLink 
-                v-if="user && user.role === 'admin'" 
-                to="/admin/dashboard" 
-                class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300"
+    <ClientOnly>
+      <AnnouncementBanner 
+        v-if="!isAuthenticated" 
+        @open-auth-modal="$emit('open-auth-modal', 'signup')" 
+      />
+      
+      <header 
+        class="fixed left-0 right-0 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg shadow-md z-40 transition-all duration-300" 
+        :class="[
+          {'top-0': isAuthenticated, 'top-10': !isAuthenticated},
+          {'shadow-lg transform -translate-y-1': scrolled, 'shadow-sm': !scrolled}
+        ]"
+      >
+        <div class="container mx-auto px-4 flex items-center justify-between h-20 md:h-24">
+          <div class="flex items-center">
+            <NuxtLink to="/" class="flex items-center relative group">
+              <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 -m-1"></div>
+              <img 
+                src="/images/logo.png"
+                alt="Dealz Logo" 
+                class="h-16 w-16 md:h-20 md:w-20 object-contain animate-float transition-all duration-300 group-hover:scale-110 relative z-10"
+              />
+            </NuxtLink>
+            <form @submit.prevent="handleSearch" class="relative hidden md:block ml-4">
+              <input 
+                type="search" 
+                v-model="searchQuery"
+                placeholder="Search deals..." 
+                class="input-field pr-10 h-10 md:h-12 w-64 md:w-80 transition-all duration-300 focus:w-96"
               >
-                Admin Dashboard
-              </NuxtLink>
-              <div class="relative">
-                <button @click="handleNotificationClick" class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center animate-pulse">
-                    {{ unreadCount }}
-                  </span>
-                </button>
-                <NotificationList v-if="showNotifications && !isMobile" @close="closeNotifications" />
-              </div>
-              <button @click="handleLogout" class="btn btn-accent md:text-lg md:px-6">Logout</button>
-            </template>
-          </ClientOnly>
+              <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary-500 hover:text-primary-600 transition-colors duration-300">
+                <i class="fas fa-search"></i>
+              </button>
+            </form>
+          </div>
+          <div class="flex items-center space-x-4">
+            <ClientOnly>
+              <template v-if="!isAuthenticated">
+                <button @click="$emit('open-auth-modal', 'login')" class="btn btn-secondary md:text-lg md:px-6">Log In</button>
+                <button @click="$emit('open-auth-modal', 'signup')" class="btn btn-primary md:text-lg md:px-6">Sign Up</button>
+              </template>
+              <template v-else>
+                <button @click="$emit('open-post-deal-modal')" class="btn btn-secondary hidden md:block md:text-lg md:px-6">Post a Deal</button>
+                
+                <NuxtLink to="/profile" class="relative group">
+                  <UserAvatar 
+                    :name="user?.username || ''"
+                    :size="40"
+                    :seed="user?.avatarSeed"
+                    class="border-2 border-primary-300 group-hover:border-primary-500 transition-all duration-300 transform group-hover:scale-110"
+                  />
+                </NuxtLink>
+                <NuxtLink 
+                  v-if="user && user.role === 'admin'" 
+                  to="/admin/dashboard" 
+                  class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300"
+                >
+                  Admin Dashboard
+                </NuxtLink>
+                <div class="relative">
+                  <button @click="handleNotificationClick" class="text-text hover:text-primary mr-2 sm:mr-4 transition duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center animate-pulse">
+                      {{ unreadCount }}
+                    </span>
+                  </button>
+                  <NotificationList v-if="showNotifications && !isMobile" @close="closeNotifications" />
+                </div>
+                <button @click="handleLogout" class="btn btn-accent md:text-lg md:px-6">Logout</button>
+              </template>
+            </ClientOnly>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </ClientOnly>
   </div>
 </template>
 
@@ -173,6 +178,13 @@ watch(isAuthenticated, (newValue) => {
 
 // Update the animation duration for the logo
 const logoAnimationDuration = '4s'
+
+// Add this single watcher for notifications
+watch(isAuthenticated, (newValue) => {
+  if (newValue) {
+    notificationStore.fetchNotifications()
+  }
+})
 </script>
 
 <style scoped>
@@ -215,6 +227,15 @@ header {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   25% { transform: translateY(-5px) rotate(2deg); }
   75% { transform: translateY(5px) rotate(-2deg); }
+}
+
+/* Make these more specific */
+header.top-0 {
+  top: 0 !important;
+}
+
+header.top-10 {
+  top: 40px !important;
 }
 
 /* Add this new style for the logo container */

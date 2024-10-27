@@ -5,6 +5,7 @@ const authController = require('../../../controllers/authController');
 const socialController = require('../../../controllers/socialController');
 const auth = require('../../../middleware/auth');
 const rateLimit = require('../../../middleware/rateLimit');
+const passport = require('passport');
 
 // Auth routes
 router.post('/register', rateLimit.register, authController.register);
@@ -50,5 +51,24 @@ router.post('/check-email', rateLimit.checkEmail, authController.checkEmail);
 // Email verification routes
 router.post('/verify-email', authController.verifyEmail);
 router.post('/resend-verification', rateLimit.resendVerification, authController.resendVerificationEmail);
+
+// Google Auth routes
+router.get('/auth/google', 
+  rateLimit.googleAuth,  // Add rate limiting
+  passport.authenticate('google', { 
+    scope: ['profile', 'email'],
+    session: false
+  })
+);
+
+router.get('/auth/google/callback', 
+  rateLimit.googleCallback,
+  passport.authenticate('google', { 
+    session: false,
+    // Update this redirect
+    failureRedirect: `${process.env.FRONTEND_URL}/?auth=error&message=google_auth_failed` 
+  }),
+  authController.googleCallback
+);
 
 module.exports = router;

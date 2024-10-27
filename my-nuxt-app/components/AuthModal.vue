@@ -96,6 +96,31 @@
           >
             {{ isSubmitting ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up') }}
           </button>
+
+          <!-- Add after the submit button and before the Forgot Password link -->
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-300"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <!-- Google Sign In Button -->
+          <button 
+            @click="handleGoogleLogin"
+            type="button"
+            class="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-md shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M23.766 12.2764C23.766 11.4607 23.6999 10.6406 23.5588 9.83807H12.24V14.4591H18.7217C18.4528 15.9494 17.5885 17.2678 16.323 18.1056V21.1039H20.19C22.4608 19.0139 23.766 15.9274 23.766 12.2764Z" fill="#4285F4"/>
+              <path d="M12.24 24.0008C15.4764 24.0008 18.2058 22.9382 20.1944 21.1039L16.3274 18.1055C15.2516 18.8375 13.8626 19.252 12.24 19.252C9.0792 19.252 6.4034 17.1399 5.4414 14.3003H1.4474V17.3912C3.4034 21.4434 7.5034 24.0008 12.24 24.0008Z" fill="#34A853"/>
+              <path d="M5.4414 14.3003C5.2022 13.5681 5.0676 12.7862 5.0676 12.0008C5.0676 11.2154 5.2022 10.4335 5.4414 9.70129V6.61029H1.4474C0.5244 8.23129 0 10.0682 0 12.0008C0 13.9334 0.5244 15.7703 1.4474 17.3913L5.4414 14.3003Z" fill="#FBBC04"/>
+              <path d="M12.24 4.74966C14.0258 4.74966 15.6234 5.35843 16.8954 6.56966L20.2698 3.19523C18.2002 1.21523 15.4764 0 12.24 0C7.5034 0 3.4034 2.55733 1.4474 6.61029L5.4414 9.70129C6.4034 6.86166 9.0792 4.74966 12.24 4.74966Z" fill="#EA4335"/>
+            </svg>
+            <span class="text-sm font-medium">Continue with Google</span>
+          </button>
         </form>
         
         <!-- Forgot Password link (only for login) -->
@@ -130,11 +155,13 @@ import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
 import ForgotPasswordModal from './ForgotPasswordModal.vue'
 import api from '~/services/api'  // Make sure to import your API service
+import { useRuntimeConfig } from 'nuxt/app'
 
 // Initialize composables
 const authStore = useAuthStore()
 const toast = useToastification()
 const router = useRouter()
+const config = useRuntimeConfig()
 
 // Props and emits
 const props = defineProps({
@@ -368,6 +395,10 @@ const resendVerificationEmail = async () => {
     handleError(err)
   }
 }
+
+const handleGoogleLogin = () => {
+  authStore.googleLogin();
+}
 </script>
 
 <style scoped>
@@ -381,6 +412,11 @@ const resendVerificationEmail = async () => {
 
 .btn-primary:disabled {
   @apply opacity-50 cursor-not-allowed;
+}
+
+/* Add to your existing styles */
+button {
+  font-family: 'Roboto', sans-serif;
 }
 </style>
 

@@ -1,7 +1,14 @@
 <template>
   <div>
-    <div class="container mx-auto px-4 pt-16 md:pt-24 pb-8">
-      <!-- Only show hero section when not authenticated -->
+    <AnnouncementBanner @open-auth-modal="openAuthModal" />
+    <!-- Adjust container padding based on authentication status -->
+    <div class="container mx-auto px-4" 
+      :class="{
+        'pt-16 md:pt-24': !isAuthenticated, // More padding for hero section when not authenticated
+        'pt-0 md:pt-0': isAuthenticated // No extra padding when authenticated
+      }"
+    >
+      <!-- Hero section for non-authenticated users -->
       <div v-if="!isAuthenticated" class="text-center mb-12 max-w-3xl mx-auto">
         <h1 class="text-3xl md:text-4xl font-heading font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
           Discover the Best Deals Daily
@@ -23,10 +30,31 @@
             Browse Deals
           </button>
         </div>
+        <!-- Add statistics -->
+        <div class="grid grid-cols-3 gap-4 mt-8 max-w-2xl mx-auto">
+          <div class="p-4 rounded-lg bg-white shadow-md">
+            <div class="text-2xl font-bold text-primary-600">{{ dealStats.total }}+</div>
+            <div class="text-sm text-gray-600">Active Deals</div>
+          </div>
+          <div class="p-4 rounded-lg bg-white shadow-md">
+            <div class="text-2xl font-bold text-primary-600">{{ dealStats.savings }}%</div>
+            <div class="text-sm text-gray-600">Avg. Savings</div>
+          </div>
+          <div class="p-4 rounded-lg bg-white shadow-md">
+            <div class="text-2xl font-bold text-primary-600">{{ dealStats.users }}k+</div>
+            <div class="text-sm text-gray-600">Happy Users</div>
+          </div>
+        </div>
       </div>
 
-      <!-- Category filters and deals will now start at the top when logged in -->
-      <div class="flex flex-wrap gap-2 mb-6">
+      <!-- Reduced padding for categories when logged in -->
+      <div 
+        class="flex flex-wrap gap-2 mb-6"
+        :class="{
+          'pt-20 md:pt-24': isAuthenticated, // Reduced from pt-24 md:pt-28
+          'pt-0': !isAuthenticated
+        }"
+      >
         <button
           v-for="category in categories"
           :key="category"
@@ -244,5 +272,12 @@ const scrollToDeals = () => {
     behavior: 'smooth'
   })
 }
-</script>
 
+const dealStats = ref({
+  total: 500,
+  savings: 45,
+  users: 10
+})
+
+const showBanner = ref(true)
+</script>

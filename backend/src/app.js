@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const routes = require('./routes/api/v1');
+const passport = require('passport');
 
 const app = express();
 
@@ -17,9 +18,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Initialize passport
+app.use(passport.initialize());
+
 // Serve static files from the 'public' directory
 app.use('/images', express.static(path.join(__dirname, '../public/images')));
 
+// Mount all routes including user routes
 app.use('/api/v1', routes);
 
 // Global error handler

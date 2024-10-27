@@ -72,6 +72,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: () => Math.random().toString(36).substring(2, 15) // Generate a random seed by default
   },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  firstName: String,
+  lastName: String,
+  provider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local'
+  },
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

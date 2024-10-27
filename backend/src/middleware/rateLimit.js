@@ -1,7 +1,9 @@
 const rateLimit = require('express-rate-limit');
+const MemoryStore = require('express-rate-limit').MemoryStore;
 
 const createRateLimiter = (options) => {
   const limiter = rateLimit({
+    store: new MemoryStore(),
     ...options,
     keyGenerator: (req) => req.body.email || req.ip,
   });
@@ -19,6 +21,7 @@ const createRateLimiter = (options) => {
 
 const rateLimitMiddleware = {
   register: rateLimit({
+    store: new MemoryStore(),
     windowMs: 3 * 60 * 1000, // 3 minutes
     max: 5, // 5 attempts per IP
     message: 'Too many signup attempts. Please try again after 3 minutes.',
@@ -35,6 +38,7 @@ const rateLimitMiddleware = {
   }),
 
   login: createRateLimiter({
+    store: new MemoryStore(),
     windowMs: 5 * 60 * 1000, // 5 minutes
     max: 5, // 5 attempts
     message: 'Too many login attempts. Please try again after 5 minutes.',
@@ -51,6 +55,7 @@ const rateLimitMiddleware = {
   }),
 
   forgotPassword: rateLimit({
+    store: new MemoryStore(),
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 3, // 3 attempts per IP
     message: 'Too many password reset attempts. Please try again after 15 minutes.',
@@ -66,6 +71,7 @@ const rateLimitMiddleware = {
   }),
 
   comment: rateLimit({
+    store: new MemoryStore(),
     windowMs: 5 * 60 * 1000, // 5 minutes
     max: 10, // 10 comments per IP
     message: 'Too many comments. Please try again after 5 minutes.',
@@ -81,6 +87,7 @@ const rateLimitMiddleware = {
   }),
 
   createDeal: rateLimit({
+    store: new MemoryStore(),
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 5, // 5 deals per IP per hour
     message: 'Too many deals created. Please try again after an hour.',
@@ -96,6 +103,7 @@ const rateLimitMiddleware = {
   }),
 
   resetPassword: rateLimit({
+    store: new MemoryStore(),
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 3, // 3 attempts per IP
     message: 'Too many password reset attempts. Please try again after an hour.',
@@ -118,7 +126,34 @@ const rateLimitMiddleware = {
   resendVerification: rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 5 // limit each IP to 5 requests per windowMs
-  })
+  }),
+
+  // Add these new rate limiters for Google auth
+  googleAuth: rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 attempts per IP
+    message: 'Too many Google auth attempts. Please try again after 15 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      res.setHeader('Retry-After', 900); // 15 minutes in seconds
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many Google auth attempts. Please try again after 15 minutes.',
+        attemptsLeft: 0
+      });
+    },
+  }),
+
+  googleCallback: rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 3,
+    handler: (req, res) => {
+      res.setHeader('Retry-After', 300);
+      // Change this to redirect to home with error param
+      res.redirect(`${process.env.FRONTEND_URL}/?auth=error&message=too_many_attempts`);
+    },
+  }),
 };
 
 module.exports = rateLimitMiddleware;

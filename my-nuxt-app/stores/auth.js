@@ -12,16 +12,24 @@ export const useAuthStore = defineStore('auth', {
     signupAttemptsLeft: 5,
     loginCountdownTimer: null,
     signupCountdownTimer: null,
+    authProvider: null, // Add this to track auth provider
+    isInitialized: false, // Add this flag
+    isLoading: true, // Add this
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.user,
+    isAuthenticated: (state) => !!state.user && state.isInitialized && !state.isLoading,
     isLoginRateLimited: (state) => state.loginCountdown > 0,
     isSignupRateLimited: (state) => state.signupCountdown > 0,
+    isGoogleAuth: (state) => state.authProvider === 'google', // Add this getter
   },
 
   actions: {
-    async login(email, password) {
+    async login(email, password, provider = 'local') {
+      if (provider === 'google') {
+        return this.googleLogin();
+      }
+
       if (this.loginCountdown > 0) {
         return { success: false, error: `Rate limited. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.` };
       }
@@ -94,9 +102,20 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    setUser(user) {
+    setUser(user, provider = 'local') {
+      console.log('Setting user:', user, 'provider:', provider);
       this.user = user;
-      console.log('User data set:', { user: this.user });
+      this.authProvider = provider;
+      this.isInitialized = true;
+      this.isLoading = false;
+    },
+
+    clearUser() {
+      console.log('Clearing user');
+      this.user = null;
+      this.authProvider = null;
+      this.isInitialized = true;
+      this.isLoading = false;
     },
 
     async fetchUser() {
@@ -116,35 +135,65 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
+        // Clear any Google OAuth state
+        if (this.authProvider === 'google') {
+          // Add a small delay to ensure proper cleanup
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // Call backend logout
         await api.post('/users/logout');
+        
+        // Clear local state
+        this.clearUser();
+        
+        // Clear any stored tokens
+        const accessTokenCookie = useCookie('accessToken');
+        const refreshTokenCookie = useCookie('refreshToken');
+        accessTokenCookie.value = null;
+        refreshTokenCookie.value = null;
+        
+        // Redirect to home page
+        const router = useRouter();
+        await router.push('/');
+        
+        // Force page reload to clear all states
+        if (process.client) {
+          window.location.reload();
+        }
       } catch (error) {
-        console.error('Error during logout:', error);
-      } finally {
-        this.user = null;
-        this.loginAttemptsLeft = 5; // Reset attempts on logout
-        console.log('Logout successful');
+        console.error('Logout error:', error);
       }
     },
 
     async initializeAuth() {
-      console.log('Auth store: Starting initializeAuth')
-      const nuxtApp = useNuxtApp()
+      if (process.server) return;
       
-      if (!nuxtApp.ssrContext) {
-        console.log('Auth store: Running on client')
-        try {
-          const response = await api.get('/users/me')
-          if (response.data && response.data.data.user) {
-            this.setUser(response.data.data.user)
-            console.log('Auth store: User data fetched and set')
+      this.isLoading = true;
+      try {
+        const route = useRoute();
+        
+        if (route.query.auth === 'success') {
+          console.log('Google auth success detected');
+          const response = await api.get('/users/me');
+          if (response.data?.data?.user) {
+            this.setUser(response.data.data.user, 'google');
           }
-        } catch (error) {
-          console.error('Auth store: Error fetching user data:', error)
-          this.user = null
-          // Don't clear the cookie here, let the server handle it
+        } else {
+          const response = await api.get('/users/me');
+          if (response.data?.data?.user) {
+            const provider = response.data.data.user.googleId ? 'google' : 'local';
+            this.setUser(response.data.data.user, provider);
+          } else {
+            this.clearUser();
+          }
         }
-      } else {
-        console.log('Auth store: Running on server, skipping initializeAuth')
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        this.clearUser();
+      } finally {
+        this.isLoading = false;
+        this.isInitialized = true;
       }
     },
 
@@ -476,5 +525,63 @@ export const useAuthStore = defineStore('auth', {
         throw error;
       }
     },
+
+    // Add these new actions for Google authentication
+    async handleGoogleCallback(code) {
+      try {
+        // Check if the login request is stale
+        const loginTimestamp = sessionStorage.getItem('googleLoginInitiated');
+        if (loginTimestamp) {
+          const timeDiff = Date.now() - parseInt(loginTimestamp);
+          if (timeDiff > 300000) { // 5 minutes
+            throw new Error('Login request expired');
+          }
+        }
+
+        const response = await api.get(`/users/auth/google/callback?code=${code}`);
+        if (response.data.status === 'success') {
+          // Clear the timestamp
+          sessionStorage.removeItem('googleLoginInitiated');
+          await this.fetchUser();
+          return { success: true };
+        }
+        return { success: false, error: response.data.message };
+      } catch (error) {
+        console.error('Google callback error:', error);
+        return { 
+          success: false, 
+          error: error.response?.data?.message || 'Failed to authenticate with Google'
+        };
+      }
+    },
+
+    async googleLogin() {
+      const config = useRuntimeConfig();
+      try {
+        // Store current timestamp to prevent stale redirects
+        if (process.client) {
+          sessionStorage.setItem('googleLoginInitiated', Date.now().toString());
+        }
+        window.location.href = `${config.public.apiBase}/users/auth/google`;
+      } catch (error) {
+        console.error('Google login error:', error);
+        return { 
+          success: false, 
+          error: 'Failed to initiate Google login'
+        };
+      }
+    },
+
+    clearUser() {
+      this.user = null;
+      this.authProvider = null;
+      this.isInitialized = true;
+      this.isLoading = false;
+      
+      // Clear any stored OAuth state
+      if (process.client) {
+        sessionStorage.removeItem('googleLoginInitiated');
+      }
+    }
   },
 })

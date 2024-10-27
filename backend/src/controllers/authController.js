@@ -7,6 +7,8 @@ const crypto = require('crypto');
 const SibApiV3Sdk = require('sib-api-v3-sdk');
 const apiInstance = require('../config/brevoConfig');
 const { generateVerificationEmailHTML, generatePasswordResetEmailHTML } = require('../utils/emailTemplates');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 const signToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -34,6 +36,64 @@ const normalizeEmail = (email) => {
   }
   return email;
 };
+
+// Add this configuration before your routes
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    done(error);
+  }
+});
+
+// Update the Google Strategy configuration
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    passReqToCallback: true
+  },
+  async function(req, accessToken, refreshToken, profile, cb) {
+    try {
+      console.log('Google auth callback received:', profile);
+      let user = await User.findOne({ email: profile.emails[0].value });
+      
+      if (!user) {
+        // Create new user
+        user = await User.create({
+          email: profile.emails[0].value,
+          username: await generateUniqueUsername(profile.displayName),
+          googleId: profile.id,
+          provider: 'google',
+          isVerified: true,
+          firstName: profile.name.givenName,
+          lastName: profile.name.familyName,
+          avatar: profile.photos[0]?.value
+        });
+      } else {
+        // Update existing user
+        user.googleId = profile.id;
+        user.provider = 'google';
+        if (!user.firstName) user.firstName = profile.name.givenName;
+        if (!user.lastName) user.lastName = profile.name.familyName;
+        if (!user.avatar && profile.photos[0]?.value) {
+          user.avatar = profile.photos[0].value;
+        }
+        await user.save();
+      }
+      
+      return cb(null, user);
+    } catch (error) {
+      console.error('Google auth error:', error);
+      return cb(error);
+    }
+  }
+));
 
 exports.register = catchAsync(async (req, res, next) => {
   let { username, email, password } = req.body;
@@ -556,6 +616,40 @@ exports.checkVerificationStatus = catchAsync(async (req, res, next) => {
     status: 'success',
     isVerified: user.isVerified
   });
+});
+
+// Update the googleCallback controller
+exports.googleCallback = catchAsync(async (req, res, next) => {
+  try {
+    const user = req.user; // Passport adds the user to req
+    if (!user) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=authentication_failed`);
+    }
+
+    const accessToken = signToken(user._id);
+    const refreshToken = signRefreshToken(user._id);
+
+    // Set cookies
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax', // Changed from 'strict' to 'lax' for cross-site redirects
+      maxAge: 15 * 60 * 1000
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax', // Changed from 'strict' to 'lax' for cross-site redirects
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    // Redirect to frontend with success
+    res.redirect(`${process.env.FRONTEND_URL}?auth=success`);
+  } catch (error) {
+    console.error('Google callback error:', error);
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
+  }
 });
 
 module.exports = exports;
