@@ -3,12 +3,12 @@
     <AnnouncementBanner @open-auth-modal="openAuthModal" />
     <div class="container mx-auto px-4" 
       :class="{
-        'pt-14 sm:pt-16 md:pt-24': !isAuthenticated,
-        'pt-0': isAuthenticated
+        'pt-20 md:pt-16': !isAuthenticated,  // More padding for non-auth to account for header
+        'pt-8': isAuthenticated              // Regular padding when authenticated
       }"
     >
       <!-- Hero section for non-authenticated users -->
-      <div v-if="!isAuthenticated" class="text-center mb-8 sm:mb-12 max-w-3xl mx-auto px-4">
+      <div v-if="!isAuthenticated" class="hidden sm:block text-center mb-8 sm:mb-12 max-w-3xl mx-auto px-4">
         <h1 class="text-2xl sm:text-3xl md:text-4xl font-heading font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3 sm:mb-4">
           Discover the Best Deals Daily
         </h1>
@@ -46,12 +46,12 @@
         </div>
       </div>
 
-      <!-- Reduced padding for categories when logged in -->
+      <!-- Categories section -->
       <div 
         class="flex flex-wrap gap-2 mb-6"
         :class="{
-          'pt-20 md:pt-24': isAuthenticated, // Reduced from pt-24 md:pt-28
-          'pt-0': !isAuthenticated
+          'sm:pt-4': !isAuthenticated,  // Small padding after hero section
+          'sm:pt-0': isAuthenticated    // No extra padding when no hero
         }"
       >
         <button
