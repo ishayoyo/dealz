@@ -47,23 +47,10 @@
       </div>
 
       <!-- Categories section -->
-      <div 
-        class="flex flex-wrap gap-2 mb-6"
-        :class="{
-          'sm:pt-4': !isAuthenticated,  // Small padding after hero section
-          'sm:pt-0': isAuthenticated    // No extra padding when no hero
-        }"
-      >
-        <button
-          v-for="category in categories"
-          :key="category"
-          @click="toggleCategory(category)"
-          class="btn btn-sm"
-          :class="selectedCategories.includes(category) ? 'btn-primary' : 'btn-secondary'"
-        >
-          {{ category }}
-        </button>
-      </div>
+      <Categories 
+        :is-authenticated="isAuthenticated" 
+        @update:selectedCategories="selectedCategories = $event" 
+      />
 
       <div v-if="showSkeleton" class="container mx-auto px-4 py-8">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -110,6 +97,7 @@ import DealModal from '~/components/DealModal.vue'
 import { useToastification } from '~/composables/useToastification'
 import AuthModal from '~/components/AuthModal.vue'
 import DealCardSkeleton from '~/components/DealCardSkeleton.vue'
+import Categories from '~/components/Categories.vue'
 
 const dealsStore = useDealsStore()
 const authStore = useAuthStore()
@@ -229,22 +217,6 @@ watch(() => dealsStore.deals, (newDeals) => {
   console.log('Deals updated:', newDeals)
 }, { deep: true })
 
-const categories = ref([
-  "Electronics",
-  "Home",
-  "Fashion",
-  "Beauty",
-  "Sports",
-  "Books",
-  "Toys",
-  "Travel",
-  "Food",
-  "Auto",
-  "DIY",
-  "Pets",
-  "Other"
-])
-
 const selectedCategories = ref([])
 
 const toggleCategory = (category) => {
@@ -280,4 +252,3 @@ const dealStats = ref({
 
 const showBanner = ref(true)
 </script>
-
