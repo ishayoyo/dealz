@@ -1,5 +1,10 @@
 <template>
-    <div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen px-4 sm:px-6 lg:px-8"
+      :class="{
+        'pt-32': !authStore.isAuthenticated, // More padding when not authenticated (announcement bar + header)
+        'pt-24': authStore.isAuthenticated // Less padding when authenticated (just header)
+      }"
+    >
         <div v-if="isLoading" class="container mx-auto">
           <UserProfileSkeleton />
           <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
