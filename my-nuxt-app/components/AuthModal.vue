@@ -1,6 +1,6 @@
 <template>
-  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl w-full max-w-md p-8 relative shadow-2xl transform transition-all">
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl w-full max-w-[340px] sm:max-w-md p-4 sm:p-8 relative shadow-2xl transform transition-all">
       <!-- Close button - styled more elegantly -->
       <button @click="$emit('close')" class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors duration-300">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -11,12 +11,12 @@
       <!-- Auth form -->
       <div v-if="!showForgotPassword">
         <!-- Enhanced title with gradient text -->
-        <h2 class="text-3xl font-bold mb-2 text-center bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
+        <h2 class="text-2xl sm:text-3xl font-bold mb-2 text-center bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
           {{ isLogin ? 'Welcome Back! 👋' : 'Join Our Community! 🎉' }}
         </h2>
         
         <!-- Enhanced subtitle -->
-        <p class="text-center text-gray-600 mb-8 max-w-sm mx-auto">
+        <p class="text-center text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base max-w-sm mx-auto">
           {{ isLogin 
             ? 'Great to see you again! Ready to discover more amazing deals?' 
             : 'Join thousands of smart shoppers and start saving today!' 
