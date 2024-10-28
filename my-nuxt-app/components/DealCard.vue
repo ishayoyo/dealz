@@ -84,7 +84,7 @@
           <div class="flex flex-col ml-3">
             <span class="text-xs text-gray-400">Posted by</span>
             <NuxtLink 
-              :to="`/user/${deal.user?._id}`"
+              :to="isCurrentUser ? '/profile' : `/user/${deal.user?._id}`"
               class="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors duration-300 truncate"
               @click.stop
             >
@@ -103,6 +103,7 @@ import { useRuntimeConfig, useRouter } from '#app'
 import { formatDistanceToNow } from 'date-fns'
 import UserAvatar from './UserAvatar.vue'
 import api from '~/services/api'
+import { useAuthStore } from '~/stores/auth'
 
 const config = useRuntimeConfig()
 const router = useRouter()
@@ -230,6 +231,13 @@ const fetchAvatar = async () => {
     avatarUrl.value = 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
   }
 }
+
+// Initialize the auth store
+const authStore = useAuthStore()
+
+const isCurrentUser = computed(() => {
+  return authStore.user && props.deal?.user?._id === authStore.user._id
+})
 
 onMounted(() => {
   if (props.deal.user && props.deal.user._id) {

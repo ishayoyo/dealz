@@ -127,7 +127,11 @@
                   <img :src="avatarUrl" :alt="dealUserName" class="w-10 h-10 rounded-full mr-3" />
                   <div>
                     <span class="text-sm text-gray-500">Posted by:</span>
-                    <NuxtLink :to="`/user/${deal.user._id}`" class="font-semibold ml-1 text-text hover:text-primary-600 hover:underline">
+                    <NuxtLink 
+                      :to="isCurrentUser ? '/profile' : `/user/${deal.user?._id}`"
+                      class="font-semibold ml-1 text-text hover:text-primary-600 hover:underline"
+                      @click.stop
+                    >
                       {{ dealUserName }}
                     </NuxtLink>
                   </div>
@@ -283,7 +287,7 @@ const formattedFollowCount = computed(() => {
 })
 
 const isCurrentUser = computed(() => {
-  return authStore.user && props.deal.user && authStore.user._id === props.deal.user._id
+  return authStore.user && props.deal?.user?._id === authStore.user._id
 })
 
 const dealUserName = computed(() => {
@@ -1004,6 +1008,7 @@ button {
 
 /* Keep existing styles below */
 </style>
+
 
 
 

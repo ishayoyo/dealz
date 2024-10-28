@@ -127,20 +127,11 @@
 
           <div v-else-if="currentTab === 'followedDeals'">
             <h2 class="text-2xl font-semibold mb-6 text-primary-800">Followed Deals</h2>
-            <div v-if="followedDeals.length > 0" class="space-y-4">
-              <div v-for="deal in followedDeals" :key="deal._id" class="bg-white shadow-md rounded-lg overflow-hidden">
-                <div class="flex items-center p-4">
-                  <img :src="getFullImageUrl(deal.imageUrl)" :alt="deal.title" class="w-20 h-20 object-cover mr-4 rounded-md">
-                  <div class="flex-grow">
-                    <h4 class="font-medium text-lg">{{ deal.title }}</h4>
-                    <p class="text-sm text-gray-600">${{ deal.price }}</p>
-                    <p class="text-xs text-gray-500 mt-1">Posted by: {{ deal.user.username }}</p>
-                  </div>
-                  <button @click="unfollowDeal(deal._id)" class="btn btn-outline-primary btn-sm">
-                    Unfollow
-                  </button>
-                </div>
-              </div>
+            <div v-if="followedDeals.length > 0">
+              <FollowedDeals 
+                :followed-deals="followedDeals" 
+                @unfollow="unfollowDeal" 
+              />
             </div>
             <p v-else class="text-center text-gray-500 py-8">You're not following any deals yet.</p>
           </div>
@@ -162,6 +153,7 @@ import { useAuthStore } from '~/stores/auth'
 import UserProfileSkeleton from '~/components/UserProfileSkeleton.vue'
 import DealCardSkeleton from '~/components/DealCardSkeleton.vue'
 import DealCard from '~/components/DealCard.vue'
+import FollowedDeals from '~/components/FollowedDeals.vue'
 
 const config = useRuntimeConfig()
 const fileInput = ref(null)
@@ -370,8 +362,10 @@ const unfollowDeal = async (dealId) => {
   try {
     await api.delete(`/deals/${dealId}/follow`)
     followedDeals.value = followedDeals.value.filter(deal => deal._id !== dealId)
+    toast.success('Deal unfollowed successfully')
   } catch (error) {
     console.error('Error unfollowing deal:', error)
+    toast.error('Failed to unfollow deal')
   }
 }
 
