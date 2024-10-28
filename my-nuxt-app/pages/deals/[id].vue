@@ -14,10 +14,17 @@
             :isOpen="true"
             :isDedicatedPage="true"
             @close-modal="goBack"
+            @open-auth-modal="openAuthModal"
           />
         </div>
       </Transition>
     </div>
+    <AuthModal 
+      v-if="showAuthModal"
+      :show="showAuthModal"
+      @close="closeAuthModal"
+      :is-login="isLoginMode"
+    />
   </div>
 </template>
 
@@ -26,6 +33,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDealsStore } from '~/stores/deals'
 import { useWindowSize } from '@vueuse/core'
+import AuthModal from '~/components/AuthModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -37,6 +45,18 @@ const loading = ref(true)
 const error = ref(null)
 
 const isMobile = computed(() => width.value < 768)
+
+const showAuthModal = ref(false)
+const isLoginMode = ref(true)
+
+const openAuthModal = (mode) => {
+  isLoginMode.value = mode === 'login'
+  showAuthModal.value = true
+}
+
+const closeAuthModal = () => {
+  showAuthModal.value = false
+}
 
 async function fetchDeal() {
   loading.value = true
