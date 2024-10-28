@@ -75,14 +75,23 @@
 
       <!-- Enhanced User Info -->
       <div class="flex items-center mt-auto pt-3 border-t border-gray-100">
-        <img 
-          :src="avatarUrl" 
-          :alt="dealUsername" 
-          class="w-8 h-8 rounded-full ring-2 ring-gray-100 mr-2 transition-transform duration-300 group-hover:scale-110" 
-        />
-        <span class="text-sm font-medium text-gray-600 group-hover:text-primary-600 transition-colors duration-300">
-          {{ dealUsername }}
-        </span>
+        <div class="flex items-center w-full">
+          <img 
+            :src="avatarUrl" 
+            :alt="dealUsername" 
+            class="w-10 h-10 md:w-12 md:h-12 rounded-full ring-2 ring-primary-50 transition-all duration-300 group-hover:ring-primary-100" 
+          />
+          <div class="flex flex-col ml-3">
+            <span class="text-xs text-gray-400">Posted by</span>
+            <NuxtLink 
+              :to="`/user/${deal.user?._id}`"
+              class="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors duration-300 truncate"
+              @click.stop
+            >
+              {{ dealUsername }}
+            </NuxtLink>
+          </div>
+        </div>
       </div>
     </div>
   </div>
