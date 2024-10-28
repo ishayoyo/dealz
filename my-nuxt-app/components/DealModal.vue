@@ -316,9 +316,11 @@ const fetchDealData = async () => {
     
     comments.value = commentsResponse.data.data.comments.map(comment => ({
       ...comment,
+      _id: comment._id || comment.id, // Ensure we have both _id and id
+      id: comment._id || comment.id,
       user: {
         ...comment.user,
-        _id: comment.user._id || comment.user.id // Ensure we have a consistent _id property
+        _id: comment.user._id || comment.user.id
       }
     }))
     isFollowing.value = statusResponse.data.data.isFollowing
@@ -547,16 +549,31 @@ const showSkeleton = computed(() => loading.value && !error.value && !comments.v
 
 const isAdmin = computed(() => authStore.user && authStore.user.role === 'admin')
 
-const handleDeleteComment = (commentId) => {
-  if (commentId) {
-    // Remove the comment from the local array
-    comments.value = comments.value.filter(comment => comment.id !== commentId)
-    // Emit the delete event to the parent component
-    emit('delete-comment', commentId)
-    // Update the deal object
-    emit('update:deal', { ...props.deal, comments: comments.value })
-  } else {
+const handleDeleteComment = async (commentId) => {
+  if (!commentId) {
     console.error('Attempted to delete comment with undefined ID')
+    return
+  }
+
+  try {
+    // Remove the comment from the local array immediately for optimistic UI update
+    comments.value = comments.value.filter(comment => 
+      (comment._id !== commentId && comment.id !== commentId)
+    )
+    
+    // Update the deal object with the new comments array
+    const updatedDeal = { 
+      ...props.deal, 
+      comments: comments.value 
+    }
+    emit('update:deal', updatedDeal)
+    
+    toast.success('Comment deleted successfully')
+  } catch (error) {
+    console.error('Error deleting comment:', error)
+    toast.error('Failed to delete comment')
+    // Revert the local changes if the API call fails
+    await fetchDealData()
   }
 }
 
@@ -987,6 +1004,7 @@ button {
 
 /* Keep existing styles below */
 </style>
+
 
 
 

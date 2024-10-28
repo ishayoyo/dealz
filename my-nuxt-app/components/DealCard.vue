@@ -7,36 +7,37 @@
     @keyup.enter="openDealPage"
   >
     <!-- Image Container with Enhanced Styling -->
-    <div class="relative w-full aspect-[4/3] overflow-hidden rounded-t-xl">
+    <div class="relative w-full aspect-[4/3] overflow-hidden rounded-t-xl bg-gray-50">
       <img 
         :src="fullImageUrl" 
         :alt="deal.title" 
-        class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+        class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         @error="handleImageError"
         loading="lazy"
       >
-      <!-- Enhanced Price Badge -->
-      <div class="absolute top-0 left-0 bg-gradient-to-r from-accent-500 to-accent-600 text-white px-4 py-2 m-4 rounded-full text-lg font-bold shadow-lg transform transition-transform duration-300 group-hover:scale-110">
-        {{ formattedDealPrice }}
-      </div>
+    </div>
 
-      <!-- Enhanced Status Badges -->
-      <div class="absolute top-0 right-0 flex flex-col items-end space-y-2 m-4">
-        <div v-if="isNew" 
-          class="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md transform transition-all duration-300 hover:scale-110"
-        >
-          NEW
-        </div>
-        <div v-if="isHot" 
-          class="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md transform transition-all duration-300 hover:scale-110"
-        >
-          HOT 🔥
-        </div>
-        <div v-if="deal.status === 'pending'" 
-          class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md transform transition-all duration-300 hover:scale-110"
-        >
-          PENDING
-        </div>
+    <!-- Enhanced Price Badge -->
+    <div class="absolute top-0 left-0 bg-gradient-to-r from-accent-500 to-accent-600 text-white px-4 py-2 m-4 rounded-full text-lg font-bold shadow-lg transform transition-transform duration-300 group-hover:scale-110">
+      {{ formattedDealPrice }}
+    </div>
+
+    <!-- Enhanced Status Badges -->
+    <div class="absolute top-0 right-0 flex flex-col items-end space-y-2 m-4">
+      <div v-if="isNew" 
+        class="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md transform transition-all duration-300 hover:scale-110"
+      >
+        NEW
+      </div>
+      <div v-if="isHot" 
+        class="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md transform transition-all duration-300 hover:scale-110"
+      >
+        HOT 🔥
+      </div>
+      <div v-if="deal.status === 'pending'" 
+        class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md transform transition-all duration-300 hover:scale-110"
+      >
+        PENDING
       </div>
     </div>
 
@@ -230,22 +231,11 @@ onMounted(() => {
 
 <style scoped>
 .deal-card {
-  @apply bg-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl border border-gray-100;
+  @apply bg-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl border border-gray-100 h-full flex flex-col;
 }
 
-.btn-primary {
-  @apply bg-gradient-to-r from-primary-600 to-primary-700 text-white py-2 px-4 rounded-full hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50 transition-all duration-300 font-semibold text-sm shadow-md hover:shadow-lg;
-}
-
-/* Add smooth transition for hover effects */
-.transition-all {
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
-}
-
-/* Add hover lift effect */
-.hover\:scale-\[1\.02\]:hover {
-  transform: scale(1.02);
+/* Keep only these new styles for consistent card sizing */
+.deal-card > div:last-child {
+  @apply flex-grow flex flex-col;
 }
 </style>

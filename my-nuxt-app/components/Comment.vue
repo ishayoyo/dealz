@@ -47,11 +47,17 @@ const props = defineProps({
 
 const emit = defineEmits(['delete-comment'])
 
-const commentId = computed(() => props.comment.id)
+const commentId = computed(() => props.comment._id || props.comment.id)
 
-const handleDelete = () => {
+const handleDelete = async () => {
   if (commentId.value) {
-    emit('delete-comment', commentId.value)
+    try {
+      await api.delete(`/comments/${commentId.value}`)
+      emit('delete-comment', commentId.value)
+    } catch (err) {
+      console.error('Error deleting comment:', err)
+      toast.error('Failed to delete comment')
+    }
   } else {
     console.error('Comment ID is undefined', props.comment)
   }
