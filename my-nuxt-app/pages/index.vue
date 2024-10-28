@@ -3,8 +3,8 @@
     <AnnouncementBanner @open-auth-modal="openAuthModal" />
     <div class="container mx-auto px-4" 
       :class="{
-        'pt-20 md:pt-16': !isAuthenticated,  // More padding for non-auth to account for header
-        'pt-8': isAuthenticated              // Regular padding when authenticated
+        'pt-20 md:pt-16': !isAuthenticated,
+        'pt-8': isAuthenticated
       }"
     >
       <!-- Hero section for non-authenticated users -->

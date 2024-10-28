@@ -9,4 +9,3 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 </style>
-

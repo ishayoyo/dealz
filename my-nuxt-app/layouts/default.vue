@@ -11,7 +11,7 @@
         An error occurred: {{ error.message }}
       </div>
       <template v-else>
-        <!-- Header section with proper z-index -->
+        <!-- Header -->
         <div 
           class="fixed top-0 left-0 right-0 z-[100] bg-white shadow-md"
           :class="{ 'hidden': isDealModalOpen && isMobile }"
@@ -24,11 +24,11 @@
         
         <!-- Main content -->
         <main class="relative z-[1] pt-16 md:pt-20">
-          <slot /> <!-- Replace NuxtPage with slot -->
+          <slot /> <!-- This will render the page content -->
         </main>
 
         <!-- Modals -->
-        <div>
+        <ClientOnly>
           <FloatingActionButton v-if="isAuthenticated" @click="openPostDealModal" />
           <PostDealModal 
             v-if="showPostDealModal" 
@@ -44,7 +44,7 @@
             @signup="handleSignup" 
             :is-login="isLoginMode" 
           />
-        </div>
+        </ClientOnly>
       </template>
     </ClientOnly>
   </div>
