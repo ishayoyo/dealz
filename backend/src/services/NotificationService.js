@@ -134,20 +134,58 @@ class NotificationService {
 
   async markAllAsRead(userId) {
     try {
-      const result = await Notification.updateMany(
+      // First update all notifications to read
+      await Notification.updateMany(
         { recipient: userId, read: false },
         { $set: { read: true } }
       );
       
-      // Fetch the updated notifications
-      const updatedNotifications = await Notification.find({ recipient: userId });
+      // Fetch updated notifications with populated data
+      const updatedNotifications = await Notification.find({ recipient: userId })
+        .populate('relatedUser', 'username profilePicture')
+        .populate('relatedDeal', 'title')
+        .populate('relatedComment', 'content')
+        .lean();
       
-      // Emit socket events for each updated notification
-      updatedNotifications.forEach(notification => {
+      // Process each notification to preserve existing data
+      const processedNotifications = updatedNotifications.map(notification => {
+        // Create a deep copy to avoid reference issues
+        const processed = JSON.parse(JSON.stringify(notification));
+
+        // Handle relatedUser
+        if (notification.relatedUser) {
+          processed.relatedUser = {
+            _id: notification.relatedUser._id,
+            username: notification.relatedUser.username || null,
+            profilePicture: notification.relatedUser.profilePicture || null
+          };
+        }
+
+        // Handle relatedDeal
+        if (notification.relatedDeal) {
+          processed.relatedDeal = {
+            _id: notification.relatedDeal._id,
+            title: notification.relatedDeal.title || null
+          };
+        }
+
+        // Handle relatedComment
+        if (notification.relatedComment) {
+          processed.relatedComment = {
+            _id: notification.relatedComment._id,
+            content: notification.relatedComment.content || null
+          };
+        }
+
+        return processed;
+      });
+
+      // Emit socket events with processed notifications
+      processedNotifications.forEach(notification => {
         this.io.to(userId.toString()).emit('updateNotification', notification);
       });
 
-      return result;
+      return processedNotifications;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       throw error;

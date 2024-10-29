@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import api from '~/services/api'
 import { useCookie } from '#app'
 import { useRuntimeConfig } from '#app'
+import { useNotificationStore } from './notification'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -172,18 +173,27 @@ export const useAuthStore = defineStore('auth', {
       this.isLoading = true;
       try {
         const route = useRoute();
+        const notificationStore = useNotificationStore();
         
         if (route.query.auth === 'success') {
           console.log('Google auth success detected');
           const response = await api.get('/users/me');
           if (response.data?.data?.user) {
             this.setUser(response.data.data.user, 'google');
+            // Wait a bit before initializing notifications
+            setTimeout(() => {
+              notificationStore.initializeNotifications();
+            }, 1000);
           }
         } else {
           const response = await api.get('/users/me');
           if (response.data?.data?.user) {
             const provider = response.data.data.user.googleId ? 'google' : 'local';
             this.setUser(response.data.data.user, provider);
+            // Wait a bit before initializing notifications
+            setTimeout(() => {
+              notificationStore.initializeNotifications();
+            }, 1000);
           } else {
             this.clearUser();
           }
@@ -537,11 +547,13 @@ export const useAuthStore = defineStore('auth', {
           }
         }
 
-        // Since apiBase already includes /v1, we just need /users/auth/google/callback
         const response = await api.get(`/users/auth/google/callback?code=${code}`);
         if (response.data.status === 'success') {
           sessionStorage.removeItem('googleLoginInitiated');
           await this.fetchUser();
+          // Initialize notifications after successful Google callback
+          const notificationStore = useNotificationStore();
+          await notificationStore.initializeNotifications();
           return { success: true };
         }
         return { success: false, error: response.data.message };
@@ -574,13 +586,16 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    clearUser() {
+    async clearUser() {
       this.user = null;
       this.authProvider = null;
       this.isInitialized = true;
       this.isLoading = false;
       
-      // Clear any stored OAuth state
+      // Clear notifications when user is cleared
+      const notificationStore = useNotificationStore();
+      notificationStore.reset();
+      
       if (process.client) {
         sessionStorage.removeItem('googleLoginInitiated');
       }

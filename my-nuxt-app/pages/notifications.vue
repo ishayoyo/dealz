@@ -112,24 +112,75 @@ const formatNotificationContent = (notification) => {
   let content = ''
   switch (notification.type) {
     case 'DEAL_APPROVED':
-      content = `Your deal "<a href="#" class="notification-link text-blue-600 hover:underline" data-type="deal" data-id="${notification.relatedDeal?._id}">${notification.relatedDeal?.title || 'Untitled'}</a>" has been approved!`
+      content = `Your deal "${
+        notification.relatedDeal?.title || 
+        (notification.relatedDeal ? 'Untitled' : 'Deleted deal')
+      }" has been approved!`
       break
+      
     case 'USER_FOLLOW':
-      content = `<a href="#" class="notification-link text-blue-600 hover:underline" data-type="user" data-id="${notification.relatedUser?._id}">${notification.relatedUser?.username || 'A user'}</a> started following you`
+      content = `${
+        notification.relatedUser?.username || 
+        (notification.relatedUser ? 'A user' : 'Deleted user')
+      } started following you`
       break
+      
     case 'DEAL_FOLLOW':
-      content = `<a href="#" class="notification-link text-blue-600 hover:underline" data-type="user" data-id="${notification.relatedUser?._id}">${notification.relatedUser?.username || 'A user'}</a> followed your deal "<a href="#" class="notification-link text-blue-600 hover:underline" data-type="deal" data-id="${notification.relatedDeal?._id}">${notification.relatedDeal?.title || 'Untitled'}</a>"`
+      content = `${
+        notification.relatedUser?.username || 
+        (notification.relatedUser ? 'A user' : 'Deleted user')
+      } followed your deal "${
+        notification.relatedDeal?.title || 
+        (notification.relatedDeal ? 'Untitled' : 'Deleted deal')
+      }"`
       break
+      
     case 'COMMENT':
     case 'NEW_COMMENT':
-      content = `<a href="#" class="notification-link text-blue-600 hover:underline" data-type="user" data-id="${notification.relatedUser?._id}">${notification.relatedUser?.username || 'Someone'}</a> commented on your deal: <a href="#" class="notification-link text-blue-600 hover:underline" data-type="deal" data-id="${notification.relatedDeal?._id}">${notification.relatedDeal?.title || 'Untitled'}</a>`
+      content = `${
+        notification.relatedUser?.username || 
+        (notification.relatedUser ? 'Someone' : 'Deleted user')
+      } commented on your deal: ${
+        notification.relatedDeal?.title || 
+        (notification.relatedDeal ? 'Untitled' : 'Deleted deal')
+      }`
       break
+      
     case 'MENTION':
-      content = `<a href="#" class="notification-link text-blue-600 hover:underline" data-type="user" data-id="${notification.relatedUser?._id}">${notification.relatedUser?.username || 'Someone'}</a> mentioned you in a comment on "<a href="#" class="notification-link text-blue-600 hover:underline" data-type="deal" data-id="${notification.relatedDeal?._id}">${notification.relatedDeal?.title || 'Untitled'}</a>"`
+      content = `${
+        notification.relatedUser?.username || 
+        (notification.relatedUser ? 'Someone' : 'Deleted user')
+      } mentioned you in a comment on "${
+        notification.relatedDeal?.title || 
+        (notification.relatedDeal ? 'Untitled' : 'Deleted deal')
+      }"`
       break
+      
     default:
       content = notification.content
   }
+
+  // Only add links if the related entities exist
+  if (content) {
+    // Add user link if user exists
+    if (notification.relatedUser?._id) {
+      const username = notification.relatedUser.username || 'A user'
+      content = content.replace(
+        username,
+        `<a href="#" class="notification-link text-blue-600 hover:underline" data-type="user" data-id="${notification.relatedUser._id}">${username}</a>`
+      )
+    }
+
+    // Add deal link if deal exists
+    if (notification.relatedDeal?._id) {
+      const dealTitle = notification.relatedDeal.title || 'Untitled'
+      content = content.replace(
+        `"${dealTitle}"`,
+        `"<a href="#" class="notification-link text-blue-600 hover:underline" data-type="deal" data-id="${notification.relatedDeal._id}">${dealTitle}</a>"`
+      )
+    }
+  }
+
   return content
 }
 
