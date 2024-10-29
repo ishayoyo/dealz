@@ -146,13 +146,13 @@
                 </button>
               </div>
               
-              <div class="border-t border-gray-200 pt-6 flex flex-col flex-shrink-0">
+              <div class="border-t border-gray-200 pt-6 flex flex-col flex-grow">
                 <h3 class="font-bold text-xl md:text-2xl mb-4 text-text">Comments</h3>
                 <div v-if="isAuthenticated">
                   <div v-if="loading" class="text-gray-500">Loading comments...</div>
                   <div v-else-if="error" class="text-red-500">{{ error }}</div>
-                  <!-- Add max-h-[300px] to fix the height -->
-                  <div class="comments-container space-y-4 mb-6 max-h-[300px] overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
+                  <!-- Make the comments container flex-grow -->
+                  <div class="comments-container space-y-4 mb-6 flex-grow overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
                     <div v-if="comments.length === 0" class="text-gray-500 text-sm md:text-base">No comments yet. Be the first to comment!</div>
                     <div v-else>
                       <Comment 
@@ -165,31 +165,34 @@
                       />
                     </div>
                   </div>
-                  <div class="mt-4 relative">
-                    <textarea
-                      v-model="newComment"
-                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
-                      rows="3"
-                      placeholder="Add a comment..."
-                      @input="handleInput"
-                      :maxlength="MAX_COMMENT_LENGTH"
-                    ></textarea>
-                    <UserMentionAutocomplete
-                      v-if="showMentions"
-                      :users="filteredMentionableUsers"
-                      @select="handleUserSelect"
-                    />
-                    <div class="text-sm text-gray-500 mt-1">
-                      {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
+                  <!-- Add a sticky container for the comment input and button -->
+                  <div class="sticky bottom-0 bg-white pt-2 pb-4">
+                    <div class="relative">
+                      <textarea
+                        v-model="newComment"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                        rows="3"
+                        placeholder="Add a comment..."
+                        @input="handleInput"
+                        :maxlength="MAX_COMMENT_LENGTH"
+                      ></textarea>
+                      <UserMentionAutocomplete
+                        v-if="showMentions"
+                        :users="filteredMentionableUsers"
+                        @select="handleUserSelect"
+                      />
+                      <div class="text-sm text-gray-500 mt-1">
+                        {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
+                      </div>
                     </div>
+                    <button 
+                      @click="handleAddComment" 
+                      class="btn btn-primary mt-3 w-full"
+                      :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
+                    >
+                      Add Comment
+                    </button>
                   </div>
-                  <button 
-                    @click="handleAddComment" 
-                    class="btn btn-primary mt-3 w-full"
-                    :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
-                  >
-                    Add Comment
-                  </button>
                 </div>
                 <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner">
                   <p class="mb-3 text-sm md:text-base">Login to view and post comments</p>
@@ -838,9 +841,15 @@ onUnmounted(() => {
 .comments-container {
   scrollbar-width: thin;
   scrollbar-color: #CBD5E0 #EDF2F7;
-  height: auto;
-  max-height: 300px !important; /* Force maximum height */
+  max-height: calc(50vh - 200px); /* Adjust this value as needed */
+  min-height: 100px;
   overflow-y: auto;
+}
+
+@media (max-width: 767px) {
+  .comments-container {
+    max-height: calc(40vh - 100px); /* Smaller height on mobile */
+  }
 }
 
 .comments-container::-webkit-scrollbar {
