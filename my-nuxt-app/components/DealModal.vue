@@ -905,14 +905,13 @@ const handleMobileAddComment = async () => {
 .comments-container {
   scrollbar-width: thin;
   scrollbar-color: #CBD5E0 #EDF2F7;
-  max-height: calc(50vh - 200px); /* Adjust this value as needed */
-  min-height: 100px;
+  height: 200px; /* Fixed height for desktop */
   overflow-y: auto;
 }
 
 @media (max-width: 767px) {
   .comments-container {
-    max-height: calc(40vh - 100px); /* Smaller height on mobile */
+    height: 40vh; /* Responsive height for mobile */
   }
 }
 
