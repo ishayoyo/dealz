@@ -250,8 +250,17 @@
                     </div>
                   </div>
                 </div>
-                <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner mb-20 md:mb-6">
-                  <p class="text-sm md:text-base text-gray-600">Please login to view and post comments</p>
+                <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner mb-20 md:mb-6 flex flex-col items-center">
+                  <p class="text-sm md:text-base text-gray-600 mb-4">Please login to view and post comments</p>
+                  <button 
+                    @click="emit('open-auth-modal', 'login')" 
+                    class="inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-full hover:from-primary-600 hover:to-primary-700 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    <span class="font-medium">Login to Comment</span>
+                  </button>
                 </div>
               </div>
             </div>

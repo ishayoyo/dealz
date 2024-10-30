@@ -1,6 +1,6 @@
 <template>
   <button 
-    v-if="!isDealModalOpen"
+    v-if="!isDealModalOpen && isAuthenticated"
     @click="$emit('click')" 
     class="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-300 flex items-center justify-center z-[40] group animate-bounce-slow button-gradient"
   >
@@ -14,6 +14,11 @@
 </template>
 
 <script setup>
+import { useAuthStore } from '~/stores/auth'
+
+const authStore = useAuthStore()
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+
 defineProps({
   isDealModalOpen: {
     type: Boolean,
