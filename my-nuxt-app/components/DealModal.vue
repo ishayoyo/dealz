@@ -250,7 +250,7 @@
                     </div>
                   </div>
                 </div>
-                <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner">
+                <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner mb-20 md:mb-6">
                   <p class="text-sm md:text-base text-gray-600">Please login to view and post comments</p>
                 </div>
               </div>
