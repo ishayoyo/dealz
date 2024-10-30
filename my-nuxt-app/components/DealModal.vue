@@ -1095,7 +1095,7 @@ button {
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  z-index: 100;
+  z-index: 999; /* Keep it below the overlay but above other content */
 }
 
 .fab-button:hover {
@@ -1113,7 +1113,11 @@ button {
   left: 0;
   right: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 200;
+  z-index: 1000; /* Increased z-index to be above navigation */
+  height: 100vh; /* Full viewport height */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 .mobile-comment-input-container {
@@ -1122,6 +1126,10 @@ button {
   border-top-left-radius: 1rem;
   border-top-right-radius: 1rem;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  /* Add margin bottom to account for navigation height */
+  margin-bottom: 60px; /* Adjust this value based on your navigation height */
+  position: relative;
+  z-index: 1001;
 }
 
 /* Animation classes */
