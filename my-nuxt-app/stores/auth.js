@@ -170,37 +170,43 @@ export const useAuthStore = defineStore('auth', {
     async initializeAuth() {
       if (process.server) return;
       
+      // If already initialized, don't do it again
+      if (this.isInitialized) return;
+      
       this.isLoading = true;
       try {
         const route = useRoute();
         const notificationStore = useNotificationStore();
         
-        if (route.query.auth === 'success') {
-          console.log('Google auth success detected');
-          const response = await api.get('/users/me');
-          if (response.data?.data?.user) {
-            this.setUser(response.data.data.user, 'google');
-            // Wait a bit before initializing notifications
-            setTimeout(() => {
-              notificationStore.initializeNotifications();
-            }, 1000);
-          }
-        } else {
-          const response = await api.get('/users/me');
-          if (response.data?.data?.user) {
-            const provider = response.data.data.user.googleId ? 'google' : 'local';
-            this.setUser(response.data.data.user, provider);
-            // Wait a bit before initializing notifications
-            setTimeout(() => {
-              notificationStore.initializeNotifications();
-            }, 1000);
-          } else {
+        // Wrap the /users/me call in a silent try-catch
+        const checkUser = async () => {
+          try {
+            const response = await api.get('/users/me');
+            if (response.data?.data?.user) {
+              const provider = response.data.data.user.googleId ? 'google' : 'local';
+              this.setUser(response.data.data.user, provider);
+              // Initialize notifications after successful auth
+              setTimeout(() => {
+                notificationStore.initializeNotifications();
+              }, 1000);
+            } else {
+              this.clearUser();
+            }
+          } catch (error) {
+            // Only log non-401 errors
+            if (error.response?.status !== 401) {
+              console.error('Auth initialization error:', error);
+            }
             this.clearUser();
           }
+        };
+
+        if (route.query.auth === 'success') {
+          console.log('Google auth success detected');
+          await checkUser();
+        } else {
+          await checkUser();
         }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-        this.clearUser();
       } finally {
         this.isLoading = false;
         this.isInitialized = true;

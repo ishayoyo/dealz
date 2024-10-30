@@ -55,7 +55,7 @@
 
 
 <script setup>
-import { ref, onBeforeMount, watch, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onBeforeMount, watch, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useDealsStore } from '~/stores/deals'
 import { storeToRefs } from 'pinia'
@@ -84,7 +84,7 @@ onBeforeMount(async () => {
   console.log('Layout: Checking authentication status')
   isLoading.value = true
   try {
-    await authStore.initializeAuth()
+    await nextTick()
     console.log('Layout: Authentication status checked, isAuthenticated:', isAuthenticated.value)
   } catch (error) {
     console.error('Layout: Error checking auth:', error)
