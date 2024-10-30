@@ -151,7 +151,7 @@
                 <div v-if="isAuthenticated">
                   <div v-if="loading" class="text-gray-500">Loading comments...</div>
                   <div v-else-if="error" class="text-red-500">{{ error }}</div>
-                  <!-- Make the comments container flex-grow -->
+                  <!-- Comments container and input section -->
                   <div class="comments-container space-y-4 mb-6 flex-grow overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
                     <div v-if="comments.length === 0" class="text-gray-500 text-sm md:text-base">No comments yet. Be the first to comment!</div>
                     <div v-else>
@@ -251,8 +251,7 @@
                   </div>
                 </div>
                 <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner">
-                  <p class="mb-3 text-sm md:text-base">Login to view and post comments</p>
-                  <button @click="openAuthModal" class="btn btn-primary w-full max-w-xs mx-auto">Login</button>
+                  <p class="text-sm md:text-base text-gray-600">Please login to view and post comments</p>
                 </div>
               </div>
             </div>
