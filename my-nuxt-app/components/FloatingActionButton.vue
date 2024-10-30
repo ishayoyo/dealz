@@ -1,7 +1,8 @@
 <template>
   <button 
+    v-if="!isDealModalOpen"
     @click="$emit('click')" 
-    class="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-300 flex items-center justify-center z-[9999] group animate-bounce-slow button-gradient"
+    class="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-300 flex items-center justify-center z-[40] group animate-bounce-slow button-gradient"
   >
     <div class="absolute inset-0 rounded-full bg-gradient-to-br from-primary-500 to-secondary-600 animate-spin-slow opacity-75"></div>
     <div class="relative bg-white rounded-full p-3">
@@ -13,6 +14,13 @@
 </template>
 
 <script setup>
+defineProps({
+  isDealModalOpen: {
+    type: Boolean,
+    default: false
+  }
+})
+
 defineEmits(['click'])
 </script>
 

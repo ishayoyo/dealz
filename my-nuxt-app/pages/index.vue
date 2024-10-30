@@ -84,6 +84,10 @@
       @signup="handleSignup" 
       :is-login="isLoginMode" 
     />
+    <FloatingActionButton 
+      :isDealModalOpen="isDealModalOpen" 
+      @click="handleFabClick"
+    />
   </div>
 </template>
 
@@ -98,6 +102,8 @@ import { useToastification } from '~/composables/useToastification'
 import AuthModal from '~/components/AuthModal.vue'
 import DealCardSkeleton from '~/components/DealCardSkeleton.vue'
 import Categories from '~/components/Categories.vue'
+import FloatingActionButton from '~/components/FloatingActionButton.vue'
+import { useRoute } from 'vue-router'
 
 const dealsStore = useDealsStore()
 const authStore = useAuthStore()
@@ -251,4 +257,17 @@ const dealStats = ref({
 })
 
 const showBanner = ref(true)
+
+const isDealModalOpen = ref(false)
+
+const route = useRoute()
+
+// Update isDealModalOpen based on route changes
+watch(() => route.params.id, (newId) => {
+  isDealModalOpen.value = !!newId
+}, { immediate: true })
+
+const handleFabClick = () => {
+  // Handle FAB click action
+}
 </script>

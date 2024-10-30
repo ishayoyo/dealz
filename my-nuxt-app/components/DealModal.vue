@@ -1,4 +1,4 @@
-  <template>
+<template>
   <Transition name="modal-fade" appear>
     <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-0 overflow-y-auto">
       <div 
@@ -166,32 +166,88 @@
                     </div>
                   </div>
                   <!-- Add a sticky container for the comment input and button -->
-                  <div class="sticky bottom-0 bg-white pt-2 pb-4">
-                    <div class="relative">
-                      <textarea
-                        v-model="newComment"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
-                        rows="3"
-                        placeholder="Add a comment..."
-                        @input="handleInput"
-                        :maxlength="MAX_COMMENT_LENGTH"
-                      ></textarea>
-                      <UserMentionAutocomplete
-                        v-if="showMentions"
-                        :users="filteredMentionableUsers"
-                        @select="handleUserSelect"
-                      />
-                      <div class="text-sm text-gray-500 mt-1">
-                        {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
+                  <div 
+                    v-if="isAuthenticated" 
+                    class="comment-input-container"
+                    :class="{ 'mobile-fab': isMobile }"
+                  >
+                    <!-- Desktop version -->
+                    <div v-if="!isMobile" class="sticky bottom-0 bg-white pt-2 pb-4">
+                      <div class="relative">
+                        <textarea
+                          v-model="newComment"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                          rows="3"
+                          placeholder="Add a comment..."
+                          @input="handleInput"
+                          :maxlength="MAX_COMMENT_LENGTH"
+                        ></textarea>
+                        <UserMentionAutocomplete
+                          v-if="showMentions"
+                          :users="filteredMentionableUsers"
+                          @select="handleUserSelect"
+                        />
+                        <div class="text-sm text-gray-500 mt-1">
+                          {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
+                        </div>
+                      </div>
+                      <button 
+                        @click="handleAddComment" 
+                        class="btn btn-primary mt-3 w-full"
+                        :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
+                      >
+                        Add Comment
+                      </button>
+                    </div>
+
+                    <!-- Mobile FAB version -->
+                    <div v-else>
+                      <button 
+                        v-if="!showMobileCommentInput"
+                        @click="showMobileCommentInput = true"
+                        class="fab-button"
+                        aria-label="Add comment"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                      </button>
+
+                      <!-- Mobile comment input overlay -->
+                      <div v-else class="mobile-comment-overlay">
+                        <div class="mobile-comment-input-container">
+                          <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-lg font-semibold">Add Comment</h3>
+                            <button 
+                              @click="showMobileCommentInput = false"
+                              class="text-gray-500 hover:text-gray-700"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                          <textarea
+                            v-model="newComment"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                            rows="4"
+                            placeholder="Add a comment..."
+                            @input="handleInput"
+                            :maxlength="MAX_COMMENT_LENGTH"
+                          ></textarea>
+                          <div class="text-sm text-gray-500 mt-1">
+                            {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
+                          </div>
+                          <button 
+                            @click="handleMobileAddComment"
+                            class="btn btn-primary mt-3 w-full"
+                            :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
+                          >
+                            Add Comment
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <button 
-                      @click="handleAddComment" 
-                      class="btn btn-primary mt-3 w-full"
-                      :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
-                    >
-                      Add Comment
-                    </button>
                   </div>
                 </div>
                 <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner">
@@ -799,6 +855,14 @@ onUnmounted(() => {
   }
 })
 */
+
+// Add to the existing script setup
+const showMobileCommentInput = ref(false)
+
+const handleMobileAddComment = async () => {
+  await handleAddComment()
+  showMobileCommentInput.value = false
+}
 </script>
 
 <style scoped>
@@ -1016,6 +1080,71 @@ button {
 }
 
 /* Keep existing styles below */
+
+/* Add to existing styles */
+.fab-button {
+  position: fixed;
+  bottom: 80px; /* Adjust based on your navigation height */
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF4D4D 0%, #FF8C00 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 100;
+}
+
+.fab-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.fab-button:active {
+  transform: scale(0.95);
+}
+
+.mobile-comment-overlay {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+}
+
+.mobile-comment-input-container {
+  background-color: white;
+  padding: 1rem;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Animation classes */
+.mobile-comment-overlay-enter-active,
+.mobile-comment-overlay-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.mobile-comment-overlay-enter-from,
+.mobile-comment-overlay-leave-to {
+  opacity: 0;
+}
+
+.mobile-comment-input-container-enter-active,
+.mobile-comment-input-container-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.mobile-comment-input-container-enter-from,
+.mobile-comment-input-container-leave-to {
+  transform: translateY(100%);
+}
 </style>
 
 

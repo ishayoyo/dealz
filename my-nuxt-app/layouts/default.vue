@@ -29,7 +29,10 @@
 
         <!-- Modals -->
         <ClientOnly>
-          <FloatingActionButton v-if="isAuthenticated" @click="openPostDealModal" />
+          <FloatingActionButton 
+            :isDealModalOpen="isDealPage"
+            @click="handleFabClick"
+          />
           <PostDealModal 
             v-if="showPostDealModal" 
             :show="showPostDealModal"
@@ -180,6 +183,15 @@ const isMobile = computed(() => width.value < 768)
 const isDealModalOpen = computed(() => {
   return route.path.startsWith('/deals/') && route.params.id
 })
+
+// Check if we're on a deal page
+const isDealPage = computed(() => {
+  return route.path.startsWith('/deals/')
+})
+
+const handleFabClick = () => {
+  // Handle FAB click action
+}
 
 // ... rest of your existing script
 </script>
