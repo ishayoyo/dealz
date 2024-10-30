@@ -5,6 +5,10 @@ const AppError = require('../utils/appError');
 const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
+const NodeCache = require('node-cache');
+
+// Initialize cache with 1 hour TTL (time to live)
+const avatarCache = new NodeCache({ stdTTL: 3600 });
 
 exports.getCurrentUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id);
@@ -60,6 +64,9 @@ exports.changeAvatar = async (req, res) => {
     const newSeed = Math.random().toString(36).substring(2, 15);
     const user = await User.findByIdAndUpdate(req.user.id, { avatarSeed: newSeed }, { new: true });
     
+    // Invalidate cache for this user
+    avatarCache.del(req.user.id);
+    
     res.status(200).json({
       status: 'success',
       data: {
@@ -113,13 +120,29 @@ exports.getUserRecentDeals = async (req, res) => {
 };
 
 exports.getUserAvatar = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id).select('avatarSeed');
+  const userId = req.params.id;
+  
+  // Check cache first
+  const cachedAvatar = avatarCache.get(userId);
+  if (cachedAvatar) {
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        avatarUrl: cachedAvatar
+      }
+    });
+  }
+
+  // If not in cache, generate new URL
+  const user = await User.findById(userId).select('avatarSeed');
   if (!user) {
     return next(new AppError('No user found with that ID', 404));
   }
   
-  // Generate avatar URL using the avatarSeed
   const avatarUrl = `https://api.dicebear.com/6.x/avataaars/svg?seed=${user.avatarSeed}`;
+  
+  // Store in cache
+  avatarCache.set(userId, avatarUrl);
   
   res.status(200).json({
     status: 'success',
