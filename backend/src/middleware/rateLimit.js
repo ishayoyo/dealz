@@ -6,13 +6,26 @@ const createRateLimiter = (options) => {
     store: new MemoryStore(),
     ...options,
     keyGenerator: (req) => req.body.email || req.ip,
+    handler: (req, res) => {
+      console.log('Rate limit reached for:', req.body.email || req.ip);
+      
+      res.setHeader('Retry-After', options.windowMs / 1000);
+      res.status(429).json({
+        status: 'error',
+        message: options.message || 'Too many attempts. Please try again later.',
+        attemptsLeft: 0,
+        waitTime: options.windowMs / 1000
+      });
+    }
   });
+
   return (req, res, next) => {
     limiter(req, res, (err) => {
       if (err) return next(err);
       req.rateLimit = {
         current: req.rateLimit.current,
-        resetKey: (key) => limiter.resetKey(key)
+        remaining: req.rateLimit.remaining,
+        resetTime: req.rateLimit.resetTime
       };
       next();
     });
@@ -38,20 +51,11 @@ const rateLimitMiddleware = {
   }),
 
   login: createRateLimiter({
-    store: new MemoryStore(),
     windowMs: 5 * 60 * 1000, // 5 minutes
     max: 5, // 5 attempts
     message: 'Too many login attempts. Please try again after 5 minutes.',
     standardHeaders: true,
-    legacyHeaders: false,
-    handler: (req, res) => {
-      res.setHeader('Retry-After', 300); // 5 minutes in seconds
-      res.status(429).json({
-        status: 'error',
-        message: 'Too many login attempts. Please try again after 5 minutes.',
-        attemptsLeft: 0
-      });
-    },
+    legacyHeaders: false
   }),
 
   forgotPassword: rateLimit({

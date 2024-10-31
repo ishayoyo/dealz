@@ -127,6 +127,43 @@ passport.use(new GoogleStrategy({
   }
 ));
 
+// Add this helper function at the top of your file with other utility functions
+const createSendToken = (user, statusCode, res) => {
+  // Create tokens
+  const accessToken = signToken(user._id);
+  const refreshToken = signRefreshToken(user._id);
+
+  // Cookie options
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  };
+
+  // Set cookies
+  res.cookie('accessToken', accessToken, {
+    ...cookieOptions,
+    maxAge: 60 * 60 * 1000 // 1 hour
+  });
+
+  res.cookie('refreshToken', refreshToken, {
+    ...cookieOptions,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+
+  // Remove password from output
+  user.password = undefined;
+
+  // Send response
+  res.status(statusCode).json({
+    status: 'success',
+    data: {
+      user
+    }
+  });
+};
+
 exports.register = catchAsync(async (req, res, next) => {
   let { username, email, password } = req.body;
 
@@ -191,75 +228,41 @@ exports.register = catchAsync(async (req, res, next) => {
 });
 
 exports.login = catchAsync(async (req, res, next) => {
-  let { email, password } = req.body;
+  const { email, password } = req.body;
 
-  // Use the updated normalizeEmail function
-  email = normalizeEmail(email);
-
-  if (!email || !password) {
-    return next(new AppError('Please provide email and password', 400));
+  // 1. Find user with password
+  const user = await User.findOne({ email }).select('+password');
+  
+  if (!user) {
+    return res.status(404).json({
+      status: 'error',
+      message: 'Invalid email or password',
+      attemptsLeft: req.rateLimit?.remaining || 5
+    });
   }
 
-  if (!validator.isEmail(email)) {
-    return next(new AppError('Invalid email address', 400));
+  // 2. Check password
+  const isCorrect = await user.correctPassword(password, user.password);
+  
+  if (!isCorrect) {
+    return res.status(401).json({
+      status: 'error',
+      message: 'Invalid password',
+      attemptsLeft: req.rateLimit?.remaining || 5
+    });
   }
 
-  try {
-    const user = await User.findOne({ email }).select('+password');
-    
-    if (!user || !(await user.comparePassword(password))) {
-      const attemptsLeft = Math.max(4 - req.rateLimit.current, 0);
-      return res.status(401).json({
-        status: 'fail',
-        message: 'Incorrect email or password',
-        attemptsLeft: attemptsLeft
-      });
-    }
-
-    if (!user.isVerified) {
-      await sendVerificationEmail(user);
-      return res.status(403).json({
-        status: 'fail',
-        message: 'Please verify your email to log in. A new verification code has been sent.',
-        requiresVerification: true
-      });
-    }
-
-    const accessToken = signToken(user._id);
-    const refreshToken = signRefreshToken(user._id);
-
-    // Set secure cookie options
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax', // Changed from strict to lax
-      path: '/'
-    };
-
-    // Set access token cookie with 15 min expiry
-    res.cookie('accessToken', accessToken, {
-      ...cookieOptions,
-      maxAge: 60 * 60 * 1000  // 60 minutes
+  // 3. Check if email is verified
+  if (!user.isVerified) {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Please verify your email before logging in',
+      requiresVerification: true
     });
-
-    // Set refresh token cookie with 7 day expiry
-    res.cookie('refreshToken', refreshToken, {
-      ...cookieOptions,
-      maxAge: 30 * 24 * 60 * 60 * 1000  // 30 days
-    });
-
-    user.password = undefined;
-    req.rateLimit.resetKey(req.ip);
-
-    res.status(200).json({
-      status: 'success',
-      data: {
-        user
-      }
-    });
-  } catch (error) {
-    return next(new AppError('Error during login', 500));
   }
+
+  // 4. If everything ok, create and send token
+  createSendToken(user, 200, res);
 });
 
 exports.logout = catchAsync(async (req, res) => {

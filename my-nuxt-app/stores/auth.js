@@ -32,28 +32,32 @@ export const useAuthStore = defineStore('auth', {
       }
 
       if (this.loginCountdown > 0) {
-        return { success: false, error: `Rate limited. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.` };
+        return { 
+          success: false, 
+          error: `Rate limited. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.` 
+        };
       }
 
       try {
         const response = await api.post('/users/login', { email, password });
+        
         if (response.data.status === 'success') {
-          console.log('✅ Login successful');
-          await new Promise(resolve => setTimeout(resolve, 1000));
           this.setUser(response.data.data.user);
           this.loginAttemptsLeft = 5;
           return { success: true };
-        } else if (response.data.requiresVerification) {
-          return { success: false, requiresVerification: true, message: response.data.message };
-        } else {
-          this.loginAttemptsLeft = response.data.attemptsLeft;
-          return { 
-            success: false, 
-            error: response.data.message || 'An unexpected error occurred',
-            attemptsLeft: this.loginAttemptsLeft
-          };
         }
+        
+        return { 
+          success: false, 
+          error: response.data.message,
+          attemptsLeft: response.data.attemptsLeft,
+          requiresVerification: response.data.requiresVerification
+        };
+
       } catch (error) {
+        console.error('Login error:', error.response?.data);
+
+        // Handle rate limiting
         if (error.response?.status === 429) {
           this.handleLoginRateLimiting(error);
           return { 
@@ -62,10 +66,14 @@ export const useAuthStore = defineStore('auth', {
             attemptsLeft: 0
           };
         }
-        this.loginAttemptsLeft = error.response?.data?.attemptsLeft || Math.max(this.loginAttemptsLeft - 1, 0);
+
+        // Handle other errors
+        this.loginAttemptsLeft = error.response?.data?.attemptsLeft || 
+                                Math.max(this.loginAttemptsLeft - 1, 0);
+
         return { 
           success: false, 
-          error: error.response?.data?.message || error.message || 'An error occurred during login',
+          error: error.response?.data?.message || 'An error occurred during login',
           attemptsLeft: this.loginAttemptsLeft
         };
       }
