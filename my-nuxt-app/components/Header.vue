@@ -20,7 +20,7 @@
               <img 
                 src="/images/logo.png"
                 alt="Dealz Logo" 
-                class="h-16 w-16 md:h-20 md:w-20 object-contain animate-float transition-all duration-300 group-hover:scale-110 relative z-10"
+                class="h-16 w-16 md:h-20 md:w-20 object-contain relative z-10 logo-pulse"
               />
             </NuxtLink>
             <form @submit.prevent="handleSearch" class="relative hidden md:block ml-4">
@@ -218,17 +218,6 @@ header {
   @apply w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-300 bg-white bg-opacity-80 hover:bg-opacity-100;
 }
 
-.animate-float {
-  animation: float v-bind(logoAnimationDuration) ease-in-out infinite;
-  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.2));
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-5px) rotate(2deg); }
-  75% { transform: translateY(5px) rotate(-2deg); }
-}
-
 /* Make these more specific */
 header.top-0 {
   top: 0 !important;
@@ -260,5 +249,14 @@ header.top-10 {
 @keyframes shine {
   0% { transform: translateX(-100%) rotate(45deg); }
   100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.logo-pulse {
+  animation: subtle-pulse 3s ease-in-out infinite;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 </style>
