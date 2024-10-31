@@ -53,9 +53,15 @@ const rateLimitMiddleware = {
   login: createRateLimiter({
     windowMs: 5 * 60 * 1000, // 5 minutes
     max: 5, // 5 attempts
-    message: 'Too many login attempts. Please try again after 5 minutes.',
-    standardHeaders: true,
-    legacyHeaders: false
+    skipSuccessfulRequests: false, // Don't skip successful attempts
+    handler: (req, res) => {
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many login attempts. Please try again after 5 minutes.',
+        attemptsLeft: 0,
+        waitTime: 5 * 60 // 5 minutes in seconds
+      });
+    }
   }),
 
   forgotPassword: rateLimit({

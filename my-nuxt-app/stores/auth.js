@@ -34,7 +34,7 @@ export const useAuthStore = defineStore('auth', {
       if (this.loginCountdown > 0) {
         return { 
           success: false, 
-          error: `Rate limited. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.` 
+          error: `Too many attempts. Please try again in ${Math.ceil(this.loginCountdown / 60)} minutes.`
         };
       }
 
@@ -49,32 +49,20 @@ export const useAuthStore = defineStore('auth', {
         
         return { 
           success: false, 
-          error: response.data.message,
-          attemptsLeft: response.data.attemptsLeft,
-          requiresVerification: response.data.requiresVerification
+          error: response.data.message
         };
 
       } catch (error) {
-        console.error('Login error:', error.response?.data);
-
-        // Handle rate limiting
         if (error.response?.status === 429) {
           this.handleLoginRateLimiting(error);
           return { 
             success: false, 
-            error: 'Too many login attempts. Please try again later.',
-            attemptsLeft: 0
+            error: 'Too many login attempts. Please try again later.'
           };
         }
-
-        // Handle other errors
-        this.loginAttemptsLeft = error.response?.data?.attemptsLeft || 
-                                Math.max(this.loginAttemptsLeft - 1, 0);
-
         return { 
           success: false, 
-          error: error.response?.data?.message || 'An error occurred during login',
-          attemptsLeft: this.loginAttemptsLeft
+          error: error.response?.data?.message || 'An error occurred during login'
         };
       }
     },
@@ -331,7 +319,7 @@ export const useAuthStore = defineStore('auth', {
       if (retryAfter) {
         this.startLoginCountdown(parseInt(retryAfter));
       } else {
-        this.startLoginCountdown(300); // 5 minutes
+        this.startLoginCountdown(300); // 5 minutes default
       }
       this.loginAttemptsLeft = 0;
     },
