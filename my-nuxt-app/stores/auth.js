@@ -158,54 +158,39 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async initializeAuth() {
-      console.log('🚀 Starting initializeAuth');
-      if (process.server) {
-        console.log('⏭️ Skipping initializeAuth on server');
-        return;
-      }
-
+      if (process.server) return;
+      
       if (this.isInitialized && this.user) {
-        console.log('⏭️ Auth already initialized with user');
         return;
       }
 
       this.isLoading = true;
-
+      
       try {
-        // Try to fetch user data directly
-        console.log('🔄 Fetching user data');
         const response = await api.get('/users/me');
-        
         if (response.data?.data?.user) {
-          console.log('✅ User data received:', response.data.data.user.email);
           const provider = response.data.data.user.googleId ? 'google' : 'local';
           this.setUser(response.data.data.user, provider);
           
-          // Initialize notifications after successful auth
           const notificationStore = useNotificationStore();
           await notificationStore.initializeNotifications();
           return true;
         }
       } catch (error) {
-        console.error('❌ Error fetching user:', error.response?.status);
-        
         if (error.response?.status === 401) {
-          console.log('🔄 Attempting token refresh');
-          const refreshed = await this.refreshToken();
-          if (refreshed) {
-            console.log('✅ Token refreshed, retrying initialization');
-            return this.initializeAuth();
+          try {
+            const refreshed = await this.refreshToken();
+            if (refreshed) {
+              return this.initializeAuth();
+            }
+          } catch (refreshError) {
+            console.error('Refresh token failed:', refreshError);
           }
         }
-        
         this.clearUser();
       } finally {
         this.isLoading = false;
         this.isInitialized = true;
-        console.log('🏁 Auth initialization completed', {
-          isAuthenticated: this.isAuthenticated,
-          user: this.user?.email
-        });
       }
       
       return false;

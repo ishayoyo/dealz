@@ -63,6 +63,7 @@ const protect = catchAsync(async (req, res, next) => {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
+        domain: process.env.NODE_ENV === 'production' ? '.saversonic.com' : 'localhost'
       };
 
       // Set new cookies with proper options

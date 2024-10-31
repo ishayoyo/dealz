@@ -20,63 +20,57 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 
   api.interceptors.request.use(
     config => {
-      console.log(`🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      if (!config.url.includes('/users/me') && !config.url.includes('/users/refresh-token')) {
+        console.log(`🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      }
       return config;
     },
-    error => {
-      console.error('❌ API Request Error:', error);
-      return Promise.reject(error);
-    }
+    error => Promise.reject(error)
   );
 
   api.interceptors.response.use(
     response => {
-      console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`);
+      if (!response.config.url.includes('/users/me') && !response.config.url.includes('/users/refresh-token')) {
+        console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`);
+      }
       return response;
     },
     async error => {
-      console.error(`❌ API Error: ${error.config.method?.toUpperCase()} ${error.config.url}`, error.response?.status);
-
       const originalRequest = error.config;
+      
+      const isAuthEndpoint = originalRequest.url.includes('/users/me') || 
+                            originalRequest.url.includes('/users/refresh-token');
+      
+      if (!isAuthEndpoint && error.response?.status !== 401) {
+        console.error(`❌ API Error: ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`, error.response?.status);
+      }
 
       if (error.response?.status !== 401 || originalRequest._retry) {
         return Promise.reject(error);
       }
 
       if (isRefreshing) {
-        console.log('🔄 Request queued while token refresh in progress');
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then(() => {
-            console.log('✅ Retrying queued request');
-            return api(originalRequest);
-          })
-          .catch(err => {
-            console.error('❌ Queued request failed:', err);
-            return Promise.reject(err);
-          });
+          .then(() => api(originalRequest))
+          .catch(err => Promise.reject(err));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        console.log('🔄 Attempting token refresh');
         const refreshed = await authStore.refreshToken();
-        
         if (refreshed) {
-          console.log('✅ Token refresh successful');
           processQueue(null);
           return api(originalRequest);
         } else {
-          console.log('❌ Token refresh failed');
           processQueue(new Error('Refresh failed'));
           await authStore.clearUser();
           return Promise.reject(error);
         }
       } catch (refreshError) {
-        console.error('❌ Token refresh error:', refreshError);
         processQueue(refreshError);
         await authStore.clearUser();
         return Promise.reject(refreshError);
