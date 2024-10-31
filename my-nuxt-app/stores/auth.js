@@ -136,34 +136,11 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
-        // Clear any Google OAuth state
-        if (this.authProvider === 'google') {
-          // Add a small delay to ensure proper cleanup
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        // Call backend logout
-        await api.post('/users/logout');
-        
-        // Clear local state
-        this.clearUser();
-        
-        // Clear any stored tokens
-        const accessTokenCookie = useCookie('accessToken');
-        const refreshTokenCookie = useCookie('refreshToken');
-        accessTokenCookie.value = null;
-        refreshTokenCookie.value = null;
-        
-        // Redirect to home page
-        const router = useRouter();
-        await router.push('/');
-        
-        // Force page reload to clear all states
-        if (process.client) {
-          window.location.reload();
-        }
+        await api.post('/users/logout')
       } catch (error) {
-        console.error('Logout error:', error);
+        console.error('Logout error:', error)
+      } finally {
+        await this.clearUser()
       }
     },
 
@@ -257,21 +234,23 @@ export const useAuthStore = defineStore('auth', {
     },
     
     async refreshToken() {
-      // Only attempt to refresh if we think we're authenticated
-      if (!this.isAuthenticated) {
-        console.log('Not authenticated, skipping token refresh');
-        return false;
-      }
-
       try {
-        const response = await api.post('/users/refresh-token');
-        // The cookie will be automatically handled by the browser
-        return true;
+        console.log('📥 Sending refresh token request')
+        const response = await api.post('/users/refresh-token')
+        
+        if (response.data.status === 'success') {
+          console.log('✅ New tokens received')
+          return true
+        }
+        
+        console.log('❌ Refresh token request failed')
+        return false
       } catch (error) {
-        console.error('Error refreshing token:', error);
-        // If refresh fails, log the user out
-        await this.logout();
-        return false;
+        console.error('❌ Refresh token error:', error)
+        if (error.response?.status === 401) {
+          await this.clearUser()
+        }
+        return false
       }
     },
 
@@ -593,17 +572,16 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async clearUser() {
-      this.user = null;
-      this.authProvider = null;
-      this.isInitialized = true;
-      this.isLoading = false;
+      this.user = null
+      this.authProvider = null
+      this.isInitialized = true
+      this.isLoading = false
       
-      // Clear notifications when user is cleared
-      const notificationStore = useNotificationStore();
-      notificationStore.reset();
+      const notificationStore = useNotificationStore()
+      notificationStore.reset()
       
       if (process.client) {
-        sessionStorage.removeItem('googleLoginInitiated');
+        sessionStorage.removeItem('googleLoginInitiated')
       }
     }
   },

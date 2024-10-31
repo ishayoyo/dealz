@@ -12,7 +12,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 const signToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '15m'  // Access token expires in 15 minute
+    expiresIn: '30s'  // Changed from 15m to 30s for testing
   });
 };
 
@@ -216,7 +216,7 @@ exports.login = catchAsync(async (req, res, next) => {
       });
     }
 
-    if (user.isVerified === false) {
+    if (!user.isVerified) {
       await sendVerificationEmail(user);
       return res.status(403).json({
         status: 'fail',
@@ -228,31 +228,33 @@ exports.login = catchAsync(async (req, res, next) => {
     const accessToken = signToken(user._id);
     const refreshToken = signRefreshToken(user._id);
 
-    // Set cookies
-    res.cookie('accessToken', accessToken, {
+    // Set secure cookie options
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000
+      sameSite: 'lax', // Changed from strict to lax
+      path: '/'
+    };
+
+    // Set access token cookie with 15 min expiry
+    res.cookie('accessToken', accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
+    // Set refresh token cookie with 7 day expiry
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
     user.password = undefined;
-
-    // Reset the rate limiter for this IP on successful login
     req.rateLimit.resetKey(req.ip);
 
     res.status(200).json({
       status: 'success',
       data: {
-        user,
-        token: accessToken // Include token in response body
+        user
       }
     });
   } catch (error) {
@@ -471,32 +473,61 @@ exports.changePassword = catchAsync(async (req, res, next) => {
 });
 
 exports.refreshToken = catchAsync(async (req, res, next) => {
-  const refreshToken = req.cookies.refreshToken;
+  console.log('📥 Refresh token request received')
+  const refreshToken = req.cookies.refreshToken
 
   if (!refreshToken) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
-    return next(new AppError('No refresh token found', 401));
+    console.log('❌ No refresh token in cookies')
+    res.clearCookie('accessToken')
+    res.clearCookie('refreshToken')
+    return next(new AppError('No refresh token provided', 401))
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const newAccessToken = signToken(decoded.id);
+    console.log('🔍 Verifying refresh token')
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET)
+    
+    console.log('🔍 Finding user:', decoded.id)
+    const user = await User.findById(decoded.id)
+
+    if (!user) {
+      console.log('❌ User not found')
+      res.clearCookie('accessToken')
+      res.clearCookie('refreshToken')
+      return next(new AppError('User not found', 401))
+    }
+
+    console.log('✅ Generating new tokens')
+    const newAccessToken = signToken(user._id)
+    const newRefreshToken = signRefreshToken(user._id)
 
     res.cookie('accessToken', newAccessToken, {
-      expires: new Date(Date.now() + 15 * 60 * 1000),
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
-    });
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 30 * 1000  // 30 seconds for testing
+    })
 
-    res.status(200).json({ status: 'success' });
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    })
+
+    console.log('✅ Tokens set in cookies')
+    res.status(200).json({
+      status: 'success'
+    })
   } catch (error) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
-    return next(new AppError('Invalid refresh token', 401));
+    console.log('❌ Error in refresh token:', error.message)
+    res.clearCookie('accessToken')
+    res.clearCookie('refreshToken')
+    return next(new AppError('Invalid refresh token', 401))
   }
-});
+})
 
 exports.checkAuth = catchAsync(async (req, res, next) => {
   res.status(200).json({

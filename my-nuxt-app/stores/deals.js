@@ -3,6 +3,28 @@ import { defineStore } from 'pinia'
 import api from '~/services/api'
 import { useAuthStore } from '~/stores/auth'
 
+// Helper function to handle API calls with retry logic
+const handleApiCall = async (apiCall) => {
+  try {
+    return await apiCall()
+  } catch (error) {
+    if (error.response?.status === 401) {
+      const authStore = useAuthStore()
+      try {
+        const refreshed = await authStore.refreshToken()
+        if (refreshed) {
+          // Retry the original request
+          return await apiCall()
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing token:', refreshError)
+        throw refreshError
+      }
+    }
+    throw error
+  }
+}
+
 export const useDealsStore = defineStore('deals', {
   state: () => ({
     deals: [],
@@ -42,34 +64,36 @@ export const useDealsStore = defineStore('deals', {
     async fetchDeals() {
       this.loading = true
       try {
-        const response = await api.get('/deals')
+        const response = await handleApiCall(() => api.get('/deals'))
         this.deals = response.data.data.deals
         this.loading = false
       } catch (error) {
         console.error('Error fetching deals:', error)
         this.error = 'Failed to fetch deals'
         this.loading = false
+        throw error
       }
     },
 
     async fetchUserDeals() {
       this.loading = true
       try {
-        const response = await api.get('/deals/user')
+        const response = await handleApiCall(() => api.get('/deals/user'))
         this.userDeals = response.data.data.deals
         this.loading = false
       } catch (error) {
         console.error('Error fetching user deals:', error)
         this.error = 'Failed to fetch user deals'
         this.loading = false
+        throw error
       }
     },
 
     async postDeal(dealData) {
       try {
-        const response = await api.post('/deals', dealData)
+        const response = await handleApiCall(() => api.post('/deals', dealData))
         const newDeal = response.data.data.deal
-        this.handleNewDeal(newDeal);  // Pass the deal directly
+        this.handleNewDeal(newDeal)
         return newDeal
       } catch (error) {
         console.error('Error posting deal:', error)
@@ -79,7 +103,7 @@ export const useDealsStore = defineStore('deals', {
 
     async updateDeal(id, updateData) {
       try {
-        const response = await api.patch(`/deals/${id}`, updateData)
+        const response = await handleApiCall(() => api.patch(`/deals/${id}`, updateData))
         const updatedDeal = response.data.data.deal
         const index = this.deals.findIndex(deal => deal._id === id)
         if (index !== -1) {
@@ -98,7 +122,7 @@ export const useDealsStore = defineStore('deals', {
 
     async deleteDeal(id) {
       try {
-        await api.delete(`/deals/${id}`)
+        await handleApiCall(() => api.delete(`/deals/${id}`))
         this.deals = this.deals.filter(deal => deal._id !== id)
         this.userDeals = this.userDeals.filter(deal => deal._id !== id)
       } catch (error) {
@@ -190,7 +214,7 @@ export const useDealsStore = defineStore('deals', {
 
     async fetchDealById(id) {
       try {
-        const response = await api.get(`/deals/${id}`)
+        const response = await handleApiCall(() => api.get(`/deals/${id}`))
         return response.data
       } catch (error) {
         console.error('Error fetching deal:', error)
@@ -201,9 +225,9 @@ export const useDealsStore = defineStore('deals', {
     async searchDeals(query, options = {}) {
       this.loading = true
       try {
-        console.log('Sending search request with query:', query, 'and options:', options);
-        const params = { 
-          q: query, // Make sure it's 'q' here
+        console.log('Sending search request with query:', query, 'and options:', options)
+        const params = {
+          q: query,
           category: options.category,
           store: options.store,
           minPrice: options.minPrice,
@@ -211,14 +235,11 @@ export const useDealsStore = defineStore('deals', {
           sortBy: options.sortBy,
           page: options.page,
           limit: options.limit
-        };
-        // Remove undefined parameters
-        Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+        }
+        Object.keys(params).forEach(key => params[key] === undefined && delete params[key])
         
-        console.log('Final params:', params);
-        
-        const response = await api.get('/deals/search', { params });
-        console.log('Search response:', response.data);
+        const response = await handleApiCall(() => api.get('/deals/search', { params }))
+        console.log('Search response:', response.data)
         this.loading = false
         return response.data.data.deals
       } catch (error) {

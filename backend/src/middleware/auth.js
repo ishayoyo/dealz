@@ -22,16 +22,7 @@ const protect = catchAsync(async (req, res, next) => {
     return next();
   }
 
-  let token;
-  
-  // Check for token in Authorization header
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  } 
-  // Check for token in cookies
-  else if (req.cookies.accessToken) {
-    token = req.cookies.accessToken;
-  }
+  let token = req.cookies.accessToken;
 
   if (!token) {
     return next(new AppError('You are not logged in. Please log in to get access.', 401));
@@ -48,7 +39,46 @@ const protect = catchAsync(async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    return next(new AppError('Invalid token. Please log in again.', 401));
+    // If token verification fails, try to refresh
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return next(new AppError('Session expired. Please log in again.', 401));
+    }
+
+    try {
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+      const user = await User.findById(decoded.id);
+
+      if (!user) {
+        return next(new AppError('User not found. Please log in again.', 401));
+      }
+
+      // Generate new tokens
+      const newAccessToken = signToken(user._id);
+      const newRefreshToken = signRefreshToken(user._id);
+
+      // Set new cookies
+      res.cookie('accessToken', newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 15 * 60 * 1000
+      });
+
+      res.cookie('refreshToken', newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
+
+      req.user = user;
+      next();
+    } catch (refreshError) {
+      return next(new AppError('Session expired. Please log in again.', 401));
+    }
   }
 });
 
