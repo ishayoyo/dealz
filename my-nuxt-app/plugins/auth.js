@@ -18,56 +18,71 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     failedQueue = []
   }
 
-  api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      const originalRequest = error.config
+  api.interceptors.request.use(
+    config => {
+      console.log(`🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      return config;
+    },
+    error => {
+      console.error('❌ API Request Error:', error);
+      return Promise.reject(error);
+    }
+  );
 
-      // If it's not 401 or request already retried, reject immediately
+  api.interceptors.response.use(
+    response => {
+      console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`);
+      return response;
+    },
+    async error => {
+      console.error(`❌ API Error: ${error.config.method?.toUpperCase()} ${error.config.url}`, error.response?.status);
+
+      const originalRequest = error.config;
+
       if (error.response?.status !== 401 || originalRequest._retry) {
-        return Promise.reject(error)
+        return Promise.reject(error);
       }
 
       if (isRefreshing) {
-        console.log('🔄 Request queued while token refresh in progress')
+        console.log('🔄 Request queued while token refresh in progress');
         return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject })
+          failedQueue.push({ resolve, reject });
         })
           .then(() => {
-            console.log('✅ Retrying request after queue resolution')
-            return api(originalRequest)
+            console.log('✅ Retrying queued request');
+            return api(originalRequest);
           })
-          .catch((err) => {
-            console.log('❌ Queued request failed:', err)
-            return Promise.reject(err)
-          })
+          .catch(err => {
+            console.error('❌ Queued request failed:', err);
+            return Promise.reject(err);
+          });
       }
 
-      originalRequest._retry = true
-      isRefreshing = true
+      originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
-        console.log('🔄 Attempting token refresh...')
-        const refreshed = await authStore.refreshToken()
+        console.log('🔄 Attempting token refresh');
+        const refreshed = await authStore.refreshToken();
         
         if (refreshed) {
-          console.log('✅ Token refresh successful')
-          processQueue(null)
-          return api(originalRequest)
+          console.log('✅ Token refresh successful');
+          processQueue(null);
+          return api(originalRequest);
         } else {
-          console.log('❌ Token refresh failed')
-          processQueue(new Error('Refresh failed'))
-          await authStore.logout()
-          return Promise.reject(error)
+          console.log('❌ Token refresh failed');
+          processQueue(new Error('Refresh failed'));
+          await authStore.clearUser();
+          return Promise.reject(error);
         }
       } catch (refreshError) {
-        console.log('❌ Token refresh error:', refreshError)
-        processQueue(refreshError)
-        await authStore.logout()
-        return Promise.reject(refreshError)
+        console.error('❌ Token refresh error:', refreshError);
+        processQueue(refreshError);
+        await authStore.clearUser();
+        return Promise.reject(refreshError);
       } finally {
-        isRefreshing = false
+        isRefreshing = false;
       }
     }
-  )
+  );
 })

@@ -13,16 +13,16 @@ export const useAuthStore = defineStore('auth', {
     signupAttemptsLeft: 5,
     loginCountdownTimer: null,
     signupCountdownTimer: null,
-    authProvider: null, // Add this to track auth provider
-    isInitialized: false, // Add this flag
-    isLoading: true, // Add this
+    authProvider: null,
+    isInitialized: false,
+    isLoading: true,
   }),
 
   getters: {
     isAuthenticated: (state) => !!state.user && state.isInitialized && !state.isLoading,
     isLoginRateLimited: (state) => state.loginCountdown > 0,
     isSignupRateLimited: (state) => state.signupCountdown > 0,
-    isGoogleAuth: (state) => state.authProvider === 'google', // Add this getter
+    isGoogleAuth: (state) => state.authProvider === 'google',
   },
 
   actions: {
@@ -38,8 +38,10 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await api.post('/users/login', { email, password });
         if (response.data.status === 'success') {
+          console.log('✅ Login successful');
+          await new Promise(resolve => setTimeout(resolve, 1000));
           this.setUser(response.data.data.user);
-          this.loginAttemptsLeft = 5; // Reset attempts on successful login
+          this.loginAttemptsLeft = 5;
           return { success: true };
         } else if (response.data.requiresVerification) {
           return { success: false, requiresVerification: true, message: response.data.message };
@@ -104,7 +106,11 @@ export const useAuthStore = defineStore('auth', {
     },
 
     setUser(user, provider = 'local') {
-      console.log('Setting user:', user, 'provider:', provider);
+      console.log('📝 Setting user:', user?.email, 'provider:', provider);
+      if (!user) {
+        console.warn('⚠️ Attempted to set null user');
+        return;
+      }
       this.user = user;
       this.authProvider = provider;
       this.isInitialized = true;
@@ -112,11 +118,18 @@ export const useAuthStore = defineStore('auth', {
     },
 
     clearUser() {
-      console.log('Clearing user');
+      console.log('🧹 Clearing user state and cookies');
       this.user = null;
       this.authProvider = null;
       this.isInitialized = true;
       this.isLoading = false;
+      
+      if (process.client) {
+        const accessCookie = useCookie('accessToken');
+        const refreshCookie = useCookie('refreshToken');
+        accessCookie.value = null;
+        refreshCookie.value = null;
+      }
     },
 
     async fetchUser() {
@@ -145,49 +158,57 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async initializeAuth() {
-      if (process.server) return;
-      
-      // If already initialized, don't do it again
-      if (this.isInitialized) return;
-      
-      this.isLoading = true;
-      try {
-        const route = useRoute();
-        const notificationStore = useNotificationStore();
-        
-        // Wrap the /users/me call in a silent try-catch
-        const checkUser = async () => {
-          try {
-            const response = await api.get('/users/me');
-            if (response.data?.data?.user) {
-              const provider = response.data.data.user.googleId ? 'google' : 'local';
-              this.setUser(response.data.data.user, provider);
-              // Initialize notifications after successful auth
-              setTimeout(() => {
-                notificationStore.initializeNotifications();
-              }, 1000);
-            } else {
-              this.clearUser();
-            }
-          } catch (error) {
-            // Only log non-401 errors
-            if (error.response?.status !== 401) {
-              console.error('Auth initialization error:', error);
-            }
-            this.clearUser();
-          }
-        };
+      console.log('🚀 Starting initializeAuth');
+      if (process.server) {
+        console.log('⏭️ Skipping initializeAuth on server');
+        return;
+      }
 
-        if (route.query.auth === 'success') {
-          console.log('Google auth success detected');
-          await checkUser();
-        } else {
-          await checkUser();
+      if (this.isInitialized && this.user) {
+        console.log('⏭️ Auth already initialized with user');
+        return;
+      }
+
+      this.isLoading = true;
+
+      try {
+        // Try to fetch user data directly
+        console.log('🔄 Fetching user data');
+        const response = await api.get('/users/me');
+        
+        if (response.data?.data?.user) {
+          console.log('✅ User data received:', response.data.data.user.email);
+          const provider = response.data.data.user.googleId ? 'google' : 'local';
+          this.setUser(response.data.data.user, provider);
+          
+          // Initialize notifications after successful auth
+          const notificationStore = useNotificationStore();
+          await notificationStore.initializeNotifications();
+          return true;
         }
+      } catch (error) {
+        console.error('❌ Error fetching user:', error.response?.status);
+        
+        if (error.response?.status === 401) {
+          console.log('🔄 Attempting token refresh');
+          const refreshed = await this.refreshToken();
+          if (refreshed) {
+            console.log('✅ Token refreshed, retrying initialization');
+            return this.initializeAuth();
+          }
+        }
+        
+        this.clearUser();
       } finally {
         this.isLoading = false;
         this.isInitialized = true;
+        console.log('🏁 Auth initialization completed', {
+          isAuthenticated: this.isAuthenticated,
+          user: this.user?.email
+        });
       }
+      
+      return false;
     },
 
     async checkAuth() {
@@ -235,22 +256,11 @@ export const useAuthStore = defineStore('auth', {
     
     async refreshToken() {
       try {
-        console.log('📥 Sending refresh token request')
-        const response = await api.post('/users/refresh-token')
-        
-        if (response.data.status === 'success') {
-          console.log('✅ New tokens received')
-          return true
-        }
-        
-        console.log('❌ Refresh token request failed')
-        return false
+        const response = await api.post('/users/refresh-token');
+        return response.data.status === 'success';
       } catch (error) {
-        console.error('❌ Refresh token error:', error)
-        if (error.response?.status === 401) {
-          await this.clearUser()
-        }
-        return false
+        console.error('Token refresh failed:', error);
+        return false;
       }
     },
 

@@ -57,21 +57,23 @@ const protect = catchAsync(async (req, res, next) => {
       const newAccessToken = signToken(user._id);
       const newRefreshToken = signRefreshToken(user._id);
 
-      // Set new cookies
-      res.cookie('accessToken', newAccessToken, {
+      // Update cookie settings
+      const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 15 * 60 * 1000
+      };
+
+      // Set new cookies with proper options
+      res.cookie('accessToken', newAccessToken, {
+        ...cookieOptions,
+        maxAge: 60 * 60 * 1000 // 1 hour
       });
 
       res.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        ...cookieOptions,
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       });
 
       req.user = user;
