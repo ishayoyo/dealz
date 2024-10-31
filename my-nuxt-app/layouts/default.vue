@@ -190,7 +190,8 @@ const isDealPage = computed(() => {
 })
 
 const handleFabClick = () => {
-  // Handle FAB click action
+  // Call the same function as the header button
+  openPostDealModal()
 }
 
 // ... rest of your existing script
