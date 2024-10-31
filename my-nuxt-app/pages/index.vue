@@ -30,18 +30,32 @@
           </button>
         </div>
         <!-- Stats section -->
-        <div class="grid grid-cols-3 gap-2 sm:gap-4 mt-6 sm:mt-8 max-w-2xl mx-auto">
-          <div class="p-2 sm:p-4 rounded-lg bg-white shadow-md">
-            <div class="text-xl sm:text-2xl font-bold text-primary-600">{{ dealStats.total }}+</div>
-            <div class="text-xs sm:text-sm text-gray-600">Active Deals</div>
+        <div class="grid grid-cols-3 gap-4 mt-8 max-w-2xl mx-auto">
+          <div class="stats-card group hover:scale-105 transition-all duration-300">
+            <div class="relative overflow-hidden p-4 rounded-xl bg-gradient-to-br from-white to-gray-50 shadow-lg border border-gray-100">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 transform origin-left group-hover:scale-x-100 scale-x-0 transition-transform duration-300"></div>
+              <div class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{{ dealStats.total }}+</div>
+              <div class="text-sm text-gray-600 font-medium">Active Deals</div>
+              <div class="absolute bottom-0 right-0 w-16 h-16 -m-6 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full opacity-20"></div>
+            </div>
           </div>
-          <div class="p-2 sm:p-4 rounded-lg bg-white shadow-md">
-            <div class="text-xl sm:text-2xl font-bold text-primary-600">{{ dealStats.savings }}%</div>
-            <div class="text-xs sm:text-sm text-gray-600">Avg. Savings</div>
+          
+          <div class="stats-card group hover:scale-105 transition-all duration-300">
+            <div class="relative overflow-hidden p-4 rounded-xl bg-gradient-to-br from-white to-gray-50 shadow-lg border border-gray-100">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 transform origin-left group-hover:scale-x-100 scale-x-0 transition-transform duration-300"></div>
+              <div class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{{ dealStats.savings }}%</div>
+              <div class="text-sm text-gray-600 font-medium">Avg. Savings</div>
+              <div class="absolute bottom-0 right-0 w-16 h-16 -m-6 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full opacity-20"></div>
+            </div>
           </div>
-          <div class="p-2 sm:p-4 rounded-lg bg-white shadow-md">
-            <div class="text-xl sm:text-2xl font-bold text-primary-600">{{ dealStats.users }}k+</div>
-            <div class="text-xs sm:text-sm text-gray-600">Happy Users</div>
+          
+          <div class="stats-card group hover:scale-105 transition-all duration-300">
+            <div class="relative overflow-hidden p-4 rounded-xl bg-gradient-to-br from-white to-gray-50 shadow-lg border border-gray-100">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 transform origin-left group-hover:scale-x-100 scale-x-0 transition-transform duration-300"></div>
+              <div class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{{ dealStats.users }}k+</div>
+              <div class="text-sm text-gray-600 font-medium">Happy Users</div>
+              <div class="absolute bottom-0 right-0 w-16 h-16 -m-6 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full opacity-20"></div>
+            </div>
           </div>
         </div>
       </div>
