@@ -649,9 +649,18 @@ const handleDeleteComment = async (commentId) => {
 }
 
 const getOutgoingLink = (url) => {
-  // Remove the '/api/v1' from the end of the baseURL
-  const baseURL = api.defaults.baseURL.replace(/\/api\/v1$/, '')
-  return `${baseURL}/api/v1/link/out?url=${encodeURIComponent(url)}`
+  // Remove the '/api/v1' from the end of the baseURL if it exists
+  const baseURL = api.defaults.baseURL.replace(/\/api\/v1$/, '');
+  
+  // Create URL object for proper encoding
+  const outgoingUrl = new URL(`${baseURL}/api/v1/link/out`);
+  
+  // Add parameters
+  outgoingUrl.searchParams.append('url', url);
+  outgoingUrl.searchParams.append('dealId', props.deal._id);
+  
+  console.log('Generated outgoing link:', outgoingUrl.toString());
+  return outgoingUrl.toString();
 }
 
 const formattedListPrice = computed(() => 
