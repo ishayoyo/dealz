@@ -12,13 +12,13 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 const signToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30s'  // Changed from 15m to 30s for testing
+    expiresIn: '60m'  // 60 minutes
   });
 };
 
 const signRefreshToken = id => {
   return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: '7d'  // Refresh token expires in 7 days
+    expiresIn: '30d'  // 30 days
   });
 };
 
@@ -239,13 +239,13 @@ exports.login = catchAsync(async (req, res, next) => {
     // Set access token cookie with 15 min expiry
     res.cookie('accessToken', accessToken, {
       ...cookieOptions,
-      maxAge: 15 * 60 * 1000 // 15 minutes
+      maxAge: 60 * 60 * 1000  // 60 minutes
     });
 
     // Set refresh token cookie with 7 day expiry
     res.cookie('refreshToken', refreshToken, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 30 * 24 * 60 * 60 * 1000  // 30 days
     });
 
     user.password = undefined;
