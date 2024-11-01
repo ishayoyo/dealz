@@ -230,7 +230,7 @@ exports.register = catchAsync(async (req, res, next) => {
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
-  // 1. Find user with password
+  // 1. Find user with password1
   const user = await User.findOne({ email }).select('+password');
   
   if (!user) {
