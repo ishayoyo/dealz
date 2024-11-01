@@ -49,17 +49,27 @@ export const useAuthStore = defineStore('auth', {
         
         return { 
           success: false, 
-          error: response.data.message
+          error: response.data.message || 'Invalid credentials'
         };
 
       } catch (error) {
-        if (error.response?.status === 429) {
-          this.handleLoginRateLimiting(error);
-          return { 
-            success: false, 
-            error: 'Too many login attempts. Please try again later.'
-          };
+        if (error.response) {
+          if (error.response.status === 429) {
+            this.handleLoginRateLimiting(error);
+            return { 
+              success: false, 
+              error: 'Too many login attempts. Please try again later.'
+            };
+          }
+          
+          if (error.response.status === 401) {
+            return { 
+              success: false, 
+              error: 'Invalid email or password'
+            };
+          }
         }
+        
         return { 
           success: false, 
           error: error.response?.data?.message || 'An error occurred during login'

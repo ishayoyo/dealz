@@ -41,42 +41,47 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       const isAuthEndpoint = originalRequest.url.includes('/users/me') || 
                             originalRequest.url.includes('/users/refresh-token');
       
-      if (!isAuthEndpoint && error.response?.status !== 401) {
-        console.error(`❌ API Error: ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`, error.response?.status);
+      if (!isAuthEndpoint) {
+        console.error(`❌ API Error: ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`, {
+          status: error.response?.status,
+          message: error.response?.data?.message
+        });
       }
 
-      if (error.response?.status !== 401 || originalRequest._retry) {
-        return Promise.reject(error);
-      }
-
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(() => api(originalRequest))
-          .catch(err => Promise.reject(err));
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const refreshed = await authStore.refreshToken();
-        if (refreshed) {
-          processQueue(null);
-          return api(originalRequest);
-        } else {
-          processQueue(new Error('Refresh failed'));
-          await authStore.clearUser();
-          return Promise.reject(error);
+      if (error.response?.status === 401 && 
+          !originalRequest._retry && 
+          !originalRequest.url.includes('/users/login')) {
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
+            .then(() => api(originalRequest))
+            .catch(err => Promise.reject(err));
         }
-      } catch (refreshError) {
-        processQueue(refreshError);
-        await authStore.clearUser();
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          const refreshed = await authStore.refreshToken();
+          if (refreshed) {
+            processQueue(null);
+            return api(originalRequest);
+          } else {
+            processQueue(new Error('Refresh failed'));
+            await authStore.clearUser();
+            return Promise.reject(error);
+          }
+        } catch (refreshError) {
+          processQueue(refreshError);
+          await authStore.clearUser();
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
       }
+
+      return Promise.reject(error);
     }
   );
 })
