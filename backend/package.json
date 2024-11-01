@@ -7,7 +7,8 @@
     "test:watch": "jest --config jest.config.js --watch",
     "test:coverage": "jest --config jest.config.js --coverage",
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "test:bot": "node src/scripts/testAmazonBot.js"
   },
   "keywords": [],
   "author": "",
