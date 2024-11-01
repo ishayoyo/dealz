@@ -19,7 +19,22 @@ const io = socketIo(server, {
     origin: ["https://saversonic.com", "http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true
+  },
+  pingTimeout: 60000, // Increase ping timeout
+  pingInterval: 25000, // Increase ping interval
+  transports: ['websocket', 'polling'], // Support both WebSocket and polling
+  allowEIO3: true, // Allow Engine.IO version 3
+  cookie: {
+    name: "socket.io",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === 'production'
   }
+});
+
+// Add error handling for socket connections
+io.engine.on("connection_error", (err) => {
+  console.log('Socket connection error:', err);
 });
 
 const testRoutes = require('./routes/testRoutes')(io);
@@ -27,9 +42,19 @@ const testRoutes = require('./routes/testRoutes')(io);
 io.on('connection', (socket) => {
   console.log('New client connected', socket.id);
   
+  // Add error handling for individual sockets
+  socket.on('error', (error) => {
+    console.error('Socket error:', error);
+  });
+
   socket.on('join', ({ userId }) => {
+    if (!userId) {
+      console.error('Join attempt without userId');
+      return;
+    }
     console.log(`User ${userId} joining room`);
     socket.join(userId);
+    socket.emit('joined', { userId }); // Confirm join
   });
 
   socket.on('disconnect', () => {

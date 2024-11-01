@@ -12,7 +12,10 @@ app.set('trust proxy', 1);
 
 app.use(cors({
   origin: ["https://saversonic.com", "http://localhost:3000"],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['set-cookie']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
