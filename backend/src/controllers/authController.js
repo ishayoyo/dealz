@@ -26,14 +26,22 @@ const generateVerificationCode = () => {
   return crypto.randomBytes(3).toString('hex').toUpperCase();
 };
 
-// Update the email normalization in register, login, and forgotPassword functions
+// Update the email normalization function
 const normalizeEmail = (email) => {
+  if (!email) return email;
+  
   email = email.toLowerCase().trim();
+  
+  // Handle Gmail addresses
   if (email.endsWith('@gmail.com')) {
-    // Only remove dots before the @gmail.com, not in @gmail.com itself
-    const [localPart] = email.split('@');
-    return `${localPart.replace(/\./g, '')}@gmail.com`;
+    const [localPart, domain] = email.split('@');
+    // Remove dots and everything after + in the local part
+    const normalizedLocal = localPart
+      .replace(/\./g, '')  // Remove all dots
+      .split('+')[0];     // Remove everything after +
+    return `${normalizedLocal}@${domain}`;
   }
+  
   return email;
 };
 
@@ -167,7 +175,7 @@ const createSendToken = (user, statusCode, res) => {
 exports.register = catchAsync(async (req, res, next) => {
   let { username, email, password } = req.body;
 
-  // Use the updated normalizeEmail function
+  // Normalize the email before saving
   email = normalizeEmail(email);
 
   // Sanitize inputs
@@ -228,10 +236,13 @@ exports.register = catchAsync(async (req, res, next) => {
 });
 
 exports.login = catchAsync(async (req, res, next) => {
-  const { email, password } = req.body;
+  const normalizedEmail = normalizeEmail(req.body.email);
+  const { password } = req.body;
 
-  // 1. Find user with password1
-  const user = await User.findOne({ email }).select('+password');
+  // Find user with normalized email
+  const user = await User.findOne({ 
+    email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') }
+  }).select('+password');
   
   if (!user) {
     return res.status(404).json({
