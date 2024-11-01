@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
   },
+  normalizedEmail: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   password: {
     type: String,
     required: [true, 'Please provide a password'],
@@ -144,6 +149,31 @@ userSchema.methods.createPasswordResetToken = function() {
 userSchema.methods.correctPassword = async function(candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
+
+userSchema.pre('save', function(next) {
+  if (this.isModified('email')) {
+    // Normalize email for Gmail addresses
+    if (this.email.endsWith('@gmail.com')) {
+      const [localPart, domain] = this.email.split('@');
+      this.normalizedEmail = `${localPart.replace(/\./g, '')}@${domain}`;
+    } else {
+      this.normalizedEmail = this.email.toLowerCase().trim();
+    }
+  }
+  next();
+});
+
+userSchema.index({ normalizedEmail: 1 }, { 
+  unique: true, 
+  sparse: true,
+  partialFilterExpression: { normalizedEmail: { $exists: true } }
+});
+
+userSchema.index({ 
+  username: 'text', 
+  email: 'text',
+  normalizedEmail: 'text'
+});
 
 const User = mongoose.model('User', userSchema);
 

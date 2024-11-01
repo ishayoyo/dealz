@@ -102,30 +102,42 @@ passport.use(new GoogleStrategy({
   },
   async function(req, accessToken, refreshToken, profile, done) {
     try {
-      // Check if user exists
-      let user = await User.findOne({ email: profile.emails[0].value });
+      const email = profile.emails[0].value;
+      const normalizedEmail = normalizeEmail(email);
       
-      if (!user) {
-        // Generate a unique username from their Google display name
-        const username = await generateUniqueUsername(profile.displayName);
-        
-        // Create new user
-        user = await User.create({
-          username: username,
-          email: profile.emails[0].value,
-          password: crypto.randomBytes(16).toString('hex'),
-          isVerified: true,
-          googleId: profile.id,
-          avatar: profile.photos?.[0]?.value || null
-        });
-      } else if (!user.googleId) {
+      // Find user by normalized email
+      let user = await User.findOne({ 
+        $or: [
+          { normalizedEmail: normalizedEmail },
+          { email: email.toLowerCase() } // Fallback
+        ]
+      });
+      
+      if (user) {
         // If user exists but hasn't linked Google
-        user.googleId = profile.id;
-        if (!user.avatar && profile.photos?.[0]?.value) {
-          user.avatar = profile.photos[0].value;
+        if (!user.googleId) {
+          user.googleId = profile.id;
+          user.isVerified = true; // Auto-verify Google users
+          if (!user.avatar && profile.photos?.[0]?.value) {
+            user.avatar = profile.photos[0].value;
+          }
+          await user.save();
         }
-        await user.save();
+        return done(null, user);
       }
+
+      // Create new user if none exists
+      const username = await generateUniqueUsername(profile.displayName);
+      user = await User.create({
+        username,
+        email: email,
+        normalizedEmail: normalizedEmail,
+        password: crypto.randomBytes(16).toString('hex'),
+        isVerified: true,
+        googleId: profile.id,
+        avatar: profile.photos?.[0]?.value || null,
+        provider: 'google'
+      });
 
       return done(null, user);
     } catch (error) {
@@ -175,105 +187,101 @@ const createSendToken = (user, statusCode, res) => {
 exports.register = catchAsync(async (req, res, next) => {
   let { username, email, password } = req.body;
 
-  // Normalize the email before saving
-  email = normalizeEmail(email);
-
-  // Sanitize inputs
-  username = validator.trim(username);
-
   if (!username || !email || !password) {
     return next(new AppError('Please provide username, email and password', 400));
   }
 
-  // Validate inputs
-  if (!validator.isAlphanumeric(username)) {
-    return next(new AppError('Username must contain only letters and numbers', 400));
-  }
-
-  if (!validator.isEmail(email)) {
-    return next(new AppError('Invalid email address', 400));
-  }
-
-  if (!validator.isLength(password, { min: 8 })) {
-    return next(new AppError('Password must be at least 8 characters long', 400));
-  }
-
   try {
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const normalizedEmail = normalizeEmail(email);
+    
+    // Check for existing user with normalized email
+    const existingUser = await User.findOne({ 
+      $or: [
+        { normalizedEmail: normalizedEmail },
+        { email: email.toLowerCase() } // Fallback
+      ]
+    });
+
     if (existingUser) {
-      return next(new AppError('User with this email or username already exists', 400));
+      if (existingUser.googleId) {
+        return next(new AppError('This email is already registered with Google. Please sign in with Google.', 400));
+      }
+      return next(new AppError('Email already exists', 400));
     }
 
     const verificationCode = generateVerificationCode();
-    const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
-
+    
+    // Create new user with both email formats
     const newUser = await User.create({
       username,
-      email,
+      email: email.trim(),
+      normalizedEmail: normalizedEmail,
       password,
       verificationCode,
-      verificationCodeExpires,
-      isVerified: false
+      verificationCodeExpires: new Date(Date.now() + 15 * 60 * 1000),
+      isVerified: false,
+      provider: 'local'
     });
 
+    // Send verification email
     const emailSent = await sendVerificationEmail(newUser);
+    
     if (!emailSent) {
-      return res.status(201).json({
-        status: 'success',
-        message: 'User registered successfully, but there was an issue sending the verification email. Please use the resend option.',
-        data: { user: newUser, requiresVerification: true, emailSendingFailed: true }
-      });
+      console.error('Failed to send verification email to:', email);
     }
 
     res.status(201).json({
       status: 'success',
-      message: 'User registered successfully. Please check your email for the verification code.',
-      data: { user: newUser, requiresVerification: true }
+      message: 'User registered successfully. Please check your email for verification.'
     });
+
   } catch (error) {
+    console.error('Registration error:', error);
     return next(new AppError('Error during registration', 500));
   }
 });
 
 exports.login = catchAsync(async (req, res, next) => {
-  const normalizedEmail = normalizeEmail(req.body.email);
-  const { password } = req.body;
+  const { email, password } = req.body;
 
-  // Find user with normalized email
-  const user = await User.findOne({ 
-    email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') }
-  }).select('+password');
-  
-  if (!user) {
-    return res.status(404).json({
-      status: 'error',
-      message: 'Invalid email or password',
-      attemptsLeft: req.rateLimit?.remaining || 5
-    });
+  if (!email || !password) {
+    return next(new AppError('Please provide email and password', 400));
   }
 
-  // 2. Check password
-  const isCorrect = await user.correctPassword(password, user.password);
-  
-  if (!isCorrect) {
-    return res.status(401).json({
-      status: 'error',
-      message: 'Invalid password',
-      attemptsLeft: req.rateLimit?.remaining || 5
-    });
-  }
+  try {
+    // Normalize the login email
+    const normalizedLoginEmail = normalizeEmail(email);
 
-  // 3. Check if email is verified
-  if (!user.isVerified) {
-    return res.status(403).json({
-      status: 'error',
-      message: 'Please verify your email before logging in',
-      requiresVerification: true
-    });
-  }
+    // Find user by normalized email
+    const user = await User.findOne({ 
+      $or: [
+        { normalizedEmail: normalizedLoginEmail },
+        { email: email.toLowerCase() } // Fallback for any users without normalizedEmail
+      ]
+    }).select('+password');
 
-  // 4. If everything ok, create and send token
-  createSendToken(user, 200, res);
+    if (!user || !(await user.correctPassword(password, user.password))) {
+      return next(new AppError('Incorrect email or password', 401));
+    }
+
+    if (user.googleId) {
+      return next(new AppError('Please sign in with Google', 401));
+    }
+
+    if (!user.isVerified) {
+      return next(new AppError('Please verify your email first', 401));
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
+
+    createSendToken(user, 200, res);
+
+  } catch (error) {
+    console.error('Login error:', error);
+    return next(new AppError('An error occurred during login', 500));
+  }
 });
 
 exports.logout = catchAsync(async (req, res) => {
