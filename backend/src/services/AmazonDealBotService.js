@@ -15,21 +15,80 @@ class AmazonDealBotService {
     this.baseUrl = process.env.NODE_ENV === 'production' 
       ? 'https://saversonic.com'
       : 'http://localhost:5000';
+    this.categoryRotation = this.initializeCategoryRotation();
+    this.currentCategoryIndex = 0;
+    this.dealTypes = [
+      'BEST_DEAL',
+      'LIGHTNING_DEAL',
+      'DEAL_OF_THE_DAY',
+      'REGULAR'
+    ];
     console.log('AmazonDealBotService initialized');
+  }
+
+  initializeCategoryRotation() {
+    return [
+      {
+        name: 'electronics',
+        keywords: [
+          'headphone', 'monitor', 'computer', 'laptop', 'tablet', 'phone', 
+          'camera', 'speaker', 'tv', 'echo', 'kindle', 'fire', 'router', 
+          'gaming', 'console', 'smartwatch', 'earbuds', 'printer'
+        ],
+        minDiscount: 25
+      },
+      {
+        name: 'home',
+        keywords: [
+          'vacuum', 'kitchen', 'furniture', 'bed', 'chair', 'table', 
+          'heater', 'light', 'coffee', 'blender', 'mixer', 'air fryer', 
+          'instant pot', 'sheets', 'pillow', 'curtain', 'rug', 'storage'
+        ],
+        minDiscount: 30
+      },
+      {
+        name: 'fashion',
+        keywords: [
+          'shoe', 'boot', 'clothing', 'wear', 'dress', 'jacket', 'sneaker',
+          'jeans', 'shirt', 'hoodie', 'sweater', 'watch', 'handbag', 'wallet'
+        ],
+        minDiscount: 40
+      },
+      {
+        name: 'beauty',
+        keywords: [
+          'beauty', 'makeup', 'skin', 'hair', 'fragrance', 'shampoo',
+          'cream', 'serum', 'moisturizer', 'perfume', 'brush', 'facial'
+        ],
+        minDiscount: 35
+      },
+      {
+        name: 'tech_accessories',
+        keywords: [
+          'charger', 'case', 'screen protector', 'keyboard', 'mouse',
+          'webcam', 'microphone', 'hub', 'storage', 'ssd', 'hard drive'
+        ],
+        minDiscount: 30
+      }
+    ];
   }
 
   async fetchDeals() {
     try {
-      console.log('Starting deal fetch...');
+      const currentCategory = this.categoryRotation[this.currentCategoryIndex];
+      const randomDealType = this.dealTypes[Math.floor(Math.random() * this.dealTypes.length)];
+      
+      console.log(`Fetching ${randomDealType} deals for category: ${currentCategory.name}`);
       
       const options = {
         method: 'GET',
         url: 'https://real-time-amazon-data.p.rapidapi.com/deals-v2',
         params: {
           country: 'US',
-          deal_type: 'BEST_DEAL',
-          min_discount_percentage: 30,
-          max_results: 5 // Start with just 5 deals for testing
+          deal_type: randomDealType,
+          min_discount_percentage: currentCategory.minDiscount,
+          max_results: 15, // Fetch more to have room for filtering
+          category: currentCategory.name
         },
         headers: {
           'X-RapidAPI-Key': this.apiKey,
@@ -37,15 +96,36 @@ class AmazonDealBotService {
         }
       };
 
-      console.log('Fetching deals with options:', JSON.stringify(options, null, 2));
+      // Rotate to next category
+      this.currentCategoryIndex = (this.currentCategoryIndex + 1) % this.categoryRotation.length;
+
       const response = await axios.request(options);
       
       if (response.data.status === 'OK' && response.data.data?.deals) {
-        console.log(`Found ${response.data.data.deals.length} deals`);
-        return this.processDeals(response.data.data.deals);
+        // Get deals from last 24 hours to avoid duplicates
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        
+        const existingDeals = await Deal.find({
+          createdAt: { $gte: twentyFourHoursAgo }
+        }).select('url');
+
+        const existingUrls = new Set(existingDeals.map(d => d.url));
+
+        // Filter out existing deals and by category
+        const newDeals = response.data.data.deals.filter(deal => 
+          !existingUrls.has(deal.deal_url) &&
+          currentCategory.keywords.some(keyword => 
+            deal.deal_title.toLowerCase().includes(keyword)
+          )
+        );
+
+        // Shuffle the deals for randomness
+        const shuffledDeals = newDeals.sort(() => Math.random() - 0.5);
+
+        console.log(`Found ${shuffledDeals.length} new deals in ${currentCategory.name} category`);
+        return this.processDeals(shuffledDeals.slice(0, 5));
       }
       
-      console.log('No deals found or invalid response format');
       return [];
     } catch (error) {
       console.error('Error fetching deals:', error);
@@ -55,16 +135,20 @@ class AmazonDealBotService {
 
   async processDeals(deals = []) {
     const processedDeals = [];
-    // Take only first 5 deals
-    const limitedDeals = deals.slice(0, 5);
-    console.log(`Processing ${limitedDeals.length} deals`);
+    console.log(`Processing ${deals.length} deals`);
 
-    for (const deal of limitedDeals) {
+    for (const deal of deals) {
       try {
-        // Check if deal already exists
-        const existingDeal = await Deal.findOne({ url: deal.deal_url });
+        // Check if deal URL already exists
+        const existingDeal = await Deal.findOne({ 
+          url: deal.deal_url,
+          createdAt: { 
+            $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) 
+          }
+        });
+
         if (existingDeal) {
-          console.log('Deal already exists, skipping:', deal.deal_title);
+          console.log('Recent deal already exists, skipping:', deal.deal_title);
           continue;
         }
 
@@ -141,24 +225,15 @@ class AmazonDealBotService {
 
   mapAmazonCategory(title) {
     const titleLower = title.toLowerCase();
-    const categoryMap = {
-      'electronics': ['headphone', 'monitor', 'computer', 'laptop', 'tablet', 'phone', 'camera', 'speaker', 'tv', 'echo'],
-      'home': ['vacuum', 'kitchen', 'furniture', 'bed', 'chair', 'table', 'heater', 'light'],
-      'fashion': ['shoe', 'boot', 'clothing', 'wear', 'dress', 'jacket'],
-      'beauty': ['beauty', 'makeup', 'skin', 'hair', 'fragrance'],
-      'sports': ['fitness', 'exercise', 'sport', 'workout', 'gym'],
-      'toys': ['toy', 'game', 'play'],
-      'auto': ['car', 'automotive', 'vehicle'],
-      'pets': ['pet', 'dog', 'cat', 'bird']
-    };
+    
+    // Find matching category based on keywords
+    const matchedCategory = this.categoryRotation.find(category =>
+      category.keywords.some(keyword => titleLower.includes(keyword))
+    );
 
-    for (const [category, keywords] of Object.entries(categoryMap)) {
-      if (keywords.some(keyword => titleLower.includes(keyword))) {
-        return category.charAt(0).toUpperCase() + category.slice(1);
-      }
-    }
-
-    return 'Other';
+    return matchedCategory ? 
+      matchedCategory.name.charAt(0).toUpperCase() + matchedCategory.name.slice(1) : 
+      'Other';
   }
 
   async optimizeDealContent(dealData) {

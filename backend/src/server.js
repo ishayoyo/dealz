@@ -17,7 +17,7 @@ const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
     origin: ["https://saversonic.com", "http://localhost:3000"],
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
     credentials: true
   },
   pingTimeout: 60000, // Increase ping timeout
