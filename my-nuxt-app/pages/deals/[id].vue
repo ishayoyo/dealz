@@ -62,8 +62,15 @@ async function fetchDeal() {
   loading.value = true
   error.value = null
   try {
+    console.log('Fetching deal with ID:', route.params.id)
     const response = await dealsStore.fetchDealById(route.params.id)
-    deal.value = response.data.deal
+    console.log('Deal response:', response)
+    
+    if (response?.data?.deal) {
+      deal.value = response.data.deal
+    } else {
+      error.value = 'Deal not found'
+    }
   } catch (err) {
     console.error('Error fetching deal:', err)
     error.value = 'Failed to load deal'

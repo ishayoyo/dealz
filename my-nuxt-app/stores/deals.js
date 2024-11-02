@@ -282,7 +282,17 @@ export const useDealsStore = defineStore('deals', {
 
     async fetchDealById(id) {
       try {
+        console.log('Fetching deal by ID:', id)
         const response = await handleApiCall(() => api.get(`/deals/${id}`))
+        
+        // Add the fetched deal to the store's deals array if it's not already there
+        if (response?.data?.data?.deal) {
+          const dealIndex = this.deals.findIndex(d => d._id === response.data.data.deal._id)
+          if (dealIndex === -1) {
+            this.deals.push(response.data.data.deal)
+          }
+        }
+        
         return response.data
       } catch (error) {
         console.error('Error fetching deal:', error)

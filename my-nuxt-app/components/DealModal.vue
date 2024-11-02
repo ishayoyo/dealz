@@ -616,7 +616,9 @@ const getImageBaseUrl = () => {
 
 const dealId = computed(() => props.deal._id || props.deal.id)
 
-const showSkeleton = computed(() => loading.value && !error.value && !comments.value.length)
+const showSkeleton = computed(() => {
+  return !props.deal || loading.value
+})
 
 const isAdmin = computed(() => authStore.user && authStore.user.role === 'admin')
 
