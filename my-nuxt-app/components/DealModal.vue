@@ -596,7 +596,7 @@ const modalStyle = computed(() => {
     }
   } else {
     return { 
-      maxHeight: '90vh',
+      maxHeight: '75vh',
       margin: '2rem auto',
     }
   }
