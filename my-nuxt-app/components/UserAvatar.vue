@@ -6,7 +6,7 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue';
+import { computed, watch, ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
@@ -58,26 +58,25 @@ const avatarStyle = computed(() => {
 });
 
 const avatarUrl = computed(() => {
-  const seedToUse = props.seed || authStore.user?.avatarSeed || 'default';
-  
-  // Check cache first
-  const cachedUrl = avatarCache.get(seedToUse);
-  if (cachedUrl) {
-    return cachedUrl;
+  if (props.seed) {
+    return `https://api.dicebear.com/6.x/avataaars/svg?seed=${props.seed}`
   }
-
-  // If not in cache, generate new URL
-  const newUrl = `https://api.dicebear.com/6.x/avataaars/svg?seed=${seedToUse}`;
-  
-  // Cache the new URL
-  avatarCache.set(seedToUse, newUrl);
-  
-  return newUrl;
+  return `https://api.dicebear.com/6.x/avataaars/svg?seed=${props.name}`
 });
 
-watch(() => props.seed || authStore.user?.avatarSeed, (newSeed) => {
-  if (newSeed) {
-    avatarUrl.value = avatarCache.get(newSeed) || `https://api.dicebear.com/6.x/avataaars/svg?seed=${newSeed}`;
-  }
-});
+const avatarKey = ref(0)
+
+onMounted(() => {
+  const { $socket } = useNuxtApp()
+  
+  $socket.on('avatarChanged', ({ userId }) => {
+    // Force re-render by updating the key
+    avatarKey.value++
+  })
+})
+
+onUnmounted(() => {
+  const { $socket } = useNuxtApp()
+  $socket.off('avatarChanged')
+})
 </script>

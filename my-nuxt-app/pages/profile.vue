@@ -17,7 +17,8 @@
             <UserAvatar 
               :name="getUserName" 
               :size="128" 
-              :seed="profile.avatarSeed || authStore.user?.avatarSeed"
+              :seed="profile?.avatarSeed"
+              :key="profile?.avatarSeed"
             />
             <button @click="changeAvatar" class="absolute bottom-0 right-0 bg-primary-500 text-white rounded-full p-2 hover:bg-primary-600">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -142,8 +143,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
-import { useRuntimeConfig } from '#app'
+import { ref, onMounted, watch, computed, onUnmounted } from 'vue'
+import { useRuntimeConfig, useNuxtApp } from '#app'
 import api from '~/services/api'
 import FollowingList from '~/components/FollowingList.vue'
 import FollowersList from '~/components/FollowersList.vue'
@@ -178,6 +179,8 @@ const tabs = [
 const followingCount = ref(0)
 const dealsCount = ref(0)
 
+const { $socket } = useNuxtApp()
+
 onMounted(async () => {
   try {
     loading.value = true
@@ -192,7 +195,18 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+
+  $socket.on('avatarChanged', ({ userId, newAvatarUrl }) => {
+    if (profile.value && profile.value._id === userId) {
+      // Force profile refresh
+      fetchUserProfile();
+    }
+  });
 })
+
+onUnmounted(() => {
+  $socket.off('avatarChanged');
+});
 
 const fetchUserProfile = async () => {
   try {
@@ -375,16 +389,37 @@ const isFollowing = (userId) => {
 
 const changeAvatar = async () => {
   try {
-    const response = await api.post('/users/change-avatar')
-    profile.value.avatarSeed = response.data.data.avatarSeed
-    // Update the auth store with the new avatar seed
-    authStore.updateUser({ avatarSeed: response.data.data.avatarSeed })
-    toast.success('Avatar changed successfully')
+    const response = await api.post('/users/change-avatar');
+    
+    if (response.data.status === 'success') {
+      // Update profile's avatarSeed
+      profile.value = {
+        ...profile.value,
+        avatarSeed: response.data.data.avatarSeed
+      };
+      
+      // Update auth store
+      if (authStore.user) {
+        authStore.updateUser({
+          ...authStore.user,
+          avatarSeed: response.data.data.avatarSeed
+        });
+      }
+      
+      // Force refresh of user deals to update avatars
+      if (currentTab.value === 'deals') {
+        await fetchUserDeals();
+      }
+      
+      toast.success('Avatar changed successfully');
+    } else {
+      throw new Error('Failed to change avatar');
+    }
   } catch (error) {
-    console.error('Error changing avatar:', error)
-    toast.error('Failed to change avatar')
+    console.error('Error changing avatar:', error);
+    toast.error(error.response?.data?.message || 'Failed to change avatar');
   }
-}
+};
 
 // Modify the watch function
 watch(currentTab, async (newTab) => {
@@ -485,6 +520,13 @@ const getFullImageUrl = (imageUrl) => {
   // For paths starting with '/images/', just prepend the modified base URL
   return `${baseUrl}${imageUrl}`
 }
+
+// Add this watch
+watch(() => profile.value?.avatarSeed, async (newSeed) => {
+  if (newSeed && currentTab.value === 'deals') {
+    await fetchUserDeals();
+  }
+});
 </script>
 
 <style scoped>

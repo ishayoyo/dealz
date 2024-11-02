@@ -465,9 +465,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     updateUser(userData) {
-      if (this.user) {
-        this.user = { ...this.user, ...userData }
-      }
+      this.user = userData;
     },
 
     async forgotPassword(email) {

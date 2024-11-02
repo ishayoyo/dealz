@@ -259,6 +259,11 @@ export const useDealsStore = defineStore('deals', {
         // If it's not in the list, add it at the beginning
         this.deals.unshift(deal)
       }
+    },
+
+    refreshDeals() {
+      // Force a reactive update by creating a new array
+      this.deals = [...this.deals]
     }
   }
 })

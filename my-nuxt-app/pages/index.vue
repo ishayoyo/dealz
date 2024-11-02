@@ -77,7 +77,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           <DealCard 
             v-for="deal in filteredDeals" 
-            :key="deal._id" 
+            :key="`${deal._id}-${avatarVersion}`"
             :deal="deal" 
             @open-modal="openModal" 
           />
@@ -128,7 +128,7 @@ const toast = useToastification()
 
 const { $socket } = useNuxtApp()
 
-const { fetchBatchAvatars } = useAvatars()
+const { fetchBatchAvatars, clearCache } = useAvatars()
 
 onMounted(async () => {
   try {
@@ -167,6 +167,12 @@ onMounted(async () => {
         toast.info(`Deal updated: ${data.deal.title}`)
       })
     }
+
+    $socket.on('avatarChanged', ({ userId }) => {
+      const { clearCache } = useAvatars()
+      clearCache(userId)
+      fetchBatchAvatars([userId])
+    })
   } catch (error) {
     console.error('Error in onMounted hook:', error)
     toast.error('An error occurred while loading deals. Please try again.')
@@ -178,6 +184,7 @@ onUnmounted(() => {
     $socket.off('newDeal')
     $socket.off('updateDeal')
   }
+  $socket.off('avatarChanged')
 })
 
 const selectedDeal = ref(null)
@@ -298,4 +305,12 @@ watch(() => route.params.id, (newId) => {
 const handleFabClick = () => {
   // Handle FAB click action
 }
+
+const avatarVersion = ref(0)
+
+$socket.on('avatarChanged', ({ userId }) => {
+  const { clearCache } = useAvatars()
+  clearCache(userId)
+  fetchBatchAvatars([userId])
+})
 </script>

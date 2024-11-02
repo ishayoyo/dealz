@@ -1,40 +1,54 @@
 import { ref } from 'vue'
 import api from '~/services/api'
 
+// Create shared state outside the composable
+const globalAvatarCache = ref(new Map())
+const globalCacheVersion = ref(0)
+
 export const useAvatars = () => {
-  const avatarCache = ref(new Map())
-  
+  const getAvatar = (userId) => {
+    if (!userId) return 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
+    return globalAvatarCache.value.get(userId) || 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
+  }
+
+  const clearCache = (userId) => {
+    if (userId) {
+      globalAvatarCache.value.delete(userId)
+    } else {
+      globalAvatarCache.value.clear()
+    }
+    globalCacheVersion.value++
+  }
+
   const fetchBatchAvatars = async (userIds) => {
-    // Filter out IDs we already have in cache
-    const uncachedIds = userIds.filter(id => !avatarCache.value.has(id))
-    
-    if (uncachedIds.length === 0) return
-    
     try {
-      const response = await api.post('/users/batch-avatars', {
-        userIds: uncachedIds
+      // Filter out userIds that are already in cache
+      const uncachedIds = userIds.filter(id => !globalAvatarCache.value.has(id))
+      
+      if (uncachedIds.length === 0) return {}
+
+      const response = await api.post('/users/batch-avatars', { userIds: uncachedIds })
+      const newAvatars = response.data.data.avatars
+      
+      Object.entries(newAvatars).forEach(([userId, avatarUrl]) => {
+        globalAvatarCache.value.set(userId, avatarUrl)
       })
       
-      // Update cache with new avatars
-      Object.entries(response.data.data.avatars).forEach(([userId, avatarUrl]) => {
-        avatarCache.value.set(userId, avatarUrl)
-      })
+      globalCacheVersion.value++
+      return newAvatars
     } catch (error) {
-      console.error('Error fetching batch avatars:', error)
-      // Set default avatars for failed fetches
-      uncachedIds.forEach(id => {
-        avatarCache.value.set(id, 'https://api.dicebear.com/6.x/avataaars/svg?seed=default')
-      })
+      console.error('Error fetching avatars:', error)
+      return {}
     }
   }
-  
-  const getAvatar = (userId) => {
-    return avatarCache.value.get(userId) || 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
-  }
-  
+
   return {
     fetchBatchAvatars,
     getAvatar,
-    avatarCache
+    clearCache,
+    avatarCache: globalAvatarCache,
+    cacheVersion: globalCacheVersion
   }
-} 
+}
+
+export default useAvatars 

@@ -59,27 +59,58 @@ exports.getUserProfile = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.changeAvatar = async (req, res) => {
+exports.changeAvatar = catchAsync(async (req, res, next) => {
   try {
+    // Validate user exists
+    if (!req.user || !req.user.id) {
+      return next(new AppError('User not found', 404));
+    }
+
     const newSeed = Math.random().toString(36).substring(2, 15);
-    const user = await User.findByIdAndUpdate(req.user.id, { avatarSeed: newSeed }, { new: true });
     
-    // Invalidate cache for this user
-    avatarCache.del(req.user.id);
+    // Add logging
+    console.log('Changing avatar for user:', req.user.id);
+    console.log('New seed:', newSeed);
+    
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return next(new AppError('User not found in database', 404));
+    }
+    
+    // Update user
+    user.avatarSeed = newSeed;
+    await user.save();
+    
+    // Clear backend cache
+    const cacheKey = `avatar_${req.user.id}`;
+    avatarCache.del(cacheKey);
+    
+    // Generate new avatar URL
+    const newAvatarUrl = `https://api.dicebear.com/6.x/avataaars/svg?seed=${newSeed}`;
+    
+    // Check if socket is available
+    if (req.io) {
+      console.log('Emitting socket event for avatar change');
+      req.io.emit('avatarChanged', {
+        userId: req.user.id,
+        newAvatarUrl
+      });
+    } else {
+      console.log('Socket not available');
+    }
     
     res.status(200).json({
       status: 'success',
       data: {
-        avatarSeed: user.avatarSeed
+        avatarSeed: newSeed,
+        avatarUrl: newAvatarUrl
       }
     });
   } catch (error) {
-    res.status(500).json({
-      status: 'error',
-      message: 'An error occurred while changing the avatar'
-    });
+    console.error('Error in changeAvatar:', error);
+    return next(new AppError('Error changing avatar: ' + error.message, 500));
   }
-};
+});
 
 exports.checkUserStatus = catchAsync(async (req, res, next) => {
   const targetUserId = req.params.id;

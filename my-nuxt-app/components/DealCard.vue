@@ -98,7 +98,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRuntimeConfig, useRouter } from '#app'
 import { formatDistanceToNow } from 'date-fns'
 import UserAvatar from './UserAvatar.vue'
@@ -221,10 +221,27 @@ const discountPercentage = computed(() => {
 })
 
 const { getAvatar } = useAvatars()
+const { $socket } = useNuxtApp()
 
+// Update the avatarUrl computed
 const avatarUrl = computed(() => {
-  if (!props.deal?.user?._id) return 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
-  return getAvatar(props.deal.user._id)
+  const userId = props.deal?.user?._id
+  if (!userId) return 'https://api.dicebear.com/6.x/avataaars/svg?seed=default'
+  return getAvatar(userId)
+})
+
+// Simplify the socket handler
+onMounted(() => {
+  $socket.on('avatarChanged', ({ userId }) => {
+    if (props.deal?.user?._id === userId) {
+      const { clearCache } = useAvatars()
+      clearCache(userId)
+    }
+  })
+})
+
+onUnmounted(() => {
+  $socket.off('avatarChanged')
 })
 
 // Initialize the auth store
