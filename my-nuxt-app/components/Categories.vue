@@ -20,6 +20,9 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useDealsStore } from '~/stores/deals'
+
+const dealsStore = useDealsStore()
 
 const props = defineProps({
   isAuthenticated: {
@@ -27,8 +30,6 @@ const props = defineProps({
     default: false
   }
 })
-
-const emit = defineEmits(['update:selectedCategories'])
 
 const categories = [
   "Electronics",
@@ -55,6 +56,7 @@ const toggleCategory = (category) => {
   } else {
     selectedCategories.value.splice(index, 1)
   }
-  emit('update:selectedCategories', selectedCategories.value)
+  // Update the store directly
+  dealsStore.setSelectedCategories(selectedCategories.value)
 }
 </script>

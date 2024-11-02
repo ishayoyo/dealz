@@ -22,13 +22,15 @@ exports.getDeals = catchAsync(async (req, res, next) => {
   const page = Math.max(1, parseInt(req.query.page, 10)) || 1;
   const limit = Math.min(24, Math.max(1, parseInt(req.query.limit, 10))) || 12;
   const skip = (page - 1) * limit;
+  const categories = req.query.categories || [];
 
-  // Create cache key including pagination params
-  const cacheKey = `deals_p${page}_l${limit}`;
+  // Create a unique cache key based on the request parameters
+  const cacheKey = `deals_p${page}_l${limit}_c${categories.join('_')}`;
+
+  // Try to get from cache first
   const cachedResult = dealCache.get(cacheKey);
-
   if (cachedResult) {
-    console.log(`Cache hit for page ${page}`);
+    console.log('Returning cached result for:', cacheKey);
     console.timeEnd(`getDeals-${requestId}`);
     return res.status(200).json({
       status: 'success',
@@ -37,29 +39,40 @@ exports.getDeals = catchAsync(async (req, res, next) => {
     });
   }
 
-  console.log('Fetching deals with params:', { page, limit, skip });
+  // Build filter object
+  let filter = { status: 'approved' };
+  
+  // Add category filter if categories are selected
+  if (categories.length > 0) {
+    // Handle both string and array inputs
+    const categoryArray = Array.isArray(categories) ? categories : [categories];
+    if (categoryArray.length > 0 && categoryArray[0] !== '') {
+      filter.category = { $in: categoryArray };
+    }
+  }
 
-  // Get total count first
-  const total = await Deal.countDocuments({ status: 'approved' });
+  // Get total count with filters
+  const total = await Deal.countDocuments(filter);
 
   // If skip is greater than total, return empty results
   if (skip >= total) {
-    console.log(`Skip (${skip}) is greater than total (${total}). Returning empty results.`);
+    const emptyResult = {
+      deals: [],
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
+    dealCache.set(cacheKey, emptyResult);
     console.timeEnd(`getDeals-${requestId}`);
     return res.status(200).json({
       status: 'success',
       results: 0,
-      data: { 
-        deals: [],
-        total,
-        page,
-        totalPages: Math.ceil(total / limit)
-      }
+      data: emptyResult
     });
   }
 
   // Build query with lean() for better performance
-  const query = Deal.find({ status: 'approved' })
+  const query = Deal.find(filter)
     .sort('-createdAt')
     .skip(skip)
     .limit(limit)
@@ -75,8 +88,8 @@ exports.getDeals = catchAsync(async (req, res, next) => {
     totalPages: Math.ceil(total / limit)
   };
 
-  // Cache the results for 5 minutes
-  dealCache.set(cacheKey, result, 300);
+  // Cache the results
+  dealCache.set(cacheKey, result);
   
   console.log(`Found ${deals.length} deals for page ${page}. Total deals: ${total}`);
   console.timeEnd(`getDeals-${requestId}`);

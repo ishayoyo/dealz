@@ -34,6 +34,7 @@ export const useDealsStore = defineStore('deals', {
     hasMore: true,
     limit: 12,
     totalDeals: 0,
+    selectedCategories: [],
   }),
 
   getters: {
@@ -78,11 +79,16 @@ export const useDealsStore = defineStore('deals', {
       this.loading = true
       
       try {
+        const categories = Array.isArray(this.selectedCategories) 
+          ? this.selectedCategories.filter(Boolean) 
+          : [];
+
         const response = await handleApiCall(() => 
           api.get('/deals', { 
             params: { 
               page: this.page,
               limit: this.limit,
+              categories: categories.length > 0 ? categories : undefined,
               _t: Date.now()
             }
           })
@@ -326,6 +332,12 @@ export const useDealsStore = defineStore('deals', {
     refreshDeals() {
       // Force a reactive update by creating a new array
       this.deals = [...this.deals]
-    }
+    },
+
+    setSelectedCategories(categories) {
+      this.selectedCategories = categories
+      this.resetPagination()
+      this.fetchDeals()
+    },
   }
 })
