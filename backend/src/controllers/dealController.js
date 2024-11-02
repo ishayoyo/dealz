@@ -16,86 +16,57 @@ const NodeCache = require('node-cache');
 const dealCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
 exports.getDeals = catchAsync(async (req, res, next) => {
-  console.time('getDeals');
+  const requestId = Date.now(); // Create unique ID for this request
+  console.time(`getDeals-${requestId}`);
   
-  const cacheKey = JSON.stringify(req.query);
-  const cachedDeals = dealCache.get(cacheKey);
+  const page = Math.max(1, parseInt(req.query.page, 10)) || 1;
+  const limit = Math.min(24, Math.max(1, parseInt(req.query.limit, 10))) || 12;
+  const skip = (page - 1) * limit;
 
-  if (cachedDeals) {
-    console.log('Cache hit');
-    console.timeEnd('getDeals');
+  console.log('Fetching deals with params:', { page, limit, skip });
+
+  // Get total count first
+  const total = await Deal.countDocuments({ status: 'approved' });
+
+  // If skip is greater than total, return empty results
+  if (skip >= total) {
+    console.log(`Skip (${skip}) is greater than total (${total}). Returning empty results.`);
+    console.timeEnd(`getDeals-${requestId}`);
     return res.status(200).json({
       status: 'success',
-      results: cachedDeals.length,
-      data: { deals: cachedDeals }
+      results: 0,
+      data: { 
+        deals: [],
+        total,
+        page,
+        totalPages: Math.ceil(total / limit)
+      }
     });
   }
 
-  console.log('Cache miss');
+  // Build query with lean() for better performance
+  const query = Deal.find({ status: 'approved' })
+    .sort('-createdAt')
+    .skip(skip)
+    .limit(limit)
+    .populate('user', 'username profilePicture')
+    .lean();
 
-  // Build query
-  const queryObj = { ...req.query, status: 'approved' };
-  const excludedFields = ['page', 'sort', 'limit', 'fields'];
-  excludedFields.forEach(el => delete queryObj[el]);
+  const deals = await query;
+  
+  console.log(`Found ${deals.length} deals for page ${page}. Total deals: ${total}`);
 
-  // Validate query parameters
-  const allowedFields = ['title', 'price', 'category', 'store'];
-  Object.keys(queryObj).forEach(key => {
-    if (!allowedFields.includes(key)) {
-      delete queryObj[key];
-    }
-  });
-
-  // Advanced filtering
-  let queryStr = JSON.stringify(queryObj);
-  queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
-
-  let query = Deal.find(JSON.parse(queryStr));
-
-  // Sorting
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(',').join(' ');
-    const allowedSortFields = ['createdAt', 'price', 'title'];
-    const sanitizedSortBy = sortBy.split(' ').filter(field => allowedSortFields.includes(field.replace('-', ''))).join(' ');
-    query = query.sort(sanitizedSortBy || '-createdAt');
-  } else {
-    query = query.sort('-createdAt');
-  }
-
-  // Field limiting
-  if (req.query.fields) {
-    const fields = req.query.fields.split(',').join(' ');
-    const allowedFields = ['title', 'description', 'price', 'imageUrl', 'store', 'category', 'createdAt'];
-    const sanitizedFields = fields.split(' ').filter(field => allowedFields.includes(field)).join(' ');
-    query = query.select(sanitizedFields);
-  } else {
-    query = query.select('-__v');
-  }
-
-  // Pagination
-  const page = Math.max(1, parseInt(req.query.page, 10)) || 1;
-  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10))) || 100;
-  const skip = (page - 1) * limit;
-
-  query = query.skip(skip).limit(limit);
-
-  // Execute query
-  const deals = await query.populate('user', 'username profilePicture');
-
-  const dealsData = deals.map(deal => ({
-    ...deal.toObject(),
-    commentCount: deal.commentCount || 0
-  }));
-
-  dealCache.set(cacheKey, dealsData);
-
-  console.timeEnd('getDeals');
-  console.log(`Fetched ${deals.length} deals`);
+  console.timeEnd(`getDeals-${requestId}`);
 
   res.status(200).json({
     status: 'success',
     results: deals.length,
-    data: { deals: dealsData }
+    data: { 
+      deals,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    }
   });
 });
 

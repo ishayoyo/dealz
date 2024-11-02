@@ -71,17 +71,34 @@
           <DealCardSkeleton v-for="i in 8" :key="i" />
         </div>
       </div>
-      <div v-else-if="dealsStore.loading" class="text-center py-8">Loading deals...</div>
+      <div v-else-if="dealsStore.loading && dealsStore.deals.length === 0" class="text-center py-8">Loading deals...</div>
       <div v-else-if="dealsStore.error" class="text-center py-8 text-red-500">{{ dealsStore.error }}</div>
       <div v-else class="container mx-auto px-4 py-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div 
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+        >
           <DealCard 
-            v-for="deal in filteredDeals" 
+            v-for="deal in dealsStore.deals" 
             :key="`${deal._id}-${avatarVersion}`"
             :deal="deal" 
             @open-modal="openModal" 
           />
         </div>
+        
+        <!-- Loading indicator -->
+        <div 
+          v-if="dealsStore.loading" 
+          class="flex justify-center py-4"
+        >
+          <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+        
+        <!-- Intersection observer target -->
+        <div
+          v-if="dealsStore.hasMore && !dealsStore.loading"
+          ref="loadMoreTrigger"
+          class="h-10"
+        />
       </div>
     </div>
     <DealModal 
@@ -109,7 +126,7 @@
 import { useDealsStore } from '~/stores/deals'
 import { useAuthStore } from '~/stores/auth'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref, computed, onUnmounted, watch } from 'vue'
+import { onMounted, ref, computed, onUnmounted, watch, nextTick } from 'vue'
 import DealCard from '~/components/DealCard.vue'
 import DealModal from '~/components/DealModal.vue'
 import { useToastification } from '~/composables/useToastification'
@@ -119,6 +136,7 @@ import Categories from '~/components/Categories.vue'
 import FloatingActionButton from '~/components/FloatingActionButton.vue'
 import { useRoute } from 'vue-router'
 import { useAvatars } from '~/composables/useAvatars'
+import { useRuntimeConfig } from '#app'
 
 const dealsStore = useDealsStore()
 const authStore = useAuthStore()
@@ -269,12 +287,12 @@ const toggleCategory = (category) => {
   }
 }
 
-const filteredDeals = computed(() => {
-  if (selectedCategories.value.length === 0) {
-    return safeDeals.value
-  }
-  return safeDeals.value.filter(deal => selectedCategories.value.includes(deal.category))
-})
+// Watch for category changes
+watch(selectedCategories, () => {
+  console.log('Categories changed, resetting pagination');
+  dealsStore.resetPagination();
+  dealsStore.fetchDeals();
+});
 
 const showSkeleton = computed(() => dealsStore.loading && dealsStore.deals.length === 0)
 
@@ -313,4 +331,91 @@ $socket.on('avatarChanged', ({ userId }) => {
   clearCache(userId)
   fetchBatchAvatars([userId])
 })
+
+const loadMoreTrigger = ref(null)
+let observer = null
+
+// Remove debounce since we don't have useDebounceFn
+let loadingTimeout = null
+
+const setupObserver = () => {
+  if (observer) {
+    observer.disconnect()
+  }
+
+  observer = new IntersectionObserver(
+    async (entries) => {
+      const entry = entries[0]
+      console.log('Intersection observer triggered:', {
+        isIntersecting: entry.isIntersecting,
+        loading: dealsStore.loading,
+        hasMore: dealsStore.hasMore,
+        currentDeals: dealsStore.deals.length,
+        totalDeals: dealsStore.totalDeals
+      })
+
+      if (entry.isIntersecting && !dealsStore.loading && dealsStore.hasMore) {
+        // Clear any existing timeout
+        if (loadingTimeout) {
+          clearTimeout(loadingTimeout)
+        }
+        
+        // Set a new timeout for loading
+        loadingTimeout = setTimeout(async () => {
+          await dealsStore.fetchDeals()
+        }, 300)
+      }
+    },
+    {
+      root: null,
+      rootMargin: '100px',
+      threshold: 0.1
+    }
+  )
+
+  if (loadMoreTrigger.value) {
+    observer.observe(loadMoreTrigger.value)
+    console.log('Observer attached to trigger element')
+  }
+}
+
+onMounted(() => {
+  // Initial load
+  if (dealsStore.deals.length === 0) {
+    dealsStore.resetPagination()
+    dealsStore.fetchDeals()
+  }
+
+  // Setup observer after initial render
+  nextTick(() => {
+    setupObserver()
+  })
+})
+
+// Reattach observer when loadMoreTrigger changes
+watch(loadMoreTrigger, (newVal) => {
+  if (newVal && dealsStore.hasMore) {
+    nextTick(() => {
+      setupObserver()
+    })
+  }
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+  }
+  if (loadingTimeout) {
+    clearTimeout(loadingTimeout)
+  }
+})
+
+// Reset pagination when filters change
+watch(selectedCategories, () => {
+  dealsStore.resetPagination()
+  dealsStore.fetchDeals()
+})
+
+const config = useRuntimeConfig()
+const isDev = process.dev // This will be true in development, false in production
 </script>

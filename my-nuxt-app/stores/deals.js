@@ -28,12 +28,12 @@ const handleApiCall = async (apiCall) => {
 export const useDealsStore = defineStore('deals', {
   state: () => ({
     deals: [],
-    userDeals: [],
     loading: false,
     error: null,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-    filterStatus: 'all'
+    page: 1,
+    hasMore: true,
+    limit: 12,
+    totalDeals: 0,
   }),
 
   getters: {
@@ -61,18 +61,80 @@ export const useDealsStore = defineStore('deals', {
   },
 
   actions: {
-    async fetchDeals() {
+    async fetchDeals({ bypassCache = false } = {}) {
+      console.log('fetchDeals called:', {
+        loading: this.loading,
+        hasMore: this.hasMore,
+        page: this.page,
+        currentDealsCount: this.deals.length,
+        totalDeals: this.totalDeals
+      })
+
+      if (this.loading || (!this.hasMore && !bypassCache)) {
+        console.log('Fetch cancelled - loading or no more deals')
+        return
+      }
+      
       this.loading = true
+      
       try {
-        const response = await handleApiCall(() => api.get('/deals'))
-        this.deals = response.data.data.deals
-        this.loading = false
+        const response = await handleApiCall(() => 
+          api.get('/deals', { 
+            params: { 
+              page: this.page,
+              limit: this.limit,
+              _t: Date.now()
+            }
+          })
+        )
+        
+        const { deals: newDeals, total } = response.data.data
+        this.totalDeals = total
+
+        // If we get no new deals, stop pagination
+        if (!newDeals || newDeals.length === 0) {
+          this.hasMore = false
+          console.log('No more deals to load')
+          return
+        }
+
+        if (this.page === 1) {
+          this.deals = newDeals
+        } else {
+          const existingIds = new Set(this.deals.map(d => d._id))
+          const uniqueNewDeals = newDeals.filter(d => !existingIds.has(d._id))
+          this.deals = [...this.deals, ...uniqueNewDeals]
+        }
+        
+        // Update hasMore based on total count and current deals
+        this.hasMore = this.deals.length < total
+        if (this.hasMore) {
+          this.page += 1
+        }
+
+        console.log('Store updated:', {
+          dealsLength: this.deals.length,
+          totalDeals: this.totalDeals,
+          hasMore: this.hasMore,
+          nextPage: this.page
+        })
       } catch (error) {
         console.error('Error fetching deals:', error)
         this.error = 'Failed to fetch deals'
+        this.hasMore = false
+      } finally {
         this.loading = false
-        throw error
       }
+    },
+
+    resetPagination() {
+      console.log('Resetting pagination')
+      this.page = 1
+      this.hasMore = true
+      this.deals = []
+      this.totalDeals = 0
+      this.error = null
+      this.loading = false
     },
 
     async fetchUserDeals() {
