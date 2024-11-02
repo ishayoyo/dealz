@@ -15,8 +15,7 @@ class AmazonDealBotService {
     this.baseUrl = process.env.NODE_ENV === 'production' 
       ? 'https://saversonic.com'
       : 'http://localhost:5000';
-    this.categoryRotation = this.initializeCategoryRotation();
-    this.currentCategoryIndex = 0;
+    this.categories = this.initializeCategoryRotation();
     this.dealTypes = [
       'BEST_DEAL',
       'LIGHTNING_DEAL',
@@ -35,7 +34,8 @@ class AmazonDealBotService {
           'camera', 'speaker', 'tv', 'echo', 'kindle', 'fire', 'router', 
           'gaming', 'console', 'smartwatch', 'earbuds', 'printer'
         ],
-        minDiscount: 25
+        minDiscount: 25,
+        weight: 2  // Reduced from 3
       },
       {
         name: 'home',
@@ -44,7 +44,8 @@ class AmazonDealBotService {
           'heater', 'light', 'coffee', 'blender', 'mixer', 'air fryer', 
           'instant pot', 'sheets', 'pillow', 'curtain', 'rug', 'storage'
         ],
-        minDiscount: 30
+        minDiscount: 30,
+        weight: 2
       },
       {
         name: 'fashion',
@@ -52,7 +53,8 @@ class AmazonDealBotService {
           'shoe', 'boot', 'clothing', 'wear', 'dress', 'jacket', 'sneaker',
           'jeans', 'shirt', 'hoodie', 'sweater', 'watch', 'handbag', 'wallet'
         ],
-        minDiscount: 40
+        minDiscount: 40,
+        weight: 2
       },
       {
         name: 'beauty',
@@ -60,7 +62,8 @@ class AmazonDealBotService {
           'beauty', 'makeup', 'skin', 'hair', 'fragrance', 'shampoo',
           'cream', 'serum', 'moisturizer', 'perfume', 'brush', 'facial'
         ],
-        minDiscount: 35
+        minDiscount: 35,
+        weight: 2
       },
       {
         name: 'tech_accessories',
@@ -68,14 +71,76 @@ class AmazonDealBotService {
           'charger', 'case', 'screen protector', 'keyboard', 'mouse',
           'webcam', 'microphone', 'hub', 'storage', 'ssd', 'hard drive'
         ],
-        minDiscount: 30
+        minDiscount: 30,
+        weight: 2
       }
     ];
   }
 
+  getRandomCategory() {
+    // Track last used categories to avoid repetition
+    if (!this.lastUsedCategories) {
+      this.lastUsedCategories = new Set();
+    }
+
+    // Create weighted pool excluding recently used categories
+    let availableCategories = this.categories.filter(cat => 
+      !this.lastUsedCategories.has(cat.name)
+    );
+
+    // If all categories were recently used, reset the tracking
+    if (availableCategories.length === 0) {
+      this.lastUsedCategories.clear();
+      availableCategories = this.categories;
+    }
+
+    // Create weighted array
+    const weightedPool = availableCategories.flatMap(category => 
+      Array(category.weight).fill(category)
+    );
+
+    // Simple time-based boost without separate function
+    const hour = new Date().getHours();
+    
+    // Add time-based boosts directly
+    if (hour >= 6 && hour <= 11) {
+      // Morning: Boost Home & Beauty
+      weightedPool.push(...availableCategories.filter(c => 
+        ['home', 'beauty'].includes(c.name)
+      ));
+    } else if (hour >= 12 && hour <= 17) {
+      // Afternoon: Boost Fashion & Tech
+      weightedPool.push(...availableCategories.filter(c => 
+        ['fashion', 'tech_accessories'].includes(c.name)
+      ));
+    } else if (hour >= 18 && hour <= 23) {
+      // Evening: Boost Electronics & Home
+      weightedPool.push(...availableCategories.filter(c => 
+        ['electronics', 'home'].includes(c.name)
+      ));
+    }
+
+    // Select random category
+    const selectedCategory = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+    
+    // Track this category
+    this.lastUsedCategories.add(selectedCategory.name);
+    
+    // Keep only last 3 categories in tracking
+    if (this.lastUsedCategories.size > 3) {
+      const [firstItem] = this.lastUsedCategories;
+      this.lastUsedCategories.delete(firstItem);
+    }
+
+    console.log('Available categories:', availableCategories.map(c => c.name));
+    console.log('Selected category:', selectedCategory.name);
+    
+    return selectedCategory;
+  }
+
   async fetchDeals() {
     try {
-      const currentCategory = this.categoryRotation[this.currentCategoryIndex];
+      const currentCategory = this.getRandomCategory();
       const randomDealType = this.dealTypes[Math.floor(Math.random() * this.dealTypes.length)];
       
       console.log(`Fetching ${randomDealType} deals for category: ${currentCategory.name}`);
@@ -95,9 +160,6 @@ class AmazonDealBotService {
           'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com'
         }
       };
-
-      // Rotate to next category
-      this.currentCategoryIndex = (this.currentCategoryIndex + 1) % this.categoryRotation.length;
 
       const response = await axios.request(options);
       
@@ -227,7 +289,7 @@ class AmazonDealBotService {
     const titleLower = title.toLowerCase();
     
     // Find matching category based on keywords
-    const matchedCategory = this.categoryRotation.find(category =>
+    const matchedCategory = this.categories.find(category =>
       category.keywords.some(keyword => titleLower.includes(keyword))
     );
 
@@ -239,27 +301,38 @@ class AmazonDealBotService {
   async optimizeDealContent(dealData) {
     try {
       const prompt = `
-      You are a JSON-only response bot. Optimize this Amazon deal data:
+      You are an expert deal hunter who knows how to create viral, high-converting deal posts.
+      Transform this Amazon deal into an irresistible social post:
+
       Title: ${dealData.title || ''}
       Price: ${dealData.current_price || '0'}
       List Price: ${dealData.list_price || '0'}
       Category: ${dealData.category || 'Other'}
 
-      Respond with ONLY a valid JSON object in this exact format:
+      Respond with ONLY a valid JSON object. Create unique, compelling titles that drive action!
+      Use varied intros, strong value props, and urgency. Examples:
+      - "STEAL ALERT 🚨 AirPods Pro at Historic Low!"
+      - "Run! 60% OFF Nike Runners Today Only"
+      - "LOWEST EVER: MacBook Air $400 OFF 🔥"
+      - "Quick! Dyson V15 with RARE $200 Discount"
+      - "Insane Deal: 75" Samsung TV Under $800 🏃"
+      - "HOT DROP: AirFryer XL at Black Friday Price"
+      
+      Format:
       {
-        "title": "(60 chars max, catchy title)",
-        "description": "(150 chars max, compelling description)",
+        "title": "(60 chars max, use varied attention-grabbing formats above)",
+        "description": "(150 chars max, focus on value, urgency, and benefits: 'Incredible value! Includes [features]. Selling fast at this price - lowest in [X] months! Worth every penny 🎯')",
         "category": "(one of: Electronics, Home, Fashion, Beauty, Sports, Books, Toys, Travel, Food, Auto, DIY, Pets, Other)",
         "price": (number only),
         "listPrice": (number only)
       }
 
-      Do not include any other text or explanation.`;
+      Focus on the specific product, price drop, and creating urgency. Vary the format for each deal. No repetitive patterns!`;
 
       const response = await this.anthropic.messages.create({
         model: 'claude-3-haiku-20240307',
         max_tokens: 300,
-        temperature: 0.7,
+        temperature: 1.0, // Maximum creativity for variety
         messages: [{ role: 'user', content: prompt }]
       });
 
