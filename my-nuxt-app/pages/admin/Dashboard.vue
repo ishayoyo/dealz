@@ -596,11 +596,15 @@ const verifyUser = async (userId) => {
 
 const clearCache = async () => {
   try {
-    await api.post('/deals/clear-cache')
-    toast.success('Cache cleared successfully')
+    // Clear both deals and avatar cache
+    await Promise.all([
+      api.post('/deals/clear-cache'),
+      api.post('/users/clear-avatar-cache')
+    ]);
+    toast.success('All caches cleared successfully');
   } catch (error) {
-    console.error('Error clearing cache:', error)
-    toast.error('Failed to clear cache')
+    console.error('Error clearing caches:', error);
+    toast.error('Failed to clear caches');
   }
 }
 

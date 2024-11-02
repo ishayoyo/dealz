@@ -71,4 +71,7 @@ router.get('/auth/google/callback',
   authController.googleCallback
 );
 
+// Add this new route for clearing avatar cache
+router.post('/clear-avatar-cache', auth, authController.restrictTo('admin'), userController.clearAvatarCache);
+
 module.exports = router;

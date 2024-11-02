@@ -121,9 +121,10 @@ exports.getUserRecentDeals = async (req, res) => {
 
 exports.getUserAvatar = catchAsync(async (req, res, next) => {
   const userId = req.params.id;
+  const cacheKey = `avatar_${userId}`;
   
   // Check cache first
-  const cachedAvatar = avatarCache.get(userId);
+  const cachedAvatar = avatarCache.get(cacheKey);
   if (cachedAvatar) {
     return res.status(200).json({
       status: 'success',
@@ -132,7 +133,7 @@ exports.getUserAvatar = catchAsync(async (req, res, next) => {
       }
     });
   }
-
+  
   // If not in cache, generate new URL
   const user = await User.findById(userId).select('avatarSeed');
   if (!user) {
@@ -142,7 +143,7 @@ exports.getUserAvatar = catchAsync(async (req, res, next) => {
   const avatarUrl = `https://api.dicebear.com/6.x/avataaars/svg?seed=${user.avatarSeed}`;
   
   // Store in cache
-  avatarCache.set(userId, avatarUrl);
+  avatarCache.set(cacheKey, avatarUrl);
   
   res.status(200).json({
     status: 'success',
@@ -150,6 +151,13 @@ exports.getUserAvatar = catchAsync(async (req, res, next) => {
       avatarUrl
     }
   });
+});
+
+// Add a method to clear avatar cache for testing/debugging
+exports.clearAvatarCache = catchAsync(async (req, res) => {
+  avatarCache.flushAll();
+  console.log('Avatar cache cleared');
+  res.status(200).json({ message: 'Avatar cache cleared' });
 });
 
 module.exports = exports;
