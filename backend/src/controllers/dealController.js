@@ -16,12 +16,26 @@ const NodeCache = require('node-cache');
 const dealCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
 exports.getDeals = catchAsync(async (req, res, next) => {
-  const requestId = Date.now(); // Create unique ID for this request
+  const requestId = Date.now();
   console.time(`getDeals-${requestId}`);
   
   const page = Math.max(1, parseInt(req.query.page, 10)) || 1;
   const limit = Math.min(24, Math.max(1, parseInt(req.query.limit, 10))) || 12;
   const skip = (page - 1) * limit;
+
+  // Create cache key including pagination params
+  const cacheKey = `deals_p${page}_l${limit}`;
+  const cachedResult = dealCache.get(cacheKey);
+
+  if (cachedResult) {
+    console.log(`Cache hit for page ${page}`);
+    console.timeEnd(`getDeals-${requestId}`);
+    return res.status(200).json({
+      status: 'success',
+      results: cachedResult.deals.length,
+      data: cachedResult
+    });
+  }
 
   console.log('Fetching deals with params:', { page, limit, skip });
 
@@ -54,19 +68,23 @@ exports.getDeals = catchAsync(async (req, res, next) => {
 
   const deals = await query;
   
-  console.log(`Found ${deals.length} deals for page ${page}. Total deals: ${total}`);
+  const result = {
+    deals,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit)
+  };
 
+  // Cache the results for 5 minutes
+  dealCache.set(cacheKey, result, 300);
+  
+  console.log(`Found ${deals.length} deals for page ${page}. Total deals: ${total}`);
   console.timeEnd(`getDeals-${requestId}`);
 
   res.status(200).json({
     status: 'success',
     results: deals.length,
-    data: { 
-      deals,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    }
+    data: result
   });
 });
 
