@@ -28,8 +28,10 @@ const handleApiCall = async (apiCall) => {
 export const useDealsStore = defineStore('deals', {
   state: () => ({
     deals: [],
+    dealCache: new Map(),
     loading: false,
     error: null,
+    lastFetch: null,
     page: 1,
     hasMore: true,
     limit: 12,
@@ -282,12 +284,22 @@ export const useDealsStore = defineStore('deals', {
 
     async fetchDealById(id) {
       try {
-        console.log('Fetching deal by ID:', id)
+        // Check cache first
+        const cachedDeal = this.dealCache.get(id)
+        const cacheAge = this.lastFetch ? Date.now() - this.lastFetch : Infinity
+        
+        if (cachedDeal && cacheAge < 5 * 60 * 1000) { // 5 minutes cache
+          return { data: { deal: cachedDeal } }
+        }
+
         const response = await handleApiCall(() => api.get(`/deals/${id}`))
         
-        // Add the fetched deal to the store's deals array if it's not already there
         if (response?.data?.data?.deal) {
-          const dealIndex = this.deals.findIndex(d => d._id === response.data.data.deal._id)
+          this.dealCache.set(id, response.data.data.deal)
+          this.lastFetch = Date.now()
+          
+          // Update deals array if needed
+          const dealIndex = this.deals.findIndex(d => d._id === id)
           if (dealIndex === -1) {
             this.deals.push(response.data.data.deal)
           }
@@ -349,5 +361,10 @@ export const useDealsStore = defineStore('deals', {
       this.resetPagination()
       this.fetchDeals()
     },
+
+    clearCache() {
+      this.dealCache.clear()
+      this.lastFetch = null
+    }
   }
 })

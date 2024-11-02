@@ -841,40 +841,6 @@ const handleKeydown = (e) => {
   }
 }
 
-// Remove or comment out these touch event handlers and their setup
-/*
-let touchStartY = 0
-const handleTouchStart = (e) => {
-  touchStartY = e.touches[0].clientY
-}
-
-const handleTouchMove = (e) => {
-  if (!isMobile.value) return
-  
-  const touchY = e.touches[0].clientY
-  const diff = touchY - touchStartY
-  
-  // If swiping down more than 100px, close the modal
-  if (diff > 100) {
-    emit('close-modal')
-  }
-}
-
-onMounted(() => {
-  if (isMobile.value) {
-    document.addEventListener('touchstart', handleTouchStart)
-    document.addEventListener('touchmove', handleTouchMove)
-  }
-})
-
-onUnmounted(() => {
-  if (isMobile.value) {
-    document.removeEventListener('touchstart', handleTouchStart)
-    document.removeEventListener('touchmove', handleTouchMove)
-  }
-})
-*/
-
 // Add to the existing script setup
 const showMobileCommentInput = ref(false)
 
@@ -882,6 +848,38 @@ const handleMobileAddComment = async () => {
   await handleAddComment()
   showMobileCommentInput.value = false
 }
+
+// Add error handling
+const handleError = (error) => {
+  console.error('Error in DealModal:', error)
+  emit('error', error)
+}
+
+// Add error recovery
+const recover = async () => {
+  loading.value = true
+  try {
+    await fetchDealData()
+  } catch (err) {
+    handleError(err)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Add watchers for better error handling
+watch(() => props.deal, async (newDeal) => {
+  if (newDeal && newDeal._id) {
+    try {
+      loading.value = true
+      await fetchDealData()
+    } catch (err) {
+      handleError(err)
+    } finally {
+      loading.value = false
+    }
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>

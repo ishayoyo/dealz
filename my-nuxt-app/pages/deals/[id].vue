@@ -4,10 +4,28 @@
       class="container mx-auto px-4 py-8"
       :class="{ 'pt-24': !deal || !isMobile }"
     >
-      <Transition name="fade" mode="out-in">
-        <div key="content">
-          <DealModalSkeleton v-if="loading" />
-          <div v-else-if="error" class="text-center py-8 text-red-500">{{ error }}</div>
+      <Transition 
+        name="fade-up" 
+        mode="out-in"
+        appear
+      >
+        <div key="content" class="relative">
+          <DealModalSkeleton 
+            v-if="loading" 
+            class="animate-shimmer"
+          />
+          <div 
+            v-else-if="error" 
+            class="text-center py-8 text-red-500 animate-fade-in"
+          >
+            {{ error }}
+            <button 
+              @click="retryFetch" 
+              class="mt-4 text-primary-600 hover:text-primary-700"
+            >
+              Retry
+            </button>
+          </div>
           <DealModal 
             v-else-if="deal" 
             v-model:deal="deal"
@@ -90,16 +108,43 @@ const goBack = () => {
     router.push('/')
   }
 }
+
+const retryFetch = async () => {
+  error.value = null
+  await fetchDeal()
+}
 </script>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.15s ease;
+.fade-up-enter-active,
+.fade-up-leave-active {
+  transition: all 0.3s ease;
 }
 
-.fade-enter-from,
-.fade-leave-to {
+.fade-up-enter-from,
+.fade-up-leave-to {
   opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-size: 2000px 100%;
+  animation: shimmer 2s infinite linear;
 }
 </style>
