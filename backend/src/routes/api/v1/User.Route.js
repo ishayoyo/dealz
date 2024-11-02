@@ -6,6 +6,7 @@ const socialController = require('../../../controllers/socialController');
 const auth = require('../../../middleware/auth');
 const rateLimit = require('../../../middleware/rateLimit');
 const passport = require('passport');
+const isAdmin = require('../../../middleware/isAdmin');
 
 // Auth routes
 router.post('/register', rateLimit.register, authController.register);
@@ -72,6 +73,6 @@ router.get('/auth/google/callback',
 );
 
 // Add this new route for clearing avatar cache
-router.post('/clear-avatar-cache', auth, authController.restrictTo('admin'), userController.clearAvatarCache);
+router.post('/clear-avatar-cache', auth, isAdmin, userController.clearAvatarCache);
 
 module.exports = router;
