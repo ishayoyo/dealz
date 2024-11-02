@@ -160,4 +160,39 @@ exports.clearAvatarCache = catchAsync(async (req, res) => {
   res.status(200).json({ message: 'Avatar cache cleared' });
 });
 
+// Add this new method for batch avatar fetching
+exports.getBatchAvatars = catchAsync(async (req, res, next) => {
+  const { userIds } = req.body;
+  
+  if (!Array.isArray(userIds)) {
+    return next(new AppError('userIds must be an array', 400));
+  }
+
+  const avatars = {};
+  
+  for (const userId of userIds) {
+    const cacheKey = `avatar_${userId}`;
+    
+    // Check cache first
+    const cachedAvatar = avatarCache.get(cacheKey);
+    if (cachedAvatar) {
+      avatars[userId] = cachedAvatar;
+      continue;
+    }
+    
+    // If not in cache, generate new URL
+    const user = await User.findById(userId).select('avatarSeed');
+    if (user) {
+      const avatarUrl = `https://api.dicebear.com/6.x/avataaars/svg?seed=${user.avatarSeed}`;
+      avatarCache.set(cacheKey, avatarUrl);
+      avatars[userId] = avatarUrl;
+    }
+  }
+  
+  res.status(200).json({
+    status: 'success',
+    data: { avatars }
+  });
+});
+
 module.exports = exports;

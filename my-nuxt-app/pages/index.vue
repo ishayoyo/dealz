@@ -118,6 +118,7 @@ import DealCardSkeleton from '~/components/DealCardSkeleton.vue'
 import Categories from '~/components/Categories.vue'
 import FloatingActionButton from '~/components/FloatingActionButton.vue'
 import { useRoute } from 'vue-router'
+import { useAvatars } from '~/composables/useAvatars'
 
 const dealsStore = useDealsStore()
 const authStore = useAuthStore()
@@ -127,17 +128,25 @@ const toast = useToastification()
 
 const { $socket } = useNuxtApp()
 
+const { fetchBatchAvatars } = useAvatars()
+
 onMounted(async () => {
   try {
-    // Fetch deals regardless of authentication status
+    // Fetch deals
     if (dealsStore.deals.length === 0) {
       await dealsStore.fetchDeals()
     }
 
-    // If deals are empty (potential cache miss), fetch again
     if (dealsStore.deals.length === 0) {
       await dealsStore.fetchDeals({ bypassCache: true })
     }
+
+    // Batch fetch avatars for all deals
+    const userIds = dealsStore.deals
+      .map(deal => deal.user?._id)
+      .filter(id => id) // Remove any undefined/null values
+    
+    await fetchBatchAvatars(userIds)
 
     // Check authentication status silently
     if (!isAuthenticated.value) {
@@ -233,8 +242,13 @@ const safeDeals = computed(() => {
 })
 
 // Watch for changes in the deals store
-watch(() => dealsStore.deals, (newDeals) => {
-  console.log('Deals updated:', newDeals)
+watch(() => dealsStore.deals, async (newDeals) => {
+  if (newDeals.length > 0) {
+    const userIds = newDeals
+      .map(deal => deal.user?._id)
+      .filter(id => id)
+    await fetchBatchAvatars(userIds)
+  }
 }, { deep: true })
 
 const selectedCategories = ref([])

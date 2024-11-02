@@ -75,4 +75,7 @@ router.get('/auth/google/callback',
 // Add this new route for clearing avatar cache
 router.post('/clear-avatar-cache', auth, isAdmin, userController.clearAvatarCache);
 
+// Add this new route for batch avatar fetching
+router.post('/batch-avatars', userController.getBatchAvatars);
+
 module.exports = router;
