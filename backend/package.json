@@ -47,7 +47,11 @@
     "@anthropic-ai/sdk": "^0.18.0",
     "body-parser": "1.20.3",
     "iconv-lite": "0.4.24",
-    "raw-body": "2.5.2"
+    "raw-body": "2.5.2",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "express-session": "^1.18.0",
+    "cookie-session": "^2.1.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
