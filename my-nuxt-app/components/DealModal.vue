@@ -29,243 +29,240 @@
           </svg>
         </button>
 
-        <DealModalSkeleton v-if="showSkeleton" />
-        <template v-else>
-          <!-- Close button - Only show if not on dedicated deal page -->
-          <button 
-            v-if="!isDedicatedPage" 
-            @click="closeModal" 
-            class="absolute top-4 right-4 text-gray-700 hover:text-text z-20 bg-white rounded-full p-2 shadow-md transition duration-300"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+        <!-- Close button - Only show if not on dedicated deal page -->
+        <button 
+          v-if="!isDedicatedPage" 
+          @click="closeModal" 
+          class="absolute top-4 right-4 text-gray-700 hover:text-text z-20 bg-white rounded-full p-2 shadow-md transition duration-300"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
 
-          <!-- Scrollable container for modal content -->
-          <div class="flex flex-col md:flex-row h-full w-full overflow-y-auto">
-            <!-- Image container -->
-            <div ref="imageContainer" class="w-full md:w-1/2 flex items-center justify-center p-4 bg-gray-100">
-              <img 
-                :src="imageUrl" 
-                :alt="deal.title" 
-                @load="onImageLoad" 
-                class="max-w-full max-h-full object-contain rounded-lg shadow-lg transition-transform duration-300 hover:scale-105"
-                :style="imageStyle"
-              >
-            </div>
+        <!-- Scrollable container for modal content -->
+        <div class="flex flex-col md:flex-row h-full w-full overflow-y-auto">
+          <!-- Image container -->
+          <div ref="imageContainer" class="w-full md:w-1/2 flex items-center justify-center p-4 bg-gray-100">
+            <img 
+              :src="imageUrl" 
+              :alt="deal.title" 
+              @load="onImageLoad" 
+              class="max-w-full max-h-full object-contain rounded-lg shadow-lg transition-transform duration-300 hover:scale-105"
+              :style="imageStyle"
+            >
+          </div>
+          
+          <!-- Content container -->
+          <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col">
+            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-text">{{ deal.title }}</h2>
+            <p class="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">{{ deal.description }}</p>
             
-            <!-- Content container -->
-            <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col">
-              <h2 class="text-2xl md:text-3xl font-bold mb-4 text-text">{{ deal.title }}</h2>
-              <p class="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">{{ deal.description }}</p>
-              
-              <!-- Price, shipping, and category information -->
-              <div class="mb-6">
-                <div class="bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg shadow-lg p-4">
-                  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                    <!-- Price and discount -->
-                    <div class="mb-2 sm:mb-0">
-                      <div class="flex items-center flex-wrap">
-                        <span class="font-bold text-primary-800 text-2xl sm:text-3xl md:text-4xl mr-2">{{ formattedDealPrice }}</span>
-                        <span class="bg-primary-600 text-white font-semibold text-xs md:text-sm px-2 py-1 rounded-full">
-                          {{ discountPercentage }}% OFF
-                        </span>
-                      </div>
-                      <span class="text-sm text-gray-600 line-through">{{ formattedListPrice }}</span>
-                    </div>
-                    
-                    <!-- Shipping and category -->
-                    <div class="flex flex-col items-start sm:items-end">
-                      <span class="text-sm font-medium text-gray-600">
-                        Category: <span class="text-primary-600">{{ deal.category }}</span>
+            <!-- Price, shipping, and category information -->
+            <div class="mb-6">
+              <div class="bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg shadow-lg p-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                  <!-- Price and discount -->
+                  <div class="mb-2 sm:mb-0">
+                    <div class="flex items-center flex-wrap">
+                      <span class="font-bold text-primary-800 text-2xl sm:text-3xl md:text-4xl mr-2">{{ formattedDealPrice }}</span>
+                      <span class="bg-primary-600 text-white font-semibold text-xs md:text-sm px-2 py-1 rounded-full">
+                        {{ discountPercentage }}% OFF
                       </span>
                     </div>
+                    <span class="text-sm text-gray-600 line-through">{{ formattedListPrice }}</span>
                   </div>
-                </div>
-              </div>
-              
-              <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
-                <a 
-                  :href="getOutgoingLink(deal.url)" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  class="btn-deal-cta group w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2 relative overflow-hidden"
-                  @click="handleGetThisDealClick"
-                >
-                  <span class="lightning left"></span>
-                  <span class="lightning right"></span>
-                  <span class="relative z-10 flex items-center justify-center">
-                    GET THIS DEAL
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2 transform transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </span>
-                </a>
-                
-                <div class="flex w-full sm:w-auto">
-                  <button @click="handleFollowDeal" class="btn btn-outline-secondary flex-1 mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                    </svg>
-                    {{ isFollowing ? 'Following' : 'Follow' }}
-                    <span class="ml-2 bg-primary-100 text-primary-800 rounded-full px-2 py-1 text-xs">
-                      {{ formattedFollowCount }}
+                  
+                  <!-- Shipping and category -->
+                  <div class="flex flex-col items-start sm:items-end">
+                    <span class="text-sm font-medium text-gray-600">
+                      Category: <span class="text-primary-600">{{ deal.category }}</span>
                     </span>
-                  </button>
-                  <button @click="handleShareDeal" class="btn btn-outline-secondary flex-1 ml-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                    </svg>
-                    Share
-                  </button>
-                </div>
-              </div>
-              
-              <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 rounded-lg">
-                <div class="flex items-center">
-                  <img :src="avatarUrl" :alt="dealUserName" class="w-10 h-10 rounded-full mr-3" />
-                  <div>
-                    <span class="text-sm text-gray-500">Posted by:</span>
-                    <NuxtLink 
-                      :to="isCurrentUser ? '/profile' : `/user/${deal.user?._id}`"
-                      class="font-semibold ml-1 text-text hover:text-primary-600 hover:underline"
-                      @click.stop
-                    >
-                      {{ dealUserName }}
-                    </NuxtLink>
                   </div>
                 </div>
-                <button 
-                  @click="handleFollowUser" 
-                  class="btn btn-outline-secondary"
-                  :disabled="isCurrentUser"
-                  :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
-                >
-                  {{ isFollowingUser ? 'Unfollow User' : 'Follow User' }}
+              </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
+              <a 
+                :href="getOutgoingLink(deal.url)" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="btn-deal-cta group w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2 relative overflow-hidden"
+                @click="handleGetThisDealClick"
+              >
+                <span class="lightning left"></span>
+                <span class="lightning right"></span>
+                <span class="relative z-10 flex items-center justify-center">
+                  GET THIS DEAL
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2 transform transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </span>
+              </a>
+              
+              <div class="flex w-full sm:w-auto">
+                <button @click="handleFollowDeal" class="btn btn-outline-secondary flex-1 mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                  </svg>
+                  {{ isFollowing ? 'Following' : 'Follow' }}
+                  <span class="ml-2 bg-primary-100 text-primary-800 rounded-full px-2 py-1 text-xs">
+                    {{ formattedFollowCount }}
+                  </span>
+                </button>
+                <button @click="handleShareDeal" class="btn btn-outline-secondary flex-1 ml-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                  </svg>
+                  Share
                 </button>
               </div>
-              
-              <div class="border-t border-gray-200 pt-6 flex flex-col flex-grow">
-                <h3 class="font-bold text-xl md:text-2xl mb-4 text-text">Comments</h3>
-                <div v-if="isAuthenticated">
-                  <div v-if="loading" class="text-gray-500">Loading comments...</div>
-                  <div v-else-if="error" class="text-red-500">{{ error }}</div>
-                  <!-- Comments container and input section -->
-                  <div class="comments-container space-y-4 mb-6 flex-grow overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
-                    <div v-if="comments.length === 0" class="text-gray-500 text-sm md:text-base">No comments yet. Be the first to comment!</div>
-                    <div v-else>
-                      <Comment 
-                        v-for="comment in comments" 
-                        :key="comment.id" 
-                        :comment="comment" 
-                        class="bg-white p-3 md:p-4 rounded shadow-sm"
-                        :show-delete="isAdmin || (authStore.user && comment.user._id === authStore.user._id)"
-                        @delete-comment="handleDeleteComment"
-                      />
-                    </div>
-                  </div>
-                  <!-- Add a sticky container for the comment input and button -->
-                  <div 
-                    v-if="isAuthenticated" 
-                    class="comment-input-container"
-                    :class="{ 'mobile-fab': isMobile }"
+            </div>
+            
+            <div v-if="deal.user" class="mb-6 flex items-center justify-between bg-gray-100 p-4 rounded-lg">
+              <div class="flex items-center">
+                <img :src="avatarUrl" :alt="dealUserName" class="w-10 h-10 rounded-full mr-3" />
+                <div>
+                  <span class="text-sm text-gray-500">Posted by:</span>
+                  <NuxtLink 
+                    :to="isCurrentUser ? '/profile' : `/user/${deal.user?._id}`"
+                    class="font-semibold ml-1 text-text hover:text-primary-600 hover:underline"
+                    @click.stop
                   >
-                    <!-- Desktop version -->
-                    <div v-if="!isMobile" class="sticky bottom-0 bg-white pt-2 pb-4">
-                      <div class="relative">
+                    {{ dealUserName }}
+                  </NuxtLink>
+                </div>
+              </div>
+              <button 
+                @click="handleFollowUser" 
+                class="btn btn-outline-secondary"
+                :disabled="isCurrentUser"
+                :class="{ 'opacity-50 cursor-not-allowed': isCurrentUser }"
+              >
+                {{ isFollowingUser ? 'Unfollow User' : 'Follow User' }}
+              </button>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-6 flex flex-col flex-grow">
+              <h3 class="font-bold text-xl md:text-2xl mb-4 text-text">Comments</h3>
+              <div v-if="isAuthenticated">
+                <div v-if="loading" class="text-gray-500">Loading comments...</div>
+                <div v-else-if="error" class="text-red-500">{{ error }}</div>
+                <!-- Comments container and input section -->
+                <div class="comments-container space-y-4 mb-6 flex-grow overflow-y-auto bg-gray-50 p-4 md:p-6 rounded-lg shadow-inner">
+                  <div v-if="comments.length === 0" class="text-gray-500 text-sm md:text-base">No comments yet. Be the first to comment!</div>
+                  <div v-else>
+                    <Comment 
+                      v-for="comment in comments" 
+                      :key="comment.id" 
+                      :comment="comment" 
+                      class="bg-white p-3 md:p-4 rounded shadow-sm"
+                      :show-delete="isAdmin || (authStore.user && comment.user._id === authStore.user._id)"
+                      @delete-comment="handleDeleteComment"
+                    />
+                  </div>
+                </div>
+                <!-- Add a sticky container for the comment input and button -->
+                <div 
+                  v-if="isAuthenticated" 
+                  class="comment-input-container"
+                  :class="{ 'mobile-fab': isMobile }"
+                >
+                  <!-- Desktop version -->
+                  <div v-if="!isMobile" class="sticky bottom-0 bg-white pt-2 pb-4">
+                    <div class="relative">
+                      <textarea
+                        v-model="newComment"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                        rows="3"
+                        placeholder="Add a comment..."
+                        @input="handleInput"
+                        :maxlength="MAX_COMMENT_LENGTH"
+                      ></textarea>
+                      <UserMentionAutocomplete
+                        v-if="showMentions"
+                        :users="filteredMentionableUsers"
+                        @select="handleUserSelect"
+                      />
+                      <div class="text-sm text-gray-500 mt-1">
+                        {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
+                      </div>
+                    </div>
+                    <button 
+                      @click="handleAddComment" 
+                      class="btn btn-primary mt-3 w-full"
+                      :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
+                    >
+                      Add Comment
+                    </button>
+                  </div>
+
+                  <!-- Mobile FAB version -->
+                  <div v-else>
+                    <button 
+                      v-if="!showMobileCommentInput"
+                      @click="showMobileCommentInput = true"
+                      class="fab-button"
+                      aria-label="Add comment"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                    </button>
+
+                    <!-- Mobile comment input overlay -->
+                    <div v-else class="mobile-comment-overlay">
+                      <div class="mobile-comment-input-container">
+                        <div class="flex items-center justify-between mb-2">
+                          <h3 class="text-lg font-semibold">Add Comment</h3>
+                          <button 
+                            @click="showMobileCommentInput = false"
+                            class="text-gray-500 hover:text-gray-700"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
                         <textarea
                           v-model="newComment"
-                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
-                          rows="3"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                          rows="4"
                           placeholder="Add a comment..."
                           @input="handleInput"
                           :maxlength="MAX_COMMENT_LENGTH"
                         ></textarea>
-                        <UserMentionAutocomplete
-                          v-if="showMentions"
-                          :users="filteredMentionableUsers"
-                          @select="handleUserSelect"
-                        />
                         <div class="text-sm text-gray-500 mt-1">
                           {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
                         </div>
-                      </div>
-                      <button 
-                        @click="handleAddComment" 
-                        class="btn btn-primary mt-3 w-full"
-                        :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
-                      >
-                        Add Comment
-                      </button>
-                    </div>
-
-                    <!-- Mobile FAB version -->
-                    <div v-else>
-                      <button 
-                        v-if="!showMobileCommentInput"
-                        @click="showMobileCommentInput = true"
-                        class="fab-button"
-                        aria-label="Add comment"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                      </button>
-
-                      <!-- Mobile comment input overlay -->
-                      <div v-else class="mobile-comment-overlay">
-                        <div class="mobile-comment-input-container">
-                          <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-lg font-semibold">Add Comment</h3>
-                            <button 
-                              @click="showMobileCommentInput = false"
-                              class="text-gray-500 hover:text-gray-700"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                          <textarea
-                            v-model="newComment"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                            rows="4"
-                            placeholder="Add a comment..."
-                            @input="handleInput"
-                            :maxlength="MAX_COMMENT_LENGTH"
-                          ></textarea>
-                          <div class="text-sm text-gray-500 mt-1">
-                            {{ newComment.length }} / {{ MAX_COMMENT_LENGTH }} characters
-                          </div>
-                          <button 
-                            @click="handleMobileAddComment"
-                            class="btn btn-primary mt-3 w-full"
-                            :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
-                          >
-                            Add Comment
-                          </button>
-                        </div>
+                        <button 
+                          @click="handleMobileAddComment"
+                          class="btn btn-primary mt-3 w-full"
+                          :disabled="!newComment.trim() || newComment.length > MAX_COMMENT_LENGTH"
+                        >
+                          Add Comment
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner mb-20 md:mb-6 flex flex-col items-center">
-                  <p class="text-sm md:text-base text-gray-600 mb-4">Please login to view and post comments</p>
-                  <button 
-                    @click="emit('open-auth-modal', 'login')" 
-                    class="inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-full hover:from-primary-600 hover:to-primary-700 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                    </svg>
-                    <span class="font-medium">Login to Comment</span>
-                  </button>
-                </div>
+              </div>
+              <div v-else class="text-center py-6 bg-gray-100 rounded-lg shadow-inner mb-20 md:mb-6 flex flex-col items-center">
+                <p class="text-sm md:text-base text-gray-600 mb-4">Please login to view and post comments</p>
+                <button 
+                  @click="emit('open-auth-modal', 'login')" 
+                  class="inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-full hover:from-primary-600 hover:to-primary-700 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  <span class="font-medium">Login to Comment</span>
+                </button>
               </div>
             </div>
           </div>
-        </template>
+        </div>
       </div>
     </div>
   </Transition>
@@ -281,7 +278,6 @@ import { useDealsStore } from '~/stores/deals'
 import Comment from '~/components/Comment.vue'
 import UserMentionAutocomplete from '~/components/UserMentionAutocomplete.vue'
 import { useUserFollow } from '~/composables/useUserFollow'
-import DealModalSkeleton from '~/components/DealModalSkeleton.vue'
 import { useClipboard } from '@vueuse/core'
 import { useHead } from '#app'
 import { useWindowSize } from '@vueuse/core'

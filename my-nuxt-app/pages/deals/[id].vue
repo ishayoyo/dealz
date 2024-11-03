@@ -1,42 +1,40 @@
 <template>
-  <div class="relative">
-    <div 
-      class="container mx-auto px-4 py-8"
-      :class="{ 'pt-24': !deal || !isMobile }"
-    >
-      <Transition 
-        name="fade-up" 
-        mode="out-in"
-        appear
+  <div class="relative min-h-screen">
+    <Transition name="fade" appear>
+      <div 
+        v-if="loading" 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-white"
       >
-        <div key="content" class="relative">
-          <DealModalSkeleton 
-            v-if="loading" 
-            class="animate-shimmer"
-          />
-          <div 
-            v-else-if="error" 
-            class="text-center py-8 text-red-500 animate-fade-in"
+        <div class="loader"></div>
+      </div>
+      
+      <div 
+        v-else-if="error" 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-white"
+      >
+        <div class="text-center py-8 text-red-500 animate-fade-in">
+          {{ error }}
+          <button 
+            @click="retryFetch" 
+            class="mt-4 text-primary-600 hover:text-primary-700"
           >
-            {{ error }}
-            <button 
-              @click="retryFetch" 
-              class="mt-4 text-primary-600 hover:text-primary-700"
-            >
-              Retry
-            </button>
-          </div>
-          <DealModal 
-            v-else-if="deal" 
-            v-model:deal="deal"
-            :isOpen="true"
-            :isDedicatedPage="true"
-            @close-modal="goBack"
-            @open-auth-modal="openAuthModal"
-          />
+            Retry
+          </button>
         </div>
-      </Transition>
-    </div>
+      </div>
+
+      <div v-else-if="deal" class="min-h-screen">
+        <DealModal 
+          v-model:deal="deal"
+          :isOpen="true"
+          :isDedicatedPage="true"
+          :isAuthenticated="isAuthenticated"
+          @close-modal="goBack"
+          @open-auth-modal="openAuthModal"
+        />
+      </div>
+    </Transition>
+
     <AuthModal 
       v-if="showAuthModal"
       :show="showAuthModal"
@@ -50,12 +48,14 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDealsStore } from '~/stores/deals'
+import { useAuthStore } from '~/stores/auth'
 import { useWindowSize } from '@vueuse/core'
 import AuthModal from '~/components/AuthModal.vue'
 
 const route = useRoute()
 const router = useRouter()
 const dealsStore = useDealsStore()
+const authStore = useAuthStore()
 const { width } = useWindowSize()
 
 const deal = ref(null)
@@ -63,6 +63,7 @@ const loading = ref(true)
 const error = ref(null)
 
 const isMobile = computed(() => width.value < 768)
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const showAuthModal = ref(false)
 const isLoginMode = ref(true)
@@ -116,35 +117,27 @@ const retryFetch = async () => {
 </script>
 
 <style scoped>
-.fade-up-enter-active,
-.fade-up-leave-active {
-  transition: all 0.3s ease;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-.fade-up-enter-from,
-.fade-up-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
-  transform: translateY(20px);
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 5px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 5px solid #3498db;
+  animation: spin 1s linear infinite;
 }
 
-.animate-shimmer {
-  background: linear-gradient(
-    to right,
-    #f6f7f8 0%,
-    #edeef1 20%,
-    #f6f7f8 40%,
-    #f6f7f8 100%
-  );
-  background-size: 2000px 100%;
-  animation: shimmer 2s infinite linear;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>
