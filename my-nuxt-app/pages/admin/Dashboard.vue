@@ -161,13 +161,6 @@
               </select>
             </div>
             <div>
-              <label for="shipping" class="block text-sm font-medium text-gray-700">Shipping</label>
-              <input v-model="editingDeal.shipping" id="shipping" type="text" class="input-field" required placeholder="Enter 'FREE' or a number">
-              <p v-if="!isValidShipping" class="text-red-500 text-xs mt-1">
-                Please enter 'FREE' or a valid number for shipping.
-              </p>
-            </div>
-            <div>
               <label for="url" class="block text-sm font-medium text-gray-700">URL</label>
               <input v-model="editingDeal.url" id="url" type="url" class="input-field" required>
             </div>
@@ -215,7 +208,6 @@ const editingDeal = ref({
   price: '',
   listPrice: '',
   category: '',
-  shipping: '',
   url: '',
   imageUrl: ''
 })
@@ -264,6 +256,7 @@ const tables = computed(() => [
     title: 'All Deals',
     data: allDeals.value,
     columns: [
+      { key: 'imageUrl', label: 'Image', type: 'image' },
       { key: 'title', label: 'Title' },
       { key: 'user.username', label: 'User' },
       { key: 'status', label: 'Status' },
@@ -458,11 +451,6 @@ const closeEditModal = () => {
 }
 
 const submitEditDeal = async () => {
-  if (!isValidShipping.value) {
-    toast.error('Please check the shipping field');
-    return;
-  }
-
   try {
     const dealData = {
       title: editingDeal.value.title.trim(),
@@ -470,7 +458,6 @@ const submitEditDeal = async () => {
       price: parseFloat(editingDeal.value.price),
       listPrice: parseFloat(editingDeal.value.listPrice),
       category: editingDeal.value.category.trim(),
-      shipping: editingDeal.value.shipping === 'FREE' ? 'FREE' : parseFloat(editingDeal.value.shipping),
       url: editingDeal.value.url.trim(),
       imageUrl: editingDeal.value.imageUrl.trim()
     };
@@ -607,11 +594,6 @@ const clearCache = async () => {
     toast.error('Failed to clear caches');
   }
 }
-
-// Add this computed property
-const isValidShipping = computed(() => {
-  return editingDeal.value.shipping === 'FREE' || (!isNaN(parseFloat(editingDeal.value.shipping)) && isFinite(editingDeal.value.shipping));
-})
 
 const router = useRouter()
 
