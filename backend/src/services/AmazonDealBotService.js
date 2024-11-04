@@ -22,6 +22,15 @@ class AmazonDealBotService {
       'DEAL_OF_THE_DAY',
       'REGULAR'
     ];
+    this.maxRetries = 3;
+    this.retryDelay = 1000;
+    this.defaultImagePath = path.join(process.cwd(), 'public', 'images', 'deals', 'default.webp');
+    this.rateLimit = {
+      requests: 0,
+      lastReset: Date.now(),
+      limit: 50, // requests per minute
+      resetInterval: 60000 // 1 minute
+    };
     console.log('AmazonDealBotService initialized');
   }
 
@@ -140,6 +149,8 @@ class AmazonDealBotService {
 
   async fetchDeals() {
     try {
+      await this.checkRateLimit();
+      
       const currentCategory = this.getRandomCategory();
       const randomDealType = this.dealTypes[Math.floor(Math.random() * this.dealTypes.length)];
       
@@ -174,18 +185,29 @@ class AmazonDealBotService {
         const existingUrls = new Set(existingDeals.map(d => d.url));
 
         // Filter out existing deals and by category
-        const newDeals = response.data.data.deals.filter(deal => 
-          !existingUrls.has(deal.deal_url) &&
-          currentCategory.keywords.some(keyword => 
+        const newDeals = response.data.data.deals.filter(deal => {
+          // Existing filters
+          const isNew = !existingUrls.has(deal.deal_url);
+          const matchesCategory = currentCategory.keywords.some(keyword => 
             deal.deal_title.toLowerCase().includes(keyword)
-          )
-        );
+          );
+          
+          // Additional quality filters
+          const hasValidPrice = deal.deal_price?.amount > 0 && deal.list_price?.amount > 0;
+          const hasValidDiscount = (deal.list_price?.amount - deal.deal_price?.amount) / deal.list_price?.amount >= 0.2;
+          const hasValidTitle = deal.deal_title?.length >= 10;
+          const hasValidImage = deal.deal_photo?.startsWith('http');
+          
+          return isNew && matchesCategory && hasValidPrice && hasValidDiscount && hasValidTitle && hasValidImage;
+        });
 
-        // Shuffle the deals for randomness
-        const shuffledDeals = newDeals.sort(() => Math.random() - 0.5);
+        // Sort by preliminary score before processing
+        const scoredDeals = newDeals.map(deal => ({
+          ...deal,
+          preliminaryScore: this.calculatePreliminaryScore(deal)
+        })).sort((a, b) => b.preliminaryScore - a.preliminaryScore);
 
-        console.log(`Found ${shuffledDeals.length} new deals in ${currentCategory.name} category`);
-        return this.processDeals(shuffledDeals.slice(0, 5));
+        return this.processDeals(scoredDeals.slice(0, 5));
       }
       
       return [];
@@ -262,26 +284,37 @@ class AmazonDealBotService {
 
   async processImage(imageUrl, dealId) {
     try {
-      // Create directory if it doesn't exist
       await fs.mkdir(this.imageDir, { recursive: true });
+      
+      const response = await this.retryOperation(async () => {
+        return await axios.get(imageUrl, { 
+          responseType: 'arraybuffer',
+          timeout: 5000,
+          validateStatus: status => status === 200
+        });
+      });
 
-      // Download image
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
       const buffer = Buffer.from(response.data);
-
-      // Convert to WebP and save
       const filename = `${dealId}.webp`;
       const filepath = path.join(this.imageDir, filename);
       
+      // Enhanced image processing
       await sharp(buffer)
-        .webp({ quality: 80 })
+        .resize(800, 800, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .webp({ 
+          quality: 80,
+          effort: 4,
+          lossless: false
+        })
         .toFile(filepath);
 
-      // Return relative path only, without base URL
       return `/images/deals/${filename}`;
     } catch (error) {
       console.error('Error processing image:', error);
-      throw error;
+      return '/images/deals/default.webp';
     }
   }
 
@@ -300,6 +333,8 @@ class AmazonDealBotService {
 
   async optimizeDealContent(dealData) {
     try {
+      await this.checkRateLimit();
+      
       const prompt = `
       You are an expert deal hunter who knows how to create viral, high-converting deal posts.
       Transform this Amazon deal into an irresistible social post:
@@ -336,30 +371,115 @@ class AmazonDealBotService {
         messages: [{ role: 'user', content: prompt }]
       });
 
-      try {
-        return JSON.parse(response.content[0].text.trim());
-      } catch (parseError) {
-        console.error('Invalid JSON from Claude:', response.content[0].text);
-        // Return fallback data
-        return {
-          title: dealData.title?.slice(0, 60) || 'Amazon Deal',
-          description: `Save on ${dealData.title?.slice(0, 100) || 'this product'}`,
-          category: dealData.category || 'Other',
-          price: parseFloat(dealData.current_price?.replace(/[^0-9.]/g, '')) || 0,
-          listPrice: parseFloat(dealData.list_price?.replace(/[^0-9.]/g, '')) || 0
-        };
+      // Enhanced error handling and validation
+      const result = JSON.parse(response.content[0].text.trim());
+      
+      // Validate response format
+      if (!this.validateOptimizedContent(result)) {
+        throw new Error('Invalid content format from Claude');
       }
+
+      return result;
     } catch (error) {
       console.error('Error optimizing deal content:', error);
-      // Return fallback data
-      return {
-        title: dealData.title?.slice(0, 60) || 'Amazon Deal',
-        description: `Save on ${dealData.title?.slice(0, 100) || 'this product'}`,
-        category: dealData.category || 'Other',
-        price: parseFloat(dealData.current_price?.replace(/[^0-9.]/g, '')) || 0,
-        listPrice: parseFloat(dealData.list_price?.replace(/[^0-9.]/g, '')) || 0
-      };
+      return this.createFallbackContent(dealData);
     }
+  }
+
+  async retryOperation(operation, retries = this.maxRetries) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        return await operation();
+      } catch (error) {
+        if (i === retries - 1) throw error;
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay * (i + 1)));
+      }
+    }
+  }
+
+  async checkRateLimit() {
+    const now = Date.now();
+    if (now - this.rateLimit.lastReset > this.rateLimit.resetInterval) {
+      this.rateLimit.requests = 0;
+      this.rateLimit.lastReset = now;
+    }
+    if (this.rateLimit.requests >= this.rateLimit.limit) {
+      throw new Error('Rate limit exceeded');
+    }
+    this.rateLimit.requests++;
+  }
+
+  calculateDealScore(deal) {
+    let score = 0;
+    
+    // Price discount score (0-40 points)
+    const discountPercent = ((deal.listPrice - deal.price) / deal.listPrice) * 100;
+    score += Math.min(40, discountPercent);
+    
+    // Deal type bonus (0-20 points)
+    const dealTypeScores = {
+      'LIGHTNING_DEAL': 20,
+      'DEAL_OF_THE_DAY': 15,
+      'BEST_DEAL': 10,
+      'REGULAR': 5
+    };
+    score += dealTypeScores[deal.metadata.dealType] || 0;
+    
+    // Time sensitivity (0-20 points)
+    if (deal.metadata.dealEndsAt) {
+      const hoursRemaining = (new Date(deal.metadata.dealEndsAt) - new Date()) / (1000 * 60 * 60);
+      score += hoursRemaining < 24 ? 20 : hoursRemaining < 48 ? 10 : 0;
+    }
+
+    // Category weight (0-10 points)
+    const categoryWeights = {
+      'electronics': 10,
+      'home': 8,
+      'tech_accessories': 7,
+      'fashion': 6,
+      'beauty': 5
+    };
+    score += categoryWeights[deal.category.toLowerCase()] || 0;
+    
+    return score;
+  }
+
+  calculatePreliminaryScore(deal) {
+    let score = 0;
+    
+    // Basic discount score
+    score += deal.savings_percentage || 0;
+    
+    // Deal type bonus
+    if (deal.deal_type === 'LIGHTNING_DEAL') score += 20;
+    if (deal.deal_type === 'DEAL_OF_THE_DAY') score += 15;
+    
+    // Title quality score
+    const titleLength = deal.deal_title?.length || 0;
+    score += Math.min(10, titleLength / 10);
+    
+    return score;
+  }
+
+  validateOptimizedContent(content) {
+    return (
+      content.title?.length <= 60 &&
+      content.description?.length <= 150 &&
+      typeof content.price === 'number' &&
+      typeof content.listPrice === 'number' &&
+      content.category
+    );
+  }
+
+  createFallbackContent(dealData) {
+    const discount = ((dealData.list_price - dealData.current_price) / dealData.list_price * 100).toFixed(0);
+    return {
+      title: `SAVE ${discount}% on ${dealData.title?.slice(0, 40)}`,
+      description: `Great deal! Save ${discount}% on this ${dealData.category.toLowerCase()} item. Limited time offer!`,
+      category: dealData.category || 'Other',
+      price: parseFloat(dealData.current_price?.replace(/[^0-9.]/g, '')) || 0,
+      listPrice: parseFloat(dealData.list_price?.replace(/[^0-9.]/g, '')) || 0
+    };
   }
 }
 
