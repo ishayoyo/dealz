@@ -333,51 +333,63 @@ class AmazonDealBotService {
 
   async optimizeDealContent(dealData) {
     try {
-      await this.checkRateLimit();
-      
       const prompt = `
-      You are an expert deal hunter who knows how to create viral, high-converting deal posts.
-      Transform this Amazon deal into an irresistible social post:
+        You are an expert deal hunter who knows how to create viral, high-converting deal posts.
+        Transform this deal data into an irresistible social post:
 
-      Title: ${dealData.title || ''}
-      Price: ${dealData.current_price || '0'}
-      List Price: ${dealData.list_price || '0'}
-      Category: ${dealData.category || 'Other'}
+        Title: ${dealData.title || ''}
+        Price: ${dealData.current_price || '0'}
+        List Price: ${dealData.list_price || '0'}
+        Category: ${dealData.category || 'Other'}
 
-      Respond with ONLY a valid JSON object. Create unique, compelling titles that drive action!
-      Use varied intros, strong value props, and urgency. Examples:
-      - "STEAL ALERT 🚨 AirPods Pro at Historic Low!"
-      - "Run! 60% OFF Nike Runners Today Only"
-      - "LOWEST EVER: MacBook Air $400 OFF 🔥"
-      - "Quick! Dyson V15 with RARE $200 Discount"
-      - "Insane Deal: 75" Samsung TV Under $800 🏃"
-      - "HOT DROP: AirFryer XL at Black Friday Price"
-      
-      Format:
-      {
-        "title": "(60 chars max, use varied attention-grabbing formats above)",
-        "description": "(150 chars max, focus on value, urgency, and benefits: 'Incredible value! Includes [features]. Selling fast at this price - lowest in [X] months! Worth every penny 🎯')",
-        "category": "(one of: Electronics, Home, Fashion, Beauty, Sports, Books, Toys, Travel, Food, Auto, DIY, Pets, Other)",
-        "price": (number only),
-        "listPrice": (number only)
-      }
+        Create a JSON object with these exact fields:
+        {
+          "title": "60 chars max, attention-grabbing title",
+          "description": "150 chars max, focus on value and urgency",
+          "category": "one of: Electronics, Home, Fashion, Beauty, Sports, Other",
+          "price": number,
+          "listPrice": number
+        }
 
-      Focus on the specific product, price drop, and creating urgency. Vary the format for each deal. No repetitive patterns!`;
+        IMPORTANT: Respond with ONLY the JSON object, no additional text or formatting.`;
 
       const response = await this.anthropic.messages.create({
         model: 'claude-3-haiku-20240307',
         max_tokens: 300,
-        temperature: 1.0, // Maximum creativity for variety
-        messages: [{ role: 'user', content: prompt }]
+        temperature: 0.7, // Reduced for more consistent output
+        messages: [{ 
+          role: 'user', 
+          content: prompt 
+        }],
+        system: "You are a deal optimization expert. Always respond with valid JSON only. No additional text or formatting."
       });
 
-      // Enhanced error handling and validation
-      const result = JSON.parse(response.content[0].text.trim());
-      
-      // Validate response format
+      let result;
+      try {
+        // Clean the response text before parsing
+        const cleanedText = response.content[0].text
+          .trim()
+          .replace(/```json/g, '')
+          .replace(/```/g, '')
+          .replace(/[\u201C\u201D]/g, '"') // Replace smart quotes
+          .trim();
+        
+        result = JSON.parse(cleanedText);
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        console.log('Raw Response:', response.content[0].text);
+        throw new Error('Failed to parse Claude response');
+      }
+
+      // Validate the content
       if (!this.validateOptimizedContent(result)) {
+        console.error('Invalid content structure:', result);
         throw new Error('Invalid content format from Claude');
       }
+
+      // Ensure numeric values
+      result.price = parseFloat(result.price) || 0;
+      result.listPrice = parseFloat(result.listPrice) || 0;
 
       return result;
     } catch (error) {
@@ -462,24 +474,61 @@ class AmazonDealBotService {
   }
 
   validateOptimizedContent(content) {
-    return (
-      content.title?.length <= 60 &&
-      content.description?.length <= 150 &&
-      typeof content.price === 'number' &&
-      typeof content.listPrice === 'number' &&
-      content.category
+    const validCategories = ['Electronics', 'Home', 'Fashion', 'Beauty', 'Sports', 'Other'];
+    
+    const isValid = (
+      typeof content === 'object' &&
+      content !== null &&
+      typeof content.title === 'string' &&
+      content.title.length <= 60 &&
+      typeof content.description === 'string' &&
+      content.description.length <= 150 &&
+      validCategories.includes(content.category) &&
+      !isNaN(parseFloat(content.price)) &&
+      !isNaN(parseFloat(content.listPrice))
     );
+
+    if (!isValid) {
+      console.error('Content validation failed:', {
+        hasTitle: typeof content.title === 'string',
+        titleLength: content.title?.length,
+        hasDescription: typeof content.description === 'string',
+        descriptionLength: content.description?.length,
+        validCategory: validCategories.includes(content.category),
+        validPrice: !isNaN(parseFloat(content.price)),
+        validListPrice: !isNaN(parseFloat(content.listPrice))
+      });
+    }
+
+    return isValid;
   }
 
   createFallbackContent(dealData) {
-    const discount = ((dealData.list_price - dealData.current_price) / dealData.list_price * 100).toFixed(0);
-    return {
-      title: `SAVE ${discount}% on ${dealData.title?.slice(0, 40)}`,
-      description: `Great deal! Save ${discount}% on this ${dealData.category.toLowerCase()} item. Limited time offer!`,
-      category: dealData.category || 'Other',
-      price: parseFloat(dealData.current_price?.replace(/[^0-9.]/g, '')) || 0,
-      listPrice: parseFloat(dealData.list_price?.replace(/[^0-9.]/g, '')) || 0
-    };
+    try {
+      const price = parseFloat(dealData.current_price?.toString().replace(/[^0-9.]/g, '')) || 0;
+      const listPrice = parseFloat(dealData.list_price?.toString().replace(/[^0-9.]/g, '')) || 0;
+      const discount = listPrice > 0 ? ((listPrice - price) / listPrice * 100).toFixed(0) : 0;
+      
+      const title = dealData.title?.slice(0, 40) || 'Great Deal';
+      const category = dealData.category || 'Other';
+
+      return {
+        title: `SAVE ${discount}% on ${title}`,
+        description: `Limited time offer! Save ${discount}% on this ${category.toLowerCase()} item. Was $${listPrice}, now only $${price}!`,
+        category: category,
+        price: price,
+        listPrice: listPrice
+      };
+    } catch (error) {
+      console.error('Error creating fallback content:', error);
+      return {
+        title: 'Special Deal Alert!',
+        description: 'Limited time offer on this amazing product. Check it out before it\'s gone!',
+        category: 'Other',
+        price: 0,
+        listPrice: 0
+      };
+    }
   }
 }
 
