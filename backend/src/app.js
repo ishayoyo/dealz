@@ -27,11 +27,24 @@ app.use(passport.initialize());
 // Serve static files from the 'public' directory
 app.use('/images', express.static(path.join(__dirname, '../public/images')));
 
+// Add this middleware before your routes
+app.use((req, res, next) => {
+  req.socket.on('error', (error) => {
+    console.error('Socket error:', error);
+  });
+  next();
+});
+
 // Mount all routes including user routes
 app.use('/api/v1', routes);
 
 // Global error handler
 app.use((err, req, res, next) => {
+  if (err.code === 'ECONNRESET') {
+    console.log('Connection reset by peer');
+    // Don't crash the server
+    return;
+  }
   console.error('Error details:', err);
   res.status(err.statusCode || 500).json({
     status: 'error',

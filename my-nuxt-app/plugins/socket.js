@@ -15,7 +15,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
-    randomizationFactor: 0.5,
+    timeout: 20000,
     transports: ['websocket'],
     withCredentials: true,
     path: '/socket.io/'
@@ -44,30 +44,30 @@ export default defineNuxtPlugin((nuxtApp) => {
     })
 
     socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error.message)
+      console.error('Socket connection error:', error);
       const retryDelay = Math.min(1000 * Math.pow(2, socket.reconnectAttempts), 10000);
       setTimeout(() => {
         if (authStore.isAuthenticated && !socket.connected) {
-          socket.connect()
+          socket.connect();
         }
-      }, retryDelay)
+      }, retryDelay);
     })
 
     socket.on('disconnect', (reason) => {
-      console.log('Socket disconnected:', reason)
+      console.log('Socket disconnected:', reason);
       if (reason === 'io server disconnect') {
         if (authStore.isAuthenticated) {
-          socket.connect()
+          socket.connect();
         }
       }
     })
 
     socket.on('newNotification', (notification) => {
-      console.log('Received new notification:', notification)
-      notificationStore.handleNewNotification(notification)
+      console.log('Received new notification:', notification);
+      notificationStore.handleNewNotification(notification);
       
-      if (notification.type === 'DEAL_APPROVED') {
-        toast.success(notification.content)
+      if (notification.type === 'USER_FOLLOW') {
+        toast.success(notification.content);
       }
     })
 
@@ -102,6 +102,14 @@ export default defineNuxtPlugin((nuxtApp) => {
 
     socket.on('ping', () => {
       socket.emit('pong');
+    });
+
+    socket.io.on('reconnect', (attempt) => {
+      console.log('Socket reconnected after', attempt, 'attempts');
+    });
+
+    socket.io.on('reconnect_attempt', (attempt) => {
+      console.log('Socket reconnection attempt:', attempt);
     });
   }
 

@@ -11,42 +11,44 @@ exports.followUser = catchAsync(async (req, res, next) => {
       return next(new AppError('No user found with that ID', 404));
     }
 
-    if (userToFollow._id.toString() === req.user.id) {
-      return next(new AppError('You cannot follow yourself', 400));
-    }
-
     const currentUser = await User.findById(req.user.id);
 
-    if (currentUser.following.includes(userToFollow._id)) {
-      return next(new AppError('You are already following this user', 400));
+    // Handle notification
+    try {
+      const io = req.app.get('io');
+      console.log('Got IO instance:', !!io);
+      
+      if (io) {
+        const notificationService = NotificationService.getInstance(io);
+        console.log('Created notification service instance');
+
+        // Create notification with populated user data
+        const notification = await notificationService.createFollowNotification(
+          currentUser._id,
+          userToFollow._id,
+          `${currentUser.username} started following you`
+        );
+
+        console.log('Created notification with user data:', notification);
+
+        // Emit follower count update separately
+        io.to(userToFollow._id.toString()).emit('followerCountUpdate', {
+          userId: userToFollow._id,
+          count: userToFollow.followers.length
+        });
+        
+        console.log('Follower count update emitted');
+      }
+    } catch (error) {
+      console.error('Notification error:', error);
     }
 
+    // Update following/followers
     currentUser.following.push(userToFollow._id);
     await currentUser.save();
 
     userToFollow.followers.push(currentUser._id);
     await userToFollow.save();
-
-    // Wrap socket.io and notification operations in try-catch
-    try {
-      const io = req.app.get('io');
-      if (io) {
-        const notificationService = new NotificationService(io);
-        await notificationService.createFollowNotification(
-          req.user.id,
-          userToFollow._id,
-          `${currentUser.username} started following you`
-        );
-
-        io.to(userToFollow._id.toString()).emit('followerCountUpdate', {
-          userId: userToFollow._id,
-          count: userToFollow.followers.length
-        });
-      }
-    } catch (error) {
-      console.error('Notification error:', error);
-      // Don't fail the request if notification fails
-    }
 
     res.status(200).json({
       status: 'success',

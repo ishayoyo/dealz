@@ -5,6 +5,7 @@ const Notification = require('../models/Notification.Model');
 class NotificationService {
   constructor(io) {
     this.io = io;
+    this.recentNotifications = new Map();
   }
 
   async createNotification(data) {
@@ -28,20 +29,69 @@ class NotificationService {
   }
 
   sendNotification(notification) {
-    console.log('Sending notification to user:', notification.recipient.toString());
-    this.io.to(notification.recipient.toString()).emit('newNotification', notification);
+    try {
+      console.log('Sending notification:', {
+        recipient: notification.recipient.toString(),
+        type: notification.type,
+        content: notification.content
+      });
+
+      this.io.to(notification.recipient.toString()).emit('newNotification', notification);
+    } catch (error) {
+      console.error('Error in sendNotification:', error);
+      throw error;
+    }
   }
 
   async createFollowNotification(followerId, followedId, customMessage) {
-    const notification = new Notification({
-      recipient: followedId,
-      type: 'USER_FOLLOW', // Change this from 'NEW_FOLLOWER' to 'USER_FOLLOW'
-      content: customMessage,
-      relatedUser: followerId
-    });
+    try {
+      // Create a unique key for this follow action
+      const notificationKey = `follow:${followerId}:${followedId}`;
+      
+      // Check for duplicate within time window (5 minutes)
+      const isDuplicate = await this.isDuplicateNotification(notificationKey, 5 * 60 * 1000);
+      
+      if (isDuplicate) {
+        console.log('Duplicate follow notification prevented within time window');
+        return null;
+      }
 
-    await notification.save();
-    this.io.to(followedId.toString()).emit('notification', notification);
+      // Check for existing unread notification
+      const existingNotification = await Notification.findOne({
+        recipient: followedId,
+        relatedUser: followerId,
+        type: 'USER_FOLLOW',
+        read: false
+      });
+
+      if (existingNotification) {
+        console.log('Unread follow notification already exists');
+        return existingNotification;
+      }
+
+      // Create new notification if no duplicates found
+      const notification = new Notification({
+        recipient: followedId,
+        type: 'USER_FOLLOW',
+        content: customMessage,
+        relatedUser: followerId
+      });
+
+      await notification.save();
+
+      // Populate the notification
+      const populatedNotification = await Notification.findById(notification._id)
+        .populate('relatedUser', 'username profilePicture avatarSeed')
+        .lean();
+
+      // Emit the notification
+      this.io.to(followedId.toString()).emit('newNotification', populatedNotification);
+      
+      return populatedNotification;
+    } catch (error) {
+      console.error('Error in createFollowNotification:', error);
+      throw error;
+    }
   }
 
   async createCommentNotification(commenterId, dealOwnerId, dealId) {
@@ -90,7 +140,7 @@ class NotificationService {
       
       // Execute population separately
       const populatedQuery = query
-        .populate('relatedUser', 'username profilePicture')
+        .populate('relatedUser', 'username profilePicture avatarSeed')
         .populate('relatedDeal', 'title')
         .populate('relatedComment', 'content');
       console.log('Populated query object:', populatedQuery);
@@ -191,6 +241,44 @@ class NotificationService {
       throw error;
     }
   }
+
+  // Add this new method to check for duplicate notifications
+  async isDuplicateNotification(key, timeWindowMs = 300000) { // 5 minutes default
+    const now = Date.now();
+    const lastNotification = this.recentNotifications.get(key);
+    
+    if (lastNotification && (now - lastNotification) < timeWindowMs) {
+      return true;
+    }
+    
+    // Set the timestamp for this notification
+    this.recentNotifications.set(key, now);
+    return false;
+  }
+
+  // Add cleanup method to prevent memory leaks
+  cleanup() {
+    const now = Date.now();
+    for (const [key, timestamp] of this.recentNotifications.entries()) {
+      if (now - timestamp > 300000) { // Clean up entries older than 5 minutes
+        this.recentNotifications.delete(key);
+      }
+    }
+  }
+
+  // Add a static method to create and manage a singleton instance
+  static getInstance(io) {
+    if (!NotificationService.instance) {
+      NotificationService.instance = new NotificationService(io);
+    }
+    return NotificationService.instance;
+  }
 }
+
+// Add periodic cleanup
+setInterval(() => {
+  const instance = NotificationService.getInstance();
+  instance.cleanup();
+}, 300000); // Run cleanup every 5 minutes
 
 module.exports = NotificationService;

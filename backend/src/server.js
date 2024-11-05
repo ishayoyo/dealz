@@ -25,6 +25,13 @@ const io = socketIo(server, {
   pingInterval: 25000,
   transports: ['websocket'], // Remove polling to prevent ECONNRESET
   allowEIO3: true,
+  maxHttpBufferSize: 1e8, // 100 MB
+  connectTimeout: 45000,
+  // Add these new settings
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
   cookie: {
     name: "socket.io",
     httpOnly: true,
