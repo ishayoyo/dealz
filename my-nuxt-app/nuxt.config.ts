@@ -45,7 +45,8 @@ export default defineNuxtConfig({
     '~/plugins/socket.js',
     { src: '~/plugins/vue-toastification.js', mode: 'client' },
     '~/plugins/analytics.js',
-    '~/plugins/router.client.js'
+    '~/plugins/router.client.js',
+    '~/plugins/clarity.client.js'
   ],
   ssr: true,
   build: {
@@ -102,5 +103,5 @@ export default defineNuxtConfig({
       ]
     }
   },
-  pages: true,
+  pages: true
 })

@@ -16,8 +16,9 @@ export default defineNuxtPlugin((nuxtApp) => {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     randomizationFactor: 0.5,
-    transports: ['websocket', 'polling'],
+    transports: ['websocket'],
     withCredentials: true,
+    path: '/socket.io/'
   })
 
   nuxtApp.provide('socket', socket)
@@ -44,11 +45,12 @@ export default defineNuxtPlugin((nuxtApp) => {
 
     socket.on('connect_error', (error) => {
       console.error('Socket connection error:', error.message)
+      const retryDelay = Math.min(1000 * Math.pow(2, socket.reconnectAttempts), 10000);
       setTimeout(() => {
         if (authStore.isAuthenticated && !socket.connected) {
           socket.connect()
         }
-      }, 5000)
+      }, retryDelay)
     })
 
     socket.on('disconnect', (reason) => {
@@ -97,6 +99,10 @@ export default defineNuxtPlugin((nuxtApp) => {
         toast.success(`Deal "${payload.deal.title}" has been approved!`)
       }
     })
+
+    socket.on('ping', () => {
+      socket.emit('pong');
+    });
   }
 
   nuxtApp.hook('app:beforeMount', () => {

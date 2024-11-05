@@ -15,7 +15,9 @@ export const useSocket = () => {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5,
+      transports: ['websocket'],
+      path: '/socket.io/',
     })
 
     socket.value.on('connect', () => {
@@ -27,6 +29,15 @@ export const useSocket = () => {
       console.log('Socket disconnected')
       isConnected.value = false
     })
+
+    socket.value.on('ping', () => {
+      socket.value.emit('pong');
+    });
+
+    socket.value.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+      isConnected.value = false;
+    });
   }
 
   return socket.value

@@ -20,10 +20,11 @@ const io = socketIo(server, {
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
     credentials: true
   },
-  pingTimeout: 60000, // Increase ping timeout
-  pingInterval: 25000, // Increase ping interval
-  transports: ['websocket', 'polling'], // Support both WebSocket and polling
-  allowEIO3: true, // Allow Engine.IO version 3
+  path: '/socket.io/', // Explicitly set the path
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  transports: ['websocket'], // Remove polling to prevent ECONNRESET
+  allowEIO3: true,
   cookie: {
     name: "socket.io",
     httpOnly: true,
@@ -31,6 +32,11 @@ const io = socketIo(server, {
     secure: process.env.NODE_ENV === 'production'
   }
 });
+
+// Add heartbeat mechanism
+setInterval(() => {
+  io.sockets.emit('ping');
+}, 25000);
 
 // Add error handling for socket connections
 io.engine.on("connection_error", (err) => {
