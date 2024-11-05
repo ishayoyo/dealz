@@ -12,6 +12,8 @@
             :name="user.username" 
             :size="40" 
             :seed="user.avatarSeed"
+            :userId="user._id"
+            :key="`following-${user._id}-${user.avatarSeed}`"
           />
           <h4 class="font-medium text-sm ml-3 truncate">{{ user.username }}</h4>
         </div>
@@ -25,8 +27,25 @@
 </template>
 
 <script setup>
-import UserAvatar from '~/components/UserAvatar.vue'
+import { onMounted } from 'vue'
+import { useAvatars } from '~/composables/useAvatars'
 
-const props = defineProps(['following'])
+const props = defineProps({
+  following: {
+    type: Array,
+    required: true
+  }
+})
+
 const emit = defineEmits(['unfollow'])
+
+// Prefetch avatars for all users in the list
+const { fetchBatchAvatars } = useAvatars()
+
+onMounted(async () => {
+  if (props.following.length > 0) {
+    const userIds = props.following.map(user => user._id)
+    await fetchBatchAvatars(userIds)
+  }
+})
 </script>

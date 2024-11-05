@@ -2,9 +2,16 @@
   <div>
     <h2 class="text-2xl font-semibold mb-6 text-primary-800">Followers</h2>
     <div v-if="followers.length > 0" class="space-y-4">
-      <div v-for="follower in followers" :key="follower._id" class="flex items-center justify-between bg-white p-4 rounded-lg shadow">
+      <div v-for="follower in followers" :key="follower._id" 
+           class="flex items-center justify-between bg-white p-4 rounded-lg shadow">
         <div class="flex items-center">
-          <UserAvatar :name="follower.username" :size="40" :seed="follower.avatarSeed" />
+          <UserAvatar 
+            :name="follower.username" 
+            :size="40" 
+            :seed="follower.avatarSeed"
+            :userId="follower._id"
+            :key="`follower-${follower._id}-${follower.avatarSeed}`"
+          />
           <span class="ml-4 font-medium">{{ follower.username }}</span>
         </div>
         <button 
@@ -21,14 +28,25 @@
 </template>
 
 <script setup>
-import UserAvatar from './UserAvatar.vue'
+import { onMounted } from 'vue'
+import { useAvatars } from '~/composables/useAvatars'
 
-defineProps({
+const props = defineProps({
   followers: {
     type: Array,
     required: true
   }
 })
 
-defineEmits(['follow', 'unfollow'])
+const emit = defineEmits(['follow', 'unfollow'])
+
+// Prefetch avatars for all users in the list
+const { fetchBatchAvatars } = useAvatars()
+
+onMounted(async () => {
+  if (props.followers.length > 0) {
+    const userIds = props.followers.map(follower => follower._id)
+    await fetchBatchAvatars(userIds)
+  }
+})
 </script>

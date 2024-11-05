@@ -49,6 +49,8 @@
                     :name="user?.username || ''"
                     :size="40"
                     :seed="user?.avatarSeed"
+                    :userId="user?._id"
+                    :key="`header-avatar-${user?._id}-${user?.avatarSeed}`"
                     class="border-2 border-primary-300 group-hover:border-primary-500 transition-all duration-300 transform group-hover:scale-110"
                   />
                 </NuxtLink>
@@ -91,6 +93,7 @@ import UserAvatar from '~/components/UserAvatar.vue'
 import { useToastification } from '~/composables/useToastification'
 import { useRouter } from 'vue-router'
 import AnnouncementBanner from '~/components/AnnouncementBanner.vue'
+import { useAvatars } from '~/composables/useAvatars'
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
@@ -123,6 +126,11 @@ onMounted(() => {
   checkIfMobile(); // Initial check
   window.addEventListener('scroll', handleScroll);
   handleScroll();
+
+  // Initialize avatar for current user if authenticated
+  if (user.value?._id) {
+    getAvatar(user.value._id, user.value?.avatarSeed)
+  }
 })
 
 onUnmounted(() => {
@@ -183,6 +191,17 @@ const logoAnimationDuration = '4s'
 watch(isAuthenticated, (newValue) => {
   if (newValue) {
     notificationStore.fetchNotifications()
+  }
+})
+
+// Initialize avatar system
+const { getAvatar } = useAvatars()
+
+// Watch for user changes to update avatar
+watch(() => user.value?._id, (newUserId) => {
+  if (newUserId) {
+    // Ensure avatar is cached for the current user
+    getAvatar(newUserId, user.value?.avatarSeed)
   }
 })
 </script>

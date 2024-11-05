@@ -6,27 +6,8 @@
 </template>
 
 <script setup>
-import { computed, watch, ref, onMounted, onUnmounted } from 'vue';
-import { useAuthStore } from '~/stores/auth';
-
-const authStore = useAuthStore();
-
-const avatarCache = {
-  get(seed) {
-    const cached = localStorage.getItem(`avatar_${seed}`);
-    if (cached) {
-      const { url, timestamp } = JSON.parse(cached);
-      // Check if the cache is less than a day old
-      if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
-        return url;
-      }
-    }
-    return null;
-  },
-  set(seed, url) {
-    localStorage.setItem(`avatar_${seed}`, JSON.stringify({ url, timestamp: Date.now() }));
-  }
-};
+import { computed } from 'vue';
+import { useAvatars } from '~/composables/useAvatars';
 
 const props = defineProps({
   name: {
@@ -40,43 +21,28 @@ const props = defineProps({
   seed: {
     type: String,
     required: false
+  },
+  userId: {
+    type: String,
+    required: false
   }
 });
 
-const avatarClasses = computed(() => {
-  return [
-    'rounded-full overflow-hidden',
-    `w-${props.size / 4} h-${props.size / 4}`
-  ];
-});
+const { getAvatar, cacheVersion } = useAvatars();
 
-const avatarStyle = computed(() => {
-  return {
-    width: `${props.size}px`,
-    height: `${props.size}px`,
-  };
-});
+const avatarClasses = computed(() => ([
+  'rounded-full overflow-hidden',
+  `w-${props.size / 4} h-${props.size / 4}`
+]));
+
+const avatarStyle = computed(() => ({
+  width: `${props.size}px`,
+  height: `${props.size}px`,
+}));
 
 const avatarUrl = computed(() => {
-  if (props.seed) {
-    return `https://api.dicebear.com/6.x/avataaars/svg?seed=${props.seed}`
-  }
-  return `https://api.dicebear.com/6.x/avataaars/svg?seed=${props.name}`
+  // Use cacheVersion to trigger re-render when cache updates
+  cacheVersion.value;
+  return getAvatar(props.userId, props.seed);
 });
-
-const avatarKey = ref(0)
-
-onMounted(() => {
-  const { $socket } = useNuxtApp()
-  
-  $socket.on('avatarChanged', ({ userId }) => {
-    // Force re-render by updating the key
-    avatarKey.value++
-  })
-})
-
-onUnmounted(() => {
-  const { $socket } = useNuxtApp()
-  $socket.off('avatarChanged')
-})
 </script>

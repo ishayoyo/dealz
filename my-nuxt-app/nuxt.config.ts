@@ -40,7 +40,6 @@ export default defineNuxtConfig({
   plugins: [
     '~/plugins/api.js',
     '~/plugins/auth.js',
-    '~/plugins/userAvatar.js',
     '~/plugins/fontawesome.js',
     '~/plugins/socket.js',
     { src: '~/plugins/vue-toastification.js', mode: 'client' },

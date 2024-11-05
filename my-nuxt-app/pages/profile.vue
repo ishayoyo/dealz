@@ -18,6 +18,7 @@
               :name="getUserName" 
               :size="128" 
               :seed="profile?.avatarSeed"
+              :userId="profile?._id"
               :key="profile?.avatarSeed"
             />
             <button @click="changeAvatar" class="absolute bottom-0 right-0 bg-primary-500 text-white rounded-full p-2 hover:bg-primary-600">
@@ -155,6 +156,7 @@ import UserProfileSkeleton from '~/components/UserProfileSkeleton.vue'
 import DealCardSkeleton from '~/components/DealCardSkeleton.vue'
 import DealCard from '~/components/DealCard.vue'
 import FollowedDeals from '~/components/FollowedDeals.vue'
+import { useAvatars } from '~/composables/useAvatars'
 
 const config = useRuntimeConfig()
 const fileInput = ref(null)
@@ -406,10 +408,9 @@ const changeAvatar = async () => {
         });
       }
       
-      // Force refresh of user deals to update avatars
-      if (currentTab.value === 'deals') {
-        await fetchUserDeals();
-      }
+      // Clear avatar cache for this user
+      const { clearCache } = useAvatars();
+      clearCache(profile.value._id);
       
       toast.success('Avatar changed successfully');
     } else {
