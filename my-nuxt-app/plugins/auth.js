@@ -9,7 +9,10 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   router.beforeEach(async (to, from) => {
     // Define public routes that don't require authentication
     const publicRoutes = ['/', '/survey/thank-you']
-    const isPublicRoute = publicRoutes.includes(to.path)
+    // Add check for deal routes
+    const isPublicRoute = publicRoutes.includes(to.path) || 
+                         to.path.startsWith('/deals/') || 
+                         to.path.startsWith('/user/')
 
     // Special handling for survey route
     if (to.path === '/survey') {
