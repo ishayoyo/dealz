@@ -8,6 +8,8 @@ const isAdmin = require('../../../middleware/isAdmin');
 // User routes
 router.post('/submit', auth, rateLimit.survey, surveyController.submitSurvey);
 router.get('/my-response', auth, surveyController.getMyResponse);
+router.get('/status', auth, surveyController.getSurveyStatus);
+router.post('/complete', auth, surveyController.markSurveyComplete);
 
 // Admin routes
 router.get('/metrics', auth, isAdmin, surveyController.getSurveyMetrics);

@@ -23,6 +23,7 @@ export const useAuthStore = defineStore('auth', {
     isLoginRateLimited: (state) => state.loginCountdown > 0,
     isSignupRateLimited: (state) => state.signupCountdown > 0,
     isGoogleAuth: (state) => state.authProvider === 'google',
+    isSurveyCompleted: (state) => state.user?.survey?.completed || false,
   },
 
   actions: {
@@ -581,6 +582,44 @@ export const useAuthStore = defineStore('auth', {
       
       if (process.client) {
         sessionStorage.removeItem('googleLoginInitiated')
+      }
+    },
+
+    // Add these new actions for survey management
+    async updateSurveyStatus() {
+      try {
+        const response = await api.post('/survey/complete')
+        if (response.data.status === 'success') {
+          this.user = {
+            ...this.user,
+            survey: {
+              completed: true,
+              completedAt: new Date().toISOString()
+            }
+          }
+          return true
+        }
+        return false
+      } catch (error) {
+        console.error('Error updating survey status:', error)
+        return false
+      }
+    },
+
+    async checkSurveyStatus() {
+      try {
+        const response = await api.get('/survey/status')
+        if (response.data.status === 'success') {
+          this.user = {
+            ...this.user,
+            survey: response.data.survey
+          }
+          return response.data.survey.completed
+        }
+        return false
+      } catch (error) {
+        console.error('Error checking survey status:', error)
+        return false
       }
     }
   },

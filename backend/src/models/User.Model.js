@@ -89,6 +89,11 @@ const userSchema = new mongoose.Schema({
     enum: ['local', 'google'],
     default: 'local'
   },
+  survey: {
+    completed: { type: Boolean, default: false },
+    completedAt: Date,
+    lastPromptedAt: Date
+  },
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

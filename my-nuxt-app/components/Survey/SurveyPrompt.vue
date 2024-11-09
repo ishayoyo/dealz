@@ -69,22 +69,29 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useLocalStorage } from '@vueuse/core'
+import api from '~/services/api'
 
 const router = useRouter()
 const toast = useToast()
 const isPromptOpen = ref(false)
 const hasSeenPrompt = useLocalStorage('hasSeenSurveyPrompt', false)
 
-const navigateToSurvey = () => {
-  const completed = localStorage.getItem('surveyCompleted')
-  if (completed) {
-    toast.info('You have already completed the survey. Thank you!')
-    return
+const navigateToSurvey = async () => {
+  try {
+    // Updated endpoint
+    const { data } = await api.get('/survey/status')
+    if (data.completed) {
+      toast.info('You have already completed the survey. Thank you!')
+      return
+    }
+    
+    hasSeenPrompt.value = true
+    isPromptOpen.value = false
+    router.push('/survey')
+  } catch (error) {
+    console.error('Error checking survey status:', error)
+    toast.error('Something went wrong. Please try again.')
   }
-  
-  hasSeenPrompt.value = true
-  isPromptOpen.value = false
-  router.push('/survey')
 }
 
 const dismissPrompt = () => {

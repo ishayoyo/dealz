@@ -8,12 +8,24 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   // Add navigation guard
   router.beforeEach(async (to, from) => {
     // Define public routes that don't require authentication
-    const publicRoutes = ['/', '/survey', '/survey/thank-you']
+    const publicRoutes = ['/', '/survey/thank-you']
     const isPublicRoute = publicRoutes.includes(to.path)
+
+    // Special handling for survey route
+    if (to.path === '/survey') {
+      if (!authStore.isAuthenticated) {
+        authStore.showAuthModal = true
+        return false
+      }
+      // Check if survey is already completed
+      const isCompleted = await authStore.checkSurveyStatus()
+      if (isCompleted) {
+        return '/survey/thank-you'
+      }
+    }
 
     // Only check auth for non-public routes
     if (!isPublicRoute && !authStore.isAuthenticated) {
-      // For non-public routes, trigger auth modal instead of redirect
       authStore.showAuthModal = true
       return false
     }

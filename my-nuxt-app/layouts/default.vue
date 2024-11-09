@@ -162,11 +162,10 @@ watch(() => route.path, async (newPath) => {
 const checkSurveyPrompt = () => {
   if (
     isAuthenticated.value && 
-    !surveyCompleted.value && 
+    !authStore.user?.survey?.completed &&
     (!lastSurveyPrompt.value || 
       new Date(lastSurveyPrompt.value).getTime() + (24 * 60 * 60 * 1000) < Date.now())
   ) {
-    // Wait 30 seconds before showing the prompt
     setTimeout(() => {
       showSurveyPrompt.value = true
     }, 30000)
@@ -191,7 +190,8 @@ onMounted(() => {
   checkSurveyPrompt()
 })
 
-const handleSurveyComplete = () => {
+const handleSurveyComplete = async () => {
+  await authStore.updateSurveyStatus()
   surveyCompleted.value = true
   showSurveyPrompt.value = false
   toast.success('Thank you for your feedback!')

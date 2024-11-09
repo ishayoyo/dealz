@@ -1,4 +1,5 @@
 const SurveyResponse = require('../models/Survey.Model');
+const User = require('../models/User.Model');
 
 const surveyController = {
   async submitSurvey(req, res) {
@@ -188,6 +189,47 @@ const surveyController = {
       res.status(500).json({
         status: 'error',
         message: 'Failed to fetch survey count'
+      });
+    }
+  },
+
+  async getSurveyStatus(req, res) {
+    try {
+      const user = await User.findById(req.user._id);
+      res.status(200).json({
+        status: 'success',
+        survey: {
+          completed: user.survey?.completed || false,
+          completedAt: user.survey?.completedAt
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: 'Error checking survey status'
+      });
+    }
+  },
+
+  async markSurveyComplete(req, res) {
+    try {
+      const user = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          'survey.completed': true,
+          'survey.completedAt': new Date()
+        },
+        { new: true }
+      );
+
+      res.status(200).json({
+        status: 'success',
+        survey: user.survey
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: 'Error updating survey status'
       });
     }
   }
