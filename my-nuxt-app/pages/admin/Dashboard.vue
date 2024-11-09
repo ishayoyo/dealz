@@ -9,6 +9,10 @@
       <button @click="navigateToMarketing" class="btn btn-secondary">
         Marketing
       </button>
+      <button @click="navigateToSurveyResults" class="btn btn-accent">
+        <i class="fas fa-chart-pie mr-2"></i>
+        Survey Results
+      </button>
     </div>
     
     <!-- Analytics Section -->
@@ -232,7 +236,8 @@ const stats = computed(() => [
   { title: 'Total Users', value: totalUsers.value, color: 'primary', icon: 'users' },
   { title: 'Total Deals', value: totalDeals.value, color: 'secondary', icon: 'tag' },
   { title: 'Pending Deals', value: pendingDeals.value.length, color: 'accent', icon: 'clock' },
-  { title: 'Total Comments', value: totalComments.value, color: 'chip', icon: 'comment' }
+  { title: 'Total Comments', value: totalComments.value, color: 'chip', icon: 'comment' },
+  { title: 'Survey Responses', value: surveyCount.value, color: 'success', icon: 'poll' }
 ])
 
 const charts = [
@@ -550,23 +555,26 @@ watch(affiliateStats, (newValue) => {
 }, { deep: true })
 
 onMounted(async () => {
-  await fetchAnalytics();
-  await fetchPendingDeals();
-  await fetchAllDeals();
-  await fetchUsers();
-  await fetchAffiliateStats();
+  await Promise.all([
+    fetchAnalytics(),
+    fetchPendingDeals(),
+    fetchAllDeals(),
+    fetchUsers(),
+    fetchAffiliateStats(),
+    fetchSurveyCount(),
+  ])
   
   try {
     const [dealsChartData, usersChartData] = await Promise.all([
       api.get('/admin/deals-chart-data'),
       api.get('/admin/users-chart-data')
-    ]);
+    ])
     
-    createDealsChart(dealsChartData.data.data);
-    createUsersChart(usersChartData.data.data);
+    createDealsChart(dealsChartData.data.data)
+    createUsersChart(usersChartData.data.data)
   } catch (error) {
-    console.error('Error fetching chart data:', error.response?.data || error.message);
-    toast.error('Failed to fetch chart data');
+    console.error('Error fetching chart data:', error.response?.data || error.message)
+    toast.error('Failed to fetch chart data')
   }
 })
 
@@ -599,6 +607,22 @@ const router = useRouter()
 
 const navigateToMarketing = () => {
   router.push('/admin/marketing')
+}
+
+const navigateToSurveyResults = () => {
+  router.push('/admin/survey-results')
+}
+
+const surveyCount = ref(0)
+
+const fetchSurveyCount = async () => {
+  try {
+    const response = await api.get('/survey/count')
+    surveyCount.value = response.data.count
+  } catch (error) {
+    console.error('Error fetching survey count:', error)
+    toast.error('Failed to fetch survey count')
+  }
 }
 </script>
 

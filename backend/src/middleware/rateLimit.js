@@ -180,6 +180,12 @@ const rateLimitMiddleware = {
       });
     },
   }),
+
+  survey: rateLimit({
+    windowMs: 24 * 60 * 60 * 1000, // 24 hours
+    max: 1, // limit each IP to 1 survey submission per day
+    message: 'Too many survey submissions from this IP, please try again in 24 hours'
+  }),
 };
 
 module.exports = rateLimitMiddleware;

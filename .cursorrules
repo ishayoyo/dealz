@@ -1,0 +1,20 @@
+# SaverSonic - Deal Sharing Network
+
+SaverSonic (saversonic.com) is a dynamic deal-sharing platform that connects users with the best online deals and discounts. Built with modern web technologies, it enables users to discover, share, and interact with deals across various categories.
+
+## Core Features
+- Deal posting and sharing
+- User following system
+- Deal following/bookmarking
+- Interactive comments on deals
+- Direct links to deal websites
+- Real-time updates using WebSockets
+
+## Technical Stack
+- **Frontend**: Nuxt 3 (Vue.js framework) inside the folder my-nuxt-app
+- **Backend**: Express.js inside the folder backend
+- **State Management**: Pinia
+- **Real-time Features**: WebSocket integration
+- **Architecture**: Full-stack JavaScript application
+
+SaverSonic creates a community-driven ecosystem where users can discover savings opportunities while engaging with like-minded deal seekers. The platform emphasizes user interaction and real-time updates to ensure deals are always current and relevant.

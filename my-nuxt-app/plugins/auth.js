@@ -3,7 +3,24 @@ import api from '~/services/api'
 
 export default defineNuxtPlugin(async (nuxtApp) => {
   const authStore = useAuthStore()
+  const router = useRouter()
   
+  // Add navigation guard
+  router.beforeEach(async (to, from) => {
+    // Define public routes that don't require authentication
+    const publicRoutes = ['/', '/survey', '/survey/thank-you']
+    const isPublicRoute = publicRoutes.includes(to.path)
+
+    // Only check auth for non-public routes
+    if (!isPublicRoute && !authStore.isAuthenticated) {
+      // For non-public routes, trigger auth modal instead of redirect
+      authStore.showAuthModal = true
+      return false
+    }
+
+    return true
+  })
+
   let isRefreshing = false
   let failedQueue = []
 
