@@ -181,7 +181,11 @@ const submitSurvey = async () => {
     const { data } = await api.post('/survey/submit', surveyData)
     
     if (data.status === 'success') {
-      localStorage.setItem('surveyCompleted', 'true')
+      await api.post('/survey/complete')
+      
+      localStorage.removeItem('surveyReminder')
+      localStorage.setItem('hasSeenSurveyPrompt', 'true')
+      
       toast.success('Thank you for your feedback!')
       navigateTo('/survey/thank-you')
     } else {

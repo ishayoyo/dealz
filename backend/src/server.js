@@ -127,12 +127,14 @@ mongoose.connect(process.env.MONGODB_URI)
       console.log(`Server is running on port ${PORT}`);
     });
 
-    // Schedule the cleanup task to run every hour
+    // Comment out the cleanup cron job
+    /*
     cron.schedule('0 * * * *', () => {
       console.log('Cron job triggered at:', new Date().toISOString());
       console.log('Running unused image cleanup task');
       cleanupUnusedImages();
     });
+    */
   })
   .catch(err => {
     console.error('Could not connect to MongoDB', err);

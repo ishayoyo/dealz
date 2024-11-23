@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="!hasSurveyCompleted">
     <!-- Enhanced Survey Button with Pulse Effect -->
     <button 
       @click="isPromptOpen = !isPromptOpen"
@@ -75,13 +75,50 @@ const router = useRouter()
 const toast = useToast()
 const isPromptOpen = ref(false)
 const hasSeenPrompt = useLocalStorage('hasSeenSurveyPrompt', false)
+const hasSurveyCompleted = ref(false)
 
+// Add this function to check survey status
+const checkSurveyStatus = async () => {
+  try {
+    const { data } = await api.get('/survey/status')
+    hasSurveyCompleted.value = data.survey.completed
+    return data.survey.completed
+  } catch (error) {
+    console.error('Error checking survey status:', error)
+    return false
+  }
+}
+
+// Update the onMounted hook
+onMounted(async () => {
+  const completed = await checkSurveyStatus()
+  
+  // Only show prompt if survey is not completed
+  if (!completed) {
+    const reminderTime = localStorage.getItem('surveyReminder')
+    if (reminderTime) {
+      // Check if reminder time has passed
+      if (new Date(reminderTime) <= new Date()) {
+        setTimeout(() => {
+          isPromptOpen.value = true
+        }, 2000)
+      }
+    } else {
+      // Show for first time users
+      setTimeout(() => {
+        isPromptOpen.value = true
+      }, 2000)
+    }
+  }
+})
+
+// Update navigateToSurvey function
 const navigateToSurvey = async () => {
   try {
-    // Updated endpoint
-    const { data } = await api.get('/survey/status')
-    if (data.completed) {
+    const completed = await checkSurveyStatus()
+    if (completed) {
       toast.info('You have already completed the survey. Thank you!')
+      isPromptOpen.value = false
       return
     }
     
@@ -100,13 +137,6 @@ const dismissPrompt = () => {
   // Set a reminder for 24 hours later
   localStorage.setItem('surveyReminder', new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())
 }
-
-onMounted(() => {
-  // Show prompt after 2 seconds for testing
-  setTimeout(() => {
-    isPromptOpen.value = true
-  }, 2000)
-})
 </script>
 
 <style scoped>
