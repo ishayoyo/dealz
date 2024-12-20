@@ -2,7 +2,7 @@
   <Transition name="modal-fade" appear>
     <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999] p-0 overflow-y-auto">
       <div 
-        class="bg-white w-full overflow-hidden flex flex-col relative transform transition-all duration-300"
+        class="bg-white w-full overflow-hidden flex flex-col relative transform transition-all duration-300 z-[1000]"
         :class="[modalSizeClass, { 'scale-95 opacity-0': !isOpen, 'scale-100 opacity-100': isOpen }]"
         :style="modalStyle"
       >
@@ -10,7 +10,7 @@
         <button 
           v-if="isDedicatedPage"
           @click="$emit('close-modal')" 
-          class="absolute top-4 right-4 z-50 bg-white rounded-full p-2 shadow-md transition duration-300 hover:bg-gray-100"
+          class="absolute top-4 right-4 z-[1001] bg-white rounded-full p-2 shadow-md transition duration-300 hover:bg-gray-100"
           aria-label="Close modal"
         >
           <svg 
@@ -33,7 +33,7 @@
         <button 
           v-if="!isDedicatedPage" 
           @click="closeModal" 
-          class="absolute top-4 right-4 text-gray-700 hover:text-text z-20 bg-white rounded-full p-2 shadow-md transition duration-300"
+          class="absolute top-4 right-4 text-gray-700 hover:text-text z-[1001] bg-white rounded-full p-2 shadow-md transition duration-300"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
