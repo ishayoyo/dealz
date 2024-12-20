@@ -1,6 +1,6 @@
 <template>
   <Transition name="modal-fade" appear>
-    <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-0 overflow-y-auto">
+    <div v-if="deal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999] p-0 overflow-y-auto">
       <div 
         class="bg-white w-full overflow-hidden flex flex-col relative transform transition-all duration-300"
         :class="[modalSizeClass, { 'scale-95 opacity-0': !isOpen, 'scale-100 opacity-100': isOpen }]"

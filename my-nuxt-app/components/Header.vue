@@ -7,7 +7,7 @@
       />
       
       <header 
-        class="fixed left-0 right-0 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg shadow-md z-40 transition-all duration-300" 
+        class="fixed left-0 right-0 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg shadow-md z-30 transition-all duration-300" 
         :class="[
           {'top-0': isAuthenticated, 'top-10': !isAuthenticated},
           {'shadow-lg transform -translate-y-1': scrolled, 'shadow-sm': !scrolled}
