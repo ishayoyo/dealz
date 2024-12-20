@@ -23,7 +23,7 @@
         </div>
       </div>
 
-      <div v-else-if="deal" class="min-h-screen">
+      <div v-else-if="deal" class="min-h-screen relative z-[998]">
         <DealModal 
           v-model:deal="deal"
           :isOpen="true"
