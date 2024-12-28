@@ -304,12 +304,18 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   try {
     let { email } = req.body;
 
-    // Use the updated normalizeEmail function
-    email = normalizeEmail(email);
-
+    // Normalize the email
+    const normalizedEmail = normalizeEmail(email);
     console.log('Searching for email:', email);
+    console.log('Normalized email:', normalizedEmail);
 
-    const user = await User.findOne({ email });
+    // Find user by either normalized or regular email
+    const user = await User.findOne({
+      $or: [
+        { normalizedEmail: normalizedEmail },
+        { email: email.toLowerCase() }
+      ]
+    });
     
     if (!user) {
       return res.status(404).json({
@@ -327,7 +333,18 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
       const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
       
       // Send email
-      await sendPasswordResetEmail(user, resetURL);
+      const emailSent = await sendPasswordResetEmail(user, resetURL);
+
+      if (!emailSent) {
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        return res.status(500).json({
+          status: 'error',
+          message: 'Failed to send password reset email. Please try again later.'
+        });
+      }
 
       res.status(200).json({
         status: 'success',
