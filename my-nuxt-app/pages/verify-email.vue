@@ -135,13 +135,20 @@ const resendCooldown = ref(0)
 const canResend = computed(() => resendCooldown.value === 0)
 
 onMounted(async () => {
+  // Pre-fill email from URL if present
+  const emailFromUrl = route.query.email
+  if (emailFromUrl) {
+    resendEmail.value = emailFromUrl
+  }
+
   // Check for verification token in URL
   const token = route.query.token
   if (token) {
     isVerifying.value = true
     error.value = ''
     try {
-      const result = await authStore.verifyEmailToken(token)
+      // Use the token verification endpoint
+      const result = await authStore.verifyEmailWithToken(token)
       if (result.success) {
         isVerified.value = true
         toast.success('Email verified successfully!')
@@ -159,16 +166,16 @@ onMounted(async () => {
     }
   } else {
     try {
-      const result = await authStore.checkVerificationStatus();
+      const result = await authStore.checkVerificationStatus()
       if (result.isVerified) {
-        toast.success('Your email is already verified!');
-        router.push('/');
+        toast.success('Your email is already verified!')
+        router.push('/')
       }
     } catch (error) {
-      console.error('Error checking verification status:', error);
+      console.error('Error checking verification status:', error)
     }
   }
-});
+})
 
 const verifyEmail = async () => {
   isSubmitting.value = true

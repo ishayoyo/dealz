@@ -335,9 +335,15 @@ const handleSignup = async () => {
     })
     if (result.success) {
       toast.success(result.message || 'Signup successful. Please check your email for the verification link.')
+      // Close modal first
       emit('close')
-      // Use router.push instead of navigateTo for more reliable navigation
-      await router.push('/verify-email')
+      // Force a small delay to ensure modal is closed
+      await new Promise(resolve => setTimeout(resolve, 100))
+      // Then navigate
+      await router.push({
+        path: '/verify-email',
+        query: { email: form.email }  // Pass email to pre-fill the resend form
+      })
     } else {
       toast.error(result.error || 'Signup failed. Please check your information and try again.')
     }
