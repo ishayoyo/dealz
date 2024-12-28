@@ -424,20 +424,33 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.verifyEmail = async (req, res) => {
-  const { code } = req.body;
-  console.log(`[verifyEmail] Attempting to verify email with code: ${code}`);
+  const { code, token } = req.body;
+  console.log(`[verifyEmail] Attempting to verify email with ${code ? 'code' : 'token'}: ${code || token}`);
 
   try {
-    const user = await User.findOne({
-      verificationCode: code,
-      verificationCodeExpires: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      console.log(`[verifyEmail] No user found with valid verification code: ${code}`);
+    let user;
+    if (code) {
+      user = await User.findOne({
+        verificationCode: code,
+        verificationCodeExpires: { $gt: Date.now() }
+      });
+    } else if (token) {
+      user = await User.findOne({
+        verificationCode: token,
+        verificationCodeExpires: { $gt: Date.now() }
+      });
+    } else {
       return res.status(400).json({
         status: 'fail',
-        message: 'Invalid or expired verification code'
+        message: 'Please provide a verification code or token'
+      });
+    }
+
+    if (!user) {
+      console.log(`[verifyEmail] No user found with valid verification ${code ? 'code' : 'token'}: ${code || token}`);
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Invalid or expired verification link'
       });
     }
 

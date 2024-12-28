@@ -435,7 +435,26 @@ export const useAuthStore = defineStore('auth', {
         return { success: false, error: error.response?.data?.message || 'Verification failed' };
       }
     },
-    
+
+    async verifyEmailWithToken(token) {
+      try {
+        const response = await api.post('/users/verify-email', { token });
+        if (response.data.status === 'success') {
+          if (this.user) {
+            this.user.isVerified = true;
+          }
+          return { success: true };
+        } else if (response.data.alreadyVerified) {
+          return { success: true, alreadyVerified: true };
+        } else {
+          return { success: false, error: response.data.message };
+        }
+      } catch (error) {
+        console.error('Email verification with token failed:', error);
+        return { success: false, error: error.response?.data?.message || 'Verification failed' };
+      }
+    },
+
     async resendVerificationEmail(email) {
       try {
         const response = await api.post('/users/resend-verification', { email });
