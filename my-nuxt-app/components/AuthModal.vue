@@ -334,9 +334,10 @@ const handleSignup = async () => {
       password: form.password
     })
     if (result.success) {
-      toast.success(result.message || 'Signup successful. Please check your email for the verification code.')
-      navigateTo('/verify-email')
+      toast.success(result.message || 'Signup successful. Please check your email for the verification link.')
       emit('close')
+      // Use router.push instead of navigateTo for more reliable navigation
+      await router.push('/verify-email')
     } else {
       toast.error(result.error || 'Signup failed. Please check your information and try again.')
     }
