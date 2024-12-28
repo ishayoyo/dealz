@@ -117,11 +117,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useToastification } from '~/composables/useToastification'
-import { useRouter } from '#app'
+import { useRouter, useRoute } from '#app'
 
 const authStore = useAuthStore()
 const toast = useToastification()
 const router = useRouter()
+const route = useRoute()
 
 const verificationCode = ref('')
 const resendEmail = ref('')
@@ -134,14 +135,38 @@ const resendCooldown = ref(0)
 const canResend = computed(() => resendCooldown.value === 0)
 
 onMounted(async () => {
-  try {
-    const result = await authStore.checkVerificationStatus(resendEmail.value);
-    if (result.isVerified) {
-      toast.success('Your email is already verified!');
-      router.push('/');
+  // Check for verification token in URL
+  const token = route.query.token
+  if (token) {
+    isVerifying.value = true
+    error.value = ''
+    try {
+      const result = await authStore.verifyEmailToken(token)
+      if (result.success) {
+        isVerified.value = true
+        toast.success('Email verified successfully!')
+        // Redirect to home after short delay
+        setTimeout(() => router.push('/'), 2000)
+      } else {
+        error.value = result.error || 'Verification failed. Please try again.'
+        toast.error(error.value)
+      }
+    } catch (err) {
+      error.value = 'An error occurred during verification.'
+      toast.error(error.value)
+    } finally {
+      isVerifying.value = false
     }
-  } catch (error) {
-    console.error('Error checking verification status:', error);
+  } else {
+    try {
+      const result = await authStore.checkVerificationStatus();
+      if (result.isVerified) {
+        toast.success('Your email is already verified!');
+        router.push('/');
+      }
+    } catch (error) {
+      console.error('Error checking verification status:', error);
+    }
   }
 });
 
@@ -179,7 +204,7 @@ const resendVerificationEmail = async () => {
   try {
     const result = await authStore.resendVerificationEmail(resendEmail.value)
     if (result.success) {
-      toast.info(result.message)
+      toast.info('A new verification link has been sent to your email.')
       verificationCode.value = '' // Reset the input field
       startResendCooldown()
     } else {

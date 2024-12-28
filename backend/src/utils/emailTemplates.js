@@ -78,15 +78,19 @@ const baseTemplate = (content) => `
 </html>
 `;
 
-exports.generateVerificationEmailHTML = (username, verificationCode) => {
+exports.generateVerificationEmailHTML = (username, verificationToken) => {
+  const verificationURL = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
   const content = `
     <h1>Verify Your SaverSonic Account</h1>
     <p>Hello ${username},</p>
-    <p>Thank you for signing up with SaverSonic! To complete your registration, please use the following verification code:</p>
-    <div class="verification-code">${verificationCode}</div>
-    <p>Enter this code on the verification page to activate your account.</p>
-    <p>This code will expire in 15 minutes.</p>
-    <p><strong>Security Notice:</strong> If you didn't create an account with SaverSonic, please ignore this email and contact our support team.</p>
+    <p>Thank you for signing up with SaverSonic! To complete your registration, please click the button below:</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${verificationURL}" class="button" style="color: #ffffff;">Verify Email Address</a>
+    </p>
+    <p>Or copy and paste this link into your browser:</p>
+    <p style="word-break: break-all;">${verificationURL}</p>
+    <p>This link will expire in 15 minutes.</p>
+    <p><strong>Security Notice:</strong> If you didn't create an account with SaverSonic, please ignore this email.</p>
   `;
   return baseTemplate(content);
 };
